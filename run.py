@@ -78,7 +78,8 @@ if __name__ == "__main__":
         collided = gazebo_sim.get_hard_collision()
         time.sleep(1)
 
-
+    rviz_process = subprocess.Popen(
+        ['roslaunch', 'jackal_viz', 'view_robot.launch'])
 
 
     ##########################################################################################
@@ -86,29 +87,29 @@ if __name__ == "__main__":
     ## (Customize this block to add your own navigation stack)
     ##########################################################################################
     
-    launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_DWA.launch')
+    launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_corridor.launch')
+    # launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_DWA.launch')
     nav_stack_process = subprocess.Popen([
         'roslaunch',
         launch_file,
     ])
-    
+
     # Make sure your navigation stack recives a goal of (0, 10, 0), which is 10 meters away
     # along postive y-axis.
-    import actionlib
-    from geometry_msgs.msg import Quaternion
-    from move_base_msgs.msg import MoveBaseGoal, MoveBaseAction
-    nav_as = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
-    mb_goal = MoveBaseGoal()
-    mb_goal.target_pose.header.frame_id = 'odom'
-    mb_goal.target_pose.pose.position.x = GOAL_POSITION[0]
-    mb_goal.target_pose.pose.position.y = GOAL_POSITION[1]
-    mb_goal.target_pose.pose.position.z = 0
-    mb_goal.target_pose.pose.orientation = Quaternion(0, 0, 0, 1)
+    # import actionlib
+    # from geometry_msgs.msg import Quaternion
+    # from move_base_msgs.msg import MoveBaseGoal, MoveBaseAction
 
-    nav_as.wait_for_server()
-    nav_as.send_goal(mb_goal)
+    # nav_as = actionlib.SimpleActionClient('/move_base', MoveBaseAction)
+    # mb_goal = MoveBaseGoal()
+    # mb_goal.target_pose.header.frame_id = 'odom'
+    # mb_goal.target_pose.pose.position.x = GOAL_POSITION[0]
+    # mb_goal.target_pose.pose.position.y = GOAL_POSITION[1]
+    # mb_goal.target_pose.pose.position.z = 0
+    # mb_goal.target_pose.pose.orientation = Quaternion(0, 0, 0, 1)
 
-
+    # nav_as.wait_for_server()
+    # nav_as.send_goal(mb_goal)
 
 
     ##########################################################################################
@@ -119,7 +120,7 @@ if __name__ == "__main__":
     pos = gazebo_sim.get_model_state().pose.position
     curr_coor = (pos.x, pos.y)
 
-    
+
     # check whether the robot started to move
     while compute_distance(init_coor, curr_coor) < 0.1:
         curr_time = rospy.get_time()
@@ -136,7 +137,8 @@ if __name__ == "__main__":
         curr_time = rospy.get_time()
         pos = gazebo_sim.get_model_state().pose.position
         curr_coor = (pos.x, pos.y)
-        print("Time: %.2f (s), x: %.2f (m), y: %.2f (m)" %(curr_time - start_time, *curr_coor), end="\r")
+        # print(gazebo_sim.get_laser_scan().ranges)
+        print("Time: %.2f (s), x: %.2f (m), y: %.2f (m)" %(curr_time - start_time, *curr_coor))
         collided = gazebo_sim.get_hard_collision()
         while rospy.get_time() - curr_time < 0.1:
             time.sleep(0.01)
