@@ -61,7 +61,7 @@ rosdep install -y --from-paths . --ignore-src --rosdistro=<YOUR_ROS_VERSION>
 ```
 catkin_make
 ```
-In case you encounter the following error: 'Could NOT find PY_em (missing: PY_EM)',
+In case you encounter the following error: `Could NOT find PY_em (missing: PY_EM)`,
 then install empy and matplotlib:
 ```
 pip3 install empy matplotlib
