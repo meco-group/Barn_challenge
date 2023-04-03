@@ -90,102 +90,6 @@ def wrapToPi(angle):
     elif angle<-m.pi:
         angle+=2*m.pi
     return angle
-
-
-
-
-
-
-def ray_check(goal):
-    marker_pub = rospy.Publisher('/visualization_marker_array', MarkerArray, queue_size=0)
-    marker_arr = MarkerArray()
-    #scanDataCoords()
-    goal_dist = distance(goal,(message.posx,message.posy))
-    comp_dist = 1
-    r_dist = goal_dist
-    theta_d = m.atan2(goal[1]-message.posy,goal[0]-message.posx)
-    ang_err = wrapToPi(theta_d-message.theta) # m.atan2(m.sin(theta_d-message.theta),m.cos(theta_d-message.theta))
-    kp = 0.55
-    scan_ind = np.argmin(abs(message.angles-ang_err))
-    replan = True
-    r_goal = goal
-    count = 0
-    while replan == True:
-        if goal_dist>0.8:
-            check_obs = []
-            check_dist = []
-            ab_dist = min(r_dist,comp_dist) #goal_dist
-            val = (ab_dist**2+ab_dist**2-message.footpr**2)/(2*ab_dist*goal_dist)
-            val = min(max(val, -1), 1)
-            check_rays = m.ceil(np.arccos(val)/message.angle_inc * 0.5)
-            # print(check_rays)
-            # print(max(scan_ind-check_rays,message.minind),min(scan_ind+check_rays,message.maxind))
-            for idx in range(int(max(scan_ind-check_rays,message.minind)),int(min(scan_ind+check_rays,message.maxind))):
-                if message.scandata[idx]<ab_dist:
-                    if idx<scan_ind:
-                        check_obs.append(1)
-                        check_dist.append(message.scandata[idx])
-                    else:
-                        check_obs.append(-1)
-                        check_dist.append(message.scandata[idx])
-                else:
-                    check_obs.append(0)
-                    check_dist.append(500)
-            min_idx = np.min(message.scandata)
-            if min_idx<comp_dist:
-                check_obs.append(1 if min_idx<scan_ind else -1)
-                #check_dist.append(message.scandata[min_idx])
-        
-            if np.sum(check_obs) != 0:
-                replan = True
-                scan_ind += np.sum(check_obs)
-                if (scan_ind < message.minind or scan_ind > message.maxind):
-                    
-                    replan = False
-                else:
-                    r_dist = min(check_dist)
-                    r_goal = [message.posx + r_dist*m.cos(message.angles[scan_ind]+message.theta), message.posy + r_dist*m.sin(message.angles[scan_ind]+message.theta)]
-                    theta_d = m.atan2(r_goal[1]-message.posy,r_goal[0]-message.posx)
-                    ang_err = m.atan2(m.sin(theta_d-message.theta),m.cos(theta_d-message.theta))
-            else:
-                replan = False
-        else:
-            replan = False
-        
-        marker_arr.markers.append(generate_wpt_marker(r_goal))
-        marker_pub.publish(marker_arr)
-        
-        count +=1
-        if count >= 10:
-            #print("replanning found nothing")
-            replan = False
-            #r_goal = goal
-            #kp = 0.25
-        #if r_dist<0.6:
-            #kp = 0.25
-
-    return theta_d, r_goal, kp
-
-def generate_wpt_marker(wpt):
-    
-    msg = Marker()
-    if len(wpt) == 0:
-        return msg
-    
-    msg.header.frame_id="odom"
-    msg.header.stamp = rospy.Time.now()
-    msg.ns = "local_goal"
-    msg.id = 281
-    msg.action = Marker.ADD
-    msg.pose.position.x = wpt[0]
-    msg.pose.position.y = wpt[1]
-    msg.pose.orientation.w = 1
-    msg.lifetime = rospy.Duration()
-    msg.type = Marker.SPHERE
-    msg.scale.x = msg.scale.y = msg.scale.z = .3
-    msg.color.r, msg.color.g, msg.color.b, msg.color.a = (0,1,1,1)
-
-    return msg  
     
 def scanDataCoords():
     coords = []
@@ -253,8 +157,6 @@ def main():
         twist.angular.z = 0
 
         # localGoal = tuple(message.gapGoal)
-        # des_ang, r_goal,kp = ray_check(localGoal)
-        # theta_d = des_ang
         # ang_err = m.atan2(m.sin(theta_d-message.theta),m.cos(theta_d-message.theta))
         # ang_v = np.sign(ang_err) * min(maxTurn,kt*abs(ang_err))
         # twist.angular.z = ang_v
@@ -288,8 +190,7 @@ def main():
                 xyh.append([point[0], point[1], 1])
         
         xy = np.array([value for value in xyh]).T
-
-        
+     
 
         if flag:
             print('start')

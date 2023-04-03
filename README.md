@@ -42,7 +42,7 @@ cd /<YOUR_HOME_DIR>/jackal_ws/src
 
 4. Clone this repo and required ros packages: (replace `<YOUR_ROS_VERSION>` with your own, e.g. melodic)
 ```
-git clone https://github.com/Daffan/nav-competition-icra2022.git
+git clone https://gitlab.kuleuven.be/meco/projects/barn_challenge_2023.git
 git clone https://github.com/jackal/jackal.git --branch <YOUR_ROS_VERSION>-devel
 git clone https://github.com/jackal/jackal_simulator.git --branch <YOUR_ROS_VERSION>-devel
 git clone https://github.com/jackal/jackal_desktop.git --branch <YOUR_ROS_VERSION>-devel
@@ -59,7 +59,6 @@ rosdep install -y --from-paths . --ignore-src --rosdistro=<YOUR_ROS_VERSION>
 
 6. Build the workspace (if `catkin_make` fails, try changing `-std=c++11` to `-std=c++17` in `jackal_helper/CMakeLists.txt` line 3)
 ```
-source devel/setup.bash
 catkin_make
 ```
 
@@ -69,8 +68,8 @@ Follow the instruction below to run simulations in Singularity containers.
 
 2. Clone this repo
 ```
-git clone https://github.com/Daffan/nav-competition-icra2022.git
-cd nav-competition-icra2022
+git clone https://gitlab.kuleuven.be/meco/projects/barn_challenge_2023.git
+cd barn_challenge_2023
 ```
 
 3. Build Singularity image (sudo access required)
