@@ -15,7 +15,7 @@ GOAL_2 = (-2, 11)
 class Corridor:
     '''Corridor object for representation of free space between obstacles.
     '''
-    DELTA = 0.1
+    DELTA = 1
     FWD = 0
     RGT = 1
     BCK = 2
@@ -63,6 +63,7 @@ class Corridor:
         self.center = center
         self.tilt = tilt
         self.corners = get_corners(self.W)
+        self.corridors_world = []
 
         # Get individual edge parameter vectors
         self.wf, self.wr, self.wb, self.wl = self.W.T
@@ -99,10 +100,10 @@ class Corridor:
         # Construct edge parameter vectors
         R = np.array([[np.cos(tilt), -np.sin(tilt)],
                       [np.sin(tilt), np.cos(tilt)]])
-        Nrot = R @ np.array([[0, 1, 0, -1],
-                             [1, 0, -1, 0]])
-        T0_rot = R @ np.array([[0, width/2, 0, -width/2],
-                               [height/2, 0, -height/2, 0]])
+        Nrot = R @ np.array([[1, 0, -1, 0],
+                             [0, -1, 0, 1]])
+        T0_rot = R @ np.array([[height/2, 0, -height/2, 0],
+                               [0, -width/2, 0, width/2]])
         T = T0_rot + np.array([[xcenter], [ycenter]])
 
         Nrot_T = np.array([Nrot[:, 0] @ T[:, 0], Nrot[:, 1] @ T[:, 1],
@@ -120,22 +121,29 @@ class Corridor:
         :param edge: edge to grow
         :type edge: int
         '''
-        i = 0
-        while (not self.check_inside(datapoints) and
-               not self.check_max_forward() and i < 100):
-            print('grow_edge', i)
-            self.W[2, edge] -= self.delta
-            # Corners need to be updated for check_max_forward()
-            self.corners = get_corners(self.W)
-            i += 1
-
-        # Take one step back to avoid triggering the condition again.
-        # if i <= 1:
-            # print("Can't fit in this corridor. TODO: discard this corridor.")
-        self.W[2, edge] += self.delta
+        step = self.DELTA
+        # Do a first check to see if initial corridor contains datapoints.
+        if self.check_inside(datapoints):
+            print('discard corridor')
+        else:
+            # Do maximum 5 big steps in any direction.
+            for i in range(5):
+                self.W[2, edge] -= step
+                self.corners = get_corners(self.W)
+                # Continue as long as there are no datapoints inside the grown
+                # corridor.
+                if (not self.check_inside(datapoints) and
+                   not self.check_max_forward()):
+                    continue
+                # Take some steps back if last grown corridor has a datapoint
+                # inside.
+                else:
+                    while self.check_inside(datapoints):
+                        self.W[2, edge] += step/3
+                        self.corners = get_corners(self.W)
+                    break
 
         # Recompute the corridorvcorners and center
-        self.corners = get_corners(self.W)
         self.height = - self.wf[2] - self.wb[2]
         self.width = - self.wr[2] - self.wl[2]
         self.center = self.get_center()
@@ -146,16 +154,17 @@ class Corridor:
         :param datapoints: array with 2d homogeneous datapoints
         :type datapoints: numpy.ndarray
         '''
-        print('forward started')
-        self.grow_edge(datapoints, Corridor.RGT)
-        print('forward finished')
+        print('growing forward')
         self.grow_edge(datapoints, Corridor.FWD)
-        print('right finished')
-        self.grow_edge(datapoints, Corridor.BCK)
-        print('left finished')
+        print('growing right')
+        self.grow_edge(datapoints, Corridor.RGT)
+        print('growing left')
+        self.grow_edge(datapoints, Corridor.LFT)
+        print('growing finished')
 
         # Rotate corridor only if width becomes larger than height
         if self.width > self.height:
+            print('rotate')
             self.rotate_corridor()
 
     def check_inside(self, datapoints):

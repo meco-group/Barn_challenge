@@ -87,12 +87,12 @@ if __name__ == "__main__":
     ## (Customize this block to add your own navigation stack)
     ##########################################################################################
     
-    launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_corridor.launch')
+    '''launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_corridor.launch')
     # launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_DWA.launch')
     nav_stack_process = subprocess.Popen([
         'roslaunch',
         launch_file,
-    ])
+    ])'''
 
     # Make sure your navigation stack recives a goal of (0, 10, 0), which is 10 meters away
     # along postive y-axis.
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     start_time_cpu = time.time()
     collided = False
     
-    while compute_distance(goal_coor, curr_coor) > 1 and not collided and curr_time - start_time < 100:
+    while compute_distance(goal_coor, curr_coor) > 1 and not collided and curr_time - start_time < 1000:
         curr_time = rospy.get_time()
         pos = gazebo_sim.get_model_state().pose.position
         curr_coor = (pos.x, pos.y)
