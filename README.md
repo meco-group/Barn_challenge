@@ -82,7 +82,7 @@ cd barn_challenge_2023
 sudo singularity build --notest nav_competition_image.sif Singularityfile.def
 ```
 
-## Use Docker image
+## Use Docker image (only from Linux for now)
 
 1. Pull the Docker image. This image has ROS melodic installed.
 ```
