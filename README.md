@@ -20,7 +20,7 @@ If you run it in Singularity containers:
 The requirements above are just suggestions. If you run into any issue, please contact organizers for help (zfxu@utexas.edu).
 
 ## Installation
-Follow the instructions below to run simulations on your local machines. (You can skip 1-6 if you only use Singularity container)
+Follow the instructions below to run simulations on your local machines. (You can skip 1-6 if you only use Singularity container). If you want to avoid installing ROS, just use the Docker image as explained below.
 
 1. Create a virtual environment (we show examples with python venv, you can use conda instead)
 ```
@@ -81,6 +81,48 @@ cd barn_challenge_2023
 ```
 sudo singularity build --notest nav_competition_image.sif Singularityfile.def
 ```
+
+## Use Docker image (only from Linux for now)
+
+1. Pull the Docker image. This image has ROS melodic installed.
+```
+docker pull alejandroastudillo/ros-melodic-barn
+```
+
+2. Create ROS workspace
+```
+mkdir -p /<YOUR_HOME_DIR>/jackal_ws/src
+cd /<YOUR_HOME_DIR>/jackal_ws/src
+```
+
+3. Clone this repo and required ros packages:
+```
+git clone https://gitlab.kuleuven.be/meco/projects/barn_challenge_2023.git
+git clone https://github.com/jackal/jackal.git --branch melodic-devel
+git clone https://github.com/jackal/jackal_simulator.git --branch melodic-devel
+git clone https://github.com/jackal/jackal_desktop.git --branch melodic-devel
+git clone https://github.com/utexas-bwi/eband_local_planner.git
+```
+
+4. Run Docker container:
+Just execute the following command. This requires the jackal_ws directory to be at `/<YOUR_HOME_DIR>/jackal_ws`.
+```
+docker run --rm -it --privileged --net=host --ipc=host --device=/dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -v $HOME/.Xauthority:/home/$(id -un)/.Xauthority -e XAUTHORITY=/home/$(id -un)/.Xauthority -e DOCKER_USER_NAME=$(id -un) -e DOCKER_USER_ID=$(id -u) -e DOCKER_USER_GROUP_NAME=$(id -gn) -e DOCKER_USER_GROUP_ID=$(id -g) -e ROS_IP=127.0.0.1 -v $HOME/jackal_ws:/home/$(id -un)/jackal_ws alejandroastudillo/ros-melodic-barn
+```
+Be aware that by running this command, your local jackal_ws will be accesible from the docker container. Any change you make to the files in this workspace will also appear in your local jackal_ws.
+
+In case you get any error related to the `$DISPLAY` or `no protocol specified`, try running the following command before using `docker run`:
+```
+xhost +si:localuser:$USER
+```
+
+5. From the terminal (terminator) that pops up, move to the jackal_ws directory and execute catkin_make.
+```
+cd jackal_ws
+catkin_make
+```
+You can now proceed to running the simulations.
+
 
 ## Run Simulations
 Navigate to the folder of this repo. Below is the example to run move_base with DWA as local planner.
