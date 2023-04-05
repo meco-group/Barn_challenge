@@ -113,7 +113,7 @@ Be aware that by running this command, your local jackal_ws will be accesible fr
 
 In case you get any error related to the `$DISPLAY` or `no protocol specified`, try running the following command before using `docker run`:
 ```
-xhost +
+xhost +si:localuser:$USER
 ```
 
 5. From the terminal (terminator) that pops up, move to the jackal_ws directory and execute catkin_make.
