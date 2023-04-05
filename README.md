@@ -111,6 +111,11 @@ docker run --rm -it --privileged --net=host --ipc=host --device=/dev/dri:/dev/dr
 ```
 Be aware that by running this command, your local jackal_ws will be accesible from the docker container. Any change you make to the files in this workspace will also appear in your local jackal_ws.
 
+In case you get any error related to the `$DISPLAY` or `no protocol specified`, try running the following command before using `docker run`:
+```
+xhost +
+```
+
 5. From the terminal (terminator) that pops up, move to the jackal_ws directory and execute catkin_make.
 ```
 cd jackal_ws
