@@ -182,7 +182,6 @@ def main():
                                reverse=True)[:1]
 
         best_corridor += [best_corridor[0]]
-
         rate.sleep()
 
 

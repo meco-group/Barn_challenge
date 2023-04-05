@@ -3,5 +3,5 @@
   <arg name="goal_y" default="10" /> 
   <arg name="scan_topic" default="/front/scan" />
   
-  <node pkg="barn_challenge" type="meco_corridors.py" name="corridors" output="screen" />
+  <node pkg="barn_challenge" type="navigator.py" name="corridors" output="screen" />
 </launch>
