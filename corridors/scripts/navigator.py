@@ -98,7 +98,6 @@ def main():
             print('I arrived')
             isDone = True
 
-        print('test', b_corridor.height)
         vel_Pub.publish(twist)
 
         if isDone:
