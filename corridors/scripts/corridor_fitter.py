@@ -157,7 +157,6 @@ def main():
     while not rospy.is_shutdown():
         # Convert laser scan data to point cloud and homogenous coordinates.
         for i, corridor in enumerate(best_corridor):
-            corridor.corners_world = get_points_for_visualization(corridor)
             visualize_rectangle(corridor.corners_world, 100+i, 0.7, 0.7, 0.7)
 
         point_generator = pc2.read_points(message.pointcloud)
