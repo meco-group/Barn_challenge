@@ -1,2 +1,2 @@
 int64 len
-corridor[] corridors
+corridor_msg[] corridors
