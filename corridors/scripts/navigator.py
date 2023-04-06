@@ -49,11 +49,22 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
+def corridorCallback(data):
+    b_corridor.height = data.height
+    b_corridor.width = data.width
+    b_corridor.quality = data.quality
+    b_corridor.center = data.center
+    b_corridor.tilt = data.tilt
+    b_corridor.corners = data.corners
+
 
 def main():
     global message
     message = messageClass()
+    global b_corridor
+    b_corridor = corridor_msg()
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback)
 
     vel_Pub = rospy.Publisher('/jackal_velocity_controller/cmd_vel', Twist,
                               queue_size=10)

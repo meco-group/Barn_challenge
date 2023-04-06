@@ -139,6 +139,7 @@ def main():
     scan_sub = rospy.Subscriber('/front/scan', LaserScan, scanCallback)
     point_sub = rospy.Subscriber("/front/scan", LaserScan, pointCallback,
                                  queue_size=1)
+    corridor_pub = rospy.Publisher("/corridor", corridor_msg, queue_size=10)
 
     rospy.init_node('corridor_node', anonymous=True)
     rate = rospy.Rate(.2)
@@ -186,7 +187,14 @@ def main():
                                reverse=True)[:1]
 
         best_corridor += [next_corridor[0]]
-
+        b_corridor = corridor_msg()
+        b_corridor.height = best_cor.height
+        b_corridor.width - best_cor.width
+        b_corridor.quality = best_cor.quality
+        b_corridor.center = best_cor.center
+        b_corridor.tilt = best_cor.tilt
+        b_corridor.corners = best_cor.corners
+        corridor_pub.publish(b_corridor)
         rate.sleep()
 
 
