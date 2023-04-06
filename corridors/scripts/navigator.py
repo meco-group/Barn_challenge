@@ -49,6 +49,7 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
+
 def corridorCallback(data):
     b_corridor.height = data.height
     b_corridor.width = data.width
@@ -97,6 +98,7 @@ def main():
             print('I arrived')
             isDone = True
 
+        print('test', b_corridor.height)
         vel_Pub.publish(twist)
 
         if isDone:

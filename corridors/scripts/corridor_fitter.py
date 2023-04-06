@@ -21,6 +21,7 @@ from corridor import Corridor
 from barn_challenge.msg import corridor_msg
 from barn_challenge.msg import corridor_list
 
+
 class messageClass():
     def __init__(self):
         self.velx = 0.0
@@ -189,11 +190,16 @@ def main():
         best_corridor += [next_corridor[0]]
         b_corridor = corridor_msg()
         b_corridor.height = best_cor.height
-        b_corridor.width - best_cor.width
+        b_corridor.width = best_cor.width
         b_corridor.quality = best_cor.quality
         b_corridor.center = best_cor.center
         b_corridor.tilt = best_cor.tilt
-        b_corridor.corners = best_cor.corners
+        test = []
+        for x in best_cor.corners:
+            test.append(x[0])
+            test.append(x[1])
+        print(test)
+        b_corridor.corners = test
         corridor_pub.publish(b_corridor)
         rate.sleep()
 

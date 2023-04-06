@@ -50,7 +50,7 @@ class Corridor:
         self.delta = self.DELTA
         self.height = height
         self.width = width
-        self.quality = None
+        self.quality = 0.
 
         # Family tree
         self.children = []
