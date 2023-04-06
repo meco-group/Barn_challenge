@@ -63,7 +63,7 @@ class Corridor:
         self.center = center
         self.tilt = tilt
         self.corners = get_corners(self.W)
-        self.corridors_world = []
+        self.corners_world = []
 
         # Get individual edge parameter vectors
         self.wf, self.wr, self.wb, self.wl = self.W.T
@@ -154,11 +154,11 @@ class Corridor:
         :param datapoints: array with 2d homogeneous datapoints
         :type datapoints: numpy.ndarray
         '''
-        print('growing forward')
+        # print('growing forward')
         self.grow_edge(datapoints, Corridor.FWD)
-        print('growing right')
+        # print('growing right')
         self.grow_edge(datapoints, Corridor.RGT)
-        print('growing left')
+        # print('growing left')
         self.grow_edge(datapoints, Corridor.LFT)
         print('growing finished')
 

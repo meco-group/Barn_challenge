@@ -140,20 +140,23 @@ def main():
                                  queue_size=1)
 
     rospy.init_node('corridor_node', anonymous=True)
-    rate = rospy.Rate(.5)
+    rate = rospy.Rate(.2)
 
     print('Building initial corridor')
     corridor_0 = Corridor(width=2., height=2., center=[0, 0],
                           tilt=0, copy=True)
     message.corridors.append(corridor_0)
-    corridor_0.corridors_world = get_points_for_visualization(corridor_0)
-    visualize_rectangle(corridor_0.corridors_world, 0, 0.7, 0.7, 0.7)
+    corridor_0.corners_world = get_points_for_visualization(corridor_0)
+    visualize_rectangle(corridor_0.corners_world, 100, 0.7, 0.7, 0.7)
     best_corridor = [corridor_0]
 
     print('Corridor node started')
     while not rospy.is_shutdown():
         # Convert laser scan data to point cloud and homogenous coordinates.
-        visualize_rectangle(corridor_0.corridors_world, 0, 0.7, 0.7, 0.7)
+        for i, corridor in enumerate(best_corridor):
+            corridor.corners_world = get_points_for_visualization(corridor)
+            visualize_rectangle(corridor.corners_world, 100+i, 0.7, 0.7, 0.7)
+
         point_generator = pc2.read_points(message.pointcloud)
         xyh = []
         i = 0
@@ -174,14 +177,15 @@ def main():
         for i, corridor in enumerate(best_cor.children):
             corridor.grow_all_edges(xy)
             message.corridors.append(corridor)
-            corridor.corridors_world = get_points_for_visualization(corridor)
-            visualize_rectangle(corridor.corridors_world, i+1, 0., 0., 0.7)
+            corridor.corners_world = get_points_for_visualization(corridor)
+            visualize_rectangle(corridor.corners_world, i+1, 0., 0., 0.7)
 
-        best_corridor = sorted(best_cor.children, key=lambda x:
-                               max([y.y[0] for y in x.corridors_world]),
+        next_corridor = sorted(best_cor.children, key=lambda corridor:
+                               max([x.x for x in corridor.corners_world]),
                                reverse=True)[:1]
 
-        best_corridor += [best_corridor[0]]
+        best_corridor += [next_corridor[0]]
+
         rate.sleep()
 
 
