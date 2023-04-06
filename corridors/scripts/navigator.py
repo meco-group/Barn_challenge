@@ -15,7 +15,8 @@ import math as m
 import numpy as np
 
 from corridor import Corridor
-
+from corridors.msg import corridor_msg
+from corridors.msg import corridor_list
 
 class messageClass():
     def __init__(self):
