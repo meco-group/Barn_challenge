@@ -1,7 +1,0 @@
-<launch>
-  <arg name="goal_x" default="0" />
-  <arg name="goal_y" default="10" /> 
-  <arg name="scan_topic" default="/front/scan" />
-  
-  <node pkg="barn_challenge" type="navigator.py" name="corridors" output="screen" />
-</launch>

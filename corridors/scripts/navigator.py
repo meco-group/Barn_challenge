@@ -70,7 +70,7 @@ def main():
     vel_Pub = rospy.Publisher('/jackal_velocity_controller/cmd_vel', Twist,
                               queue_size=10)
 
-    rospy.init_node('move_base_node', anonymous=True)
+    rospy.init_node('navigator', anonymous=True)
     rate = rospy.Rate(100)
 
     maxSpeed = 1
@@ -85,8 +85,11 @@ def main():
 
     print('I started moving')
     while not rospy.is_shutdown():
+
+        print('current_position', message.posx, message.posy, message.theta)
+
         # Start moving slowly.
-        twist.linear.x = 0.1
+        twist.linear.x = 0.
         twist.angular.z = 0.
 
         distToGoal = distance((message.goalx, message.goaly),

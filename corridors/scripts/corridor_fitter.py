@@ -142,7 +142,7 @@ def main():
                                  queue_size=1)
     corridor_pub = rospy.Publisher("/corridor", corridor_msg, queue_size=10)
 
-    rospy.init_node('corridor_node', anonymous=True)
+    rospy.init_node('fitter', anonymous=True)
     rate = rospy.Rate(.2)
 
     print('Building initial corridor')
@@ -183,7 +183,7 @@ def main():
             visualize_rectangle(corridor.corners_world, i+1, 0., 0., 0.7)
 
         next_corridor = sorted(best_cor.children, key=lambda corridor:
-                               max([x.x for x in corridor.corners_world]),
+                               max([xs.x for xs in corridor.corners_world]),
                                reverse=True)[:1]
 
         best_corridor += [next_corridor[0]]
@@ -196,9 +196,9 @@ def main():
         b_corridor.center = best_cor.center
         b_corridor.tilt = best_cor.tilt
         xy_corners = []
-        for xy in best_cor.corners:
-            xy_corners.append(xy[0])
-            xy_corners.append(xy[1])
+        for xy in best_cor.corners_world:
+            xy_corners.append(xy.x)
+            xy_corners.append(xy.y)
         b_corridor.corners = xy_corners
         corridor_pub.publish(b_corridor)
 

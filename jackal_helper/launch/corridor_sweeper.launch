@@ -1,0 +1,6 @@
+<launch>
+  <arg name="goal_x" default="0" />
+  <arg name="goal_y" default="10" /> 
+  
+  <node pkg="barn_challenge" type="corridor_sweeper.py" name="sweeper" output="screen" />
+</launch>
