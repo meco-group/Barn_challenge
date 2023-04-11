@@ -50,3 +50,97 @@ def get_center(corners):
     center = (corners[0]+corners[2])/2
 
     return center
+
+def check_stuck(parent, child, threshold=0.3):
+    '''
+        returns a boolean indicating whether the child corridor
+        improves enough on the parent corridor
+
+        Returning True means that the child corridor does not improve enough
+    '''
+    H1 = parent.height/2
+    if np.abs(child.growth_center[1] - child.center[1]) < 1.0e-8:
+        alpha = 0
+    else:
+        alpha = -np.arctan((child.growth_center[0]-child.center[0])/(child.growth_center[1]-child.center[1]))   # angle between centerline of the corridor and line between growth-center and center
+    centers_dist = np.sqrt(np.power(child.growth_center[0]-child.center[0],2) + np.power(child.growth_center[1]-child.center[1],2))
+    H2 = child.height/2 + centers_dist*np.cos(alpha-child.tilt)
+    W1 = parent.width/2
+    x1 = child.growth_center[0]-parent.center[0]
+    y1 = child.growth_center[1]-parent.center[1]
+    tilt1 = parent.tilt
+    tilt2 = child.tilt
+
+    tilt_critical = np.arctan((W1-x1)/(H1-y1))
+    if tilt2-tilt1 < -tilt_critical or tilt2-tilt1 > tilt_critical:
+        d_improvement = max(0,H2-(W1-x1)/np.cos(np.pi/2-np.abs(tilt2)+tilt1))
+    else:
+        d_improvement = max(0,H2-(H1-y1)/np.cos(tilt2-tilt1))
+
+    print("Stuck detection -- d_improvement: ", d_improvement)
+
+    return d_improvement < threshold
+
+def check_significantly_different(corridor1, corridor2, distance_threshold=0.2, tilt_threshold=np.pi/6):
+    '''
+        Compute the distance between the 'forward' corners of the
+        corridors and compare it with the threshold.
+
+        Returning True means that the corridors are considered to be
+        different enough to keep them both
+    '''
+    corners1 = get_corners(corridor1.W)
+    corners2 = get_corners(corridor2.W)
+
+    indx1 = 0
+    indx2 = 3
+
+    distance_bool = np.sqrt(np.power(corners1[indx1][0]-corners2[indx1][0], 2) + np.power(corners1[indx1][1]-corners2[indx1][1], 2)) + \
+        np.sqrt(np.power(corners1[indx2][0]-corners2[indx2][0], 2) + np.power(corners1[indx2][1]-corners2[indx2][1], 2)) > distance_threshold
+    tilt_bool = np.abs(corridor1.tilt - corridor2.tilt) > tilt_threshold
+
+    return distance_bool and tilt_bool
+
+def get_back_track_point(current_corridor):
+    '''
+        Given the corridor the robot is currently in, this function
+        returns the point to backtrack to from which we can get to another
+        branch
+    '''
+    # we know this current corridor is a dead end, so we have to start 
+    # checking for other options at the parent level
+    corridor_to_explore = current_corridor.parent
+    previous_point = current_corridor.growth_center
+
+    backtracking_corridors = [corridor_to_explore]
+
+    while not corridor_to_explore is None and len(corridor_to_explore.children) <= 1:
+        if corridor_to_explore is None:
+            print("No more parent to backtrack to, let's just go back home")
+            return previous_point
+        
+        previous_point = corridor_to_explore.growth_center
+        corridor_to_explore = corridor_to_explore.parent
+
+        backtracking_corridors.append(corridor_to_explore)
+
+    if corridor_to_explore is None:
+        return (None, None)
+    corridor_to_explore.remove_child_corridor(0)
+    return (corridor_to_explore.children[0].growth_center, corridor_to_explore.children[0], backtracking_corridors)
+
+def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
+    '''
+        Compute the distance from the current position to the edge of the corridor
+        It is assumed that the current position is inside the current corridor
+    '''
+    top_left = current_corridor.corners[3]
+    top_right = current_corridor.corners[0]
+    a = (top_right[1]-top_left[1])/(top_right[0]-top_left[0])
+    b = -1.
+    c = top_left[1] - a
+    distance_to_end = np.abs(a*current_pos[0]+b*current_pos[1]+c)/np.sqrt(a*a + b*b)
+
+    print(distance_to_end)
+
+    return distance_to_end < threshold
