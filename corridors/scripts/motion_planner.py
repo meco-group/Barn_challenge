@@ -151,7 +151,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
     :rtype: np.array
     '''
     #Initialize output
-    maneuver = np.empty([0,3])
+    maneuver = np.empty((0,3))
     #Unpack variables
     v_min = u_bounds[0]
     v_max = u_bounds[1]
@@ -175,10 +175,10 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
 
         if theta0 < gamma:
             t_align = (gamma - theta0)/omega_max
-            maneuver = np.array(0,omega_max,t_align)
+            maneuver = np.vstack((np.array([0,omega_max,t_align]), maneuver))
         elif theta0 > gamma:
             t_align = (theta0-gamma)/omega_min
-            maneuver = np.array(0,omega_min,t_align)
+            maneuver = np.vstack((np.array([0,omega_min,t_align]), maneuver))
         else:
             t_align = 0
 
@@ -262,12 +262,18 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
             arc_y = y_center+R*sin(angle_arc_segment)
             angle_complete_circle = linspace(0,2*pi,100)
 
+            #Compute control inputs
+            t1 = v_max * c1
+            t2 = v_max * R * theta
+            t3 = v_max * c2  
+            maneuver = np.array([[v_max, 0 , t1],[v_max, omega_max , t2], [v_max, 0 , t3]])
+
             if theta0 < gamma1:
                 t_align = (gamma1 - theta0)/ omega_max
-                maneuver = np.array(0,omega_max,t_align)
+                maneuver = np.vstack((np.array([0,omega_max,t_align]), maneuver))
             elif theta0 > gamma1:
-                t_align = (theta0-gamma1)/omega_min
-                maneuver = np.array(0,omega_max,t_align)
+                t_align = abs((theta0-gamma1)/omega_min)
+                maneuver = np.vstack((np.array([0,omega_min,t_align]), maneuver))
             else:
                 t_align = 0
 
@@ -315,7 +321,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
                 t_align = (gamma1 - theta0)/ omega_max
                 maneuver = np.array(0,omega_max,t_align)
             elif theta0 > gamma1:
-                t_align = (theta0-gamma1)/omega_min
+                t_align = abs((theta0-gamma1)/omega_min)
                 maneuver = np.array(0,omega_max,t_align)
             else:
                 t_align = 0
@@ -360,11 +366,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
 
         #Compute the time instants in which to start and stop steering, plus final time
         #Formula = v_max * length 
-        if turn_right or turn_left:
-            t1 = v_max * c1
-            t2 = t1 + v_max * R * theta
-            t3 = t2 + v_max * c2  
-            maneuver = np.array([v_max, 0 , t1]) 
+        if turn_right or turn_left: 
 
             #Plot solution
             figure_solution = plt.figure()
