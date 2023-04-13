@@ -15,15 +15,24 @@ from barn_challenge.msg import corridor_msg, corridor_list
 from corridor_helpers import *
 
 def transformCorridorToWorld(newCorridor, curr_pose):
+    # translate the center
     newCorridor.center[0] += curr_pose.posx
     newCorridor.center[1] += curr_pose.posy
-    newCorridor.growth_center[0] += curr_pose.posx
-    newCorridor.growth_center[1] += curr_pose.posy
-    newCorridor.corners = [[c[0]+curr_pose.posx, c[1]+curr_pose.posy] for c in newCorridor.corners]
 
-    newCorridor.tilt = newCorridor.tilt + curr_pose.theta - np.pi/2
+    # rotate the tilt
+    rotation_angle = curr_pose.theta - np.pi/2
+    newCorridor.tilt = newCorridor.tilt + rotation_angle
 
+    # translate and rotate the growth center
+    a = newCorridor.growth_center[0] + curr_pose.posx
+    b = newCorridor.growth_center[1] + curr_pose.posy
+    c = a*np.cos(rotation_angle)-b*np.sin(rotation_angle)
+    d = b*np.cos(rotation_angle)+a*np.sin(rotation_angle)
+    newCorridor.growth_center = [c, d]
+
+    # update W and the corners
     newCorridor.update_W()
+    newCorridor.corners = newCorridor.getCorners()
 
     return newCorridor
 
