@@ -84,9 +84,9 @@ sudo singularity build --notest nav_competition_image.sif Singularityfile.def
 
 ## Use Docker image (only from Linux for now)
 
-1. Pull the Docker image. This image has ROS melodic installed.
+1. Pull the Docker image. This image has ROS noetic installed.
 ```
-docker pull alejandroastudillo/ros-melodic-barn
+docker pull alejandroastudillo/ros-noetic-barn
 ```
 
 2. Create ROS workspace
@@ -98,7 +98,7 @@ cd /<YOUR_HOME_DIR>/jackal_ws/src
 3. Clone this repo and required ros packages:
 ```
 git clone https://gitlab.kuleuven.be/meco/projects/barn_challenge_2023.git
-git clone https://github.com/jackal/jackal.git --branch melodic-devel
+git clone https://github.com/jackal/jackal.git --branch noetic-devel
 git clone https://github.com/jackal/jackal_simulator.git --branch melodic-devel
 git clone https://github.com/jackal/jackal_desktop.git --branch melodic-devel
 git clone https://github.com/utexas-bwi/eband_local_planner.git
@@ -107,13 +107,17 @@ git clone https://github.com/utexas-bwi/eband_local_planner.git
 4. Run Docker container:
 Just execute the following command. This requires the jackal_ws directory to be at `/<YOUR_HOME_DIR>/jackal_ws`.
 ```
-docker run --rm -it --privileged --net=host --ipc=host --device=/dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -v $HOME/.Xauthority:/home/$(id -un)/.Xauthority -e XAUTHORITY=/home/$(id -un)/.Xauthority -e DOCKER_USER_NAME=$(id -un) -e DOCKER_USER_ID=$(id -u) -e DOCKER_USER_GROUP_NAME=$(id -gn) -e DOCKER_USER_GROUP_ID=$(id -g) -e ROS_IP=127.0.0.1 -v $HOME/jackal_ws:/home/$(id -un)/jackal_ws alejandroastudillo/ros-melodic-barn
+docker run --rm -it --privileged --net=host --ipc=host --device=/dev/dri:/dev/dri -v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY -v $HOME/.Xauthority:/home/$(id -un)/.Xauthority -e XAUTHORITY=/home/$(id -un)/.Xauthority -e DOCKER_USER_NAME=$(id -un) -e DOCKER_USER_ID=$(id -u) -e DOCKER_USER_GROUP_NAME=$(id -gn) -e DOCKER_USER_GROUP_ID=$(id -g) -e ROS_IP=127.0.0.1 -v $HOME/jackal_ws:/home/$(id -un)/jackal_ws alejandroastudillo/ros-noetic-barn
 ```
 Be aware that by running this command, your local jackal_ws will be accesible from the docker container. Any change you make to the files in this workspace will also appear in your local jackal_ws.
 
 In case you get any error related to the `$DISPLAY` or `no protocol specified`, try running the following command before using `docker run`:
 ```
 xhost +si:localuser:$USER
+```
+In case you still get the same error, use the following command instead:
+```
+xhost +
 ```
 
 5. From the terminal (terminator) that pops up, move to the jackal_ws directory and execute catkin_make.
