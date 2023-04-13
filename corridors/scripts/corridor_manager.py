@@ -11,7 +11,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 import math as m
 import numpy as np
-from barn_challenge.msg import corridor_msg
+from barn_challenge.msg import corridor_msg, corridor_list
 from corridor_helpers import *
 
 def transformCorridorToWorld(newCorridor, curr_pose):
@@ -72,21 +72,29 @@ def odomCallback(data):
     curr_pose.posy = data.pose.pose.position.y
     curr_pose.theta = yawFromQuaternion(data.pose.pose.orientation)
 
-def publishCurrentCorridor(current_corridor, publisher):
-    to_send = corridor_msg()
-    to_send.height = current_corridor.height
-    to_send.width = current_corridor.width
-    to_send.quality = current_corridor.quality
-    to_send.center = current_corridor.center
-    to_send.growth_center = current_corridor.growth_center
-    to_send.tilt = current_corridor.tilt
-    xy_corners = []
-    for xy in current_corridor.corners_world:
-        xy_corners.append(xy.x)
-        xy_corners.append(xy.y)
-    to_send.corners = xy_corners
+def publishCorridors(corridors, publisher):
+    if len(corridors) == 0:
+        return
+    
+    to_send_list = corridor_list()
+    for k in range(len(corridors)):
+        to_send = corridor_msg()
+        to_send.height = corridors.height
+        to_send.width = corridors.width
+        to_send.quality = corridors.quality
+        to_send.center = corridors.center
+        to_send.growth_center = corridors.growth_center
+        to_send.tilt = corridors.tilt
+        xy_corners = []
+        for xy in corridors.corners_world:
+            xy_corners.append(xy.x)
+            xy_corners.append(xy.y)
+        to_send.corners = xy_corners
 
-    publisher.publish(to_send)
+        to_send_list.len += 1
+        to_send_list.corridor_msg.append(to_send)
+
+    publisher.publish(to_send_list)
 
 def main():
 
@@ -101,7 +109,7 @@ def main():
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
 
     # Prepare to publish corridors
-    corridor_pub = rospy.Publisher("/corridor", corridor_msg)
+    corridor_pub = rospy.Publisher("/corridor", corridor_list)
 
     rospy.init_node('manager', anonymous=True)
     rate = rospy.Rate(1)
@@ -131,11 +139,11 @@ def main():
             if end_reached:
                 succes = select_child_corridor(current_corridor)
                 if not succes:
+                    # pass the backtracking corridors to the motion planner
                     (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor)
-                    # pass these corridors to the motion planner
-                    # wait until we are at the backtrack point
+                    publishCorridors(backtracking_corridors, corridor_pub)
                 else:
-                    corridor_pub.publish(current_corridor, corridor_pub)
+                    publishCorridors([current_corridor], corridor_pub)
 
         rate.sleep()
 
