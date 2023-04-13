@@ -118,13 +118,14 @@ def main():
     root_corridor = None
     current_corridor = None
     backtrack_point = None
+    backtrack_mode_activated = False
 
     print('manager ready')
     while not rospy.is_shutdown():
         # if we are backtracking, just wait until we enter the new branch
-        if backtrack_point is not None:
+        if backtrack_mode_activated:
             if current_corridor.check_inside([[curr_pose.posx, curr_pose.posy]]):
-                backtrack_point = None
+                backtrack_mode_activated = False
             else:
                 continue
 
@@ -140,6 +141,7 @@ def main():
                 succes = select_child_corridor(current_corridor)
                 if not succes:
                     # pass the backtracking corridors to the motion planner
+                    backtrack_mode_activated = True
                     (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor)
                     publishCorridors(backtracking_corridors, corridor_pub)
                 else:
