@@ -112,6 +112,9 @@ class Corridor:
 
         return W
 
+    def update_W(self):
+        self.W = self._init_W_from_width_height_tilt(self.width, self.height, self.center[0], self.center[1], self.tilt)
+
     def grow_edge(self, datapoints, edge):
         '''Grow specified edge of the corridor.
 

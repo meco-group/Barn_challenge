@@ -194,6 +194,7 @@ def main():
         b_corridor.width = best_cor.width
         b_corridor.quality = best_cor.quality
         b_corridor.center = best_cor.center
+        b_corridor.growth_center = best_cor.growth_center
         b_corridor.tilt = best_cor.tilt
         xy_corners = []
         for xy in best_cor.corners_world:

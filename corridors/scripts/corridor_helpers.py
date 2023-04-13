@@ -139,7 +139,7 @@ def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
     a = (top_right[1]-top_left[1])/(top_right[0]-top_left[0])
     b = -1.
     c = top_left[1] - a
-    distance_to_end = np.abs(a*current_pos[0]+b*current_pos[1]+c)/np.sqrt(a*a + b*b)
+    distance_to_end = np.abs(a*current_pos.posx+b*current_pos.posy+c)/np.sqrt(a*a + b*b)
 
     print(distance_to_end)
 
