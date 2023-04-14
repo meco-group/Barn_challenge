@@ -116,8 +116,7 @@ def get_back_track_point(current_corridor):
 
     while not corridor_to_explore is None and len(corridor_to_explore.children) <= 1:
         if corridor_to_explore is None:
-            print("No more parent to backtrack to, let's just go back home")
-            return previous_point
+            return (None, None, [])
         
         previous_point = corridor_to_explore.growth_center
         corridor_to_explore = corridor_to_explore.parent
@@ -125,7 +124,7 @@ def get_back_track_point(current_corridor):
         backtracking_corridors.append(corridor_to_explore)
 
     if corridor_to_explore is None:
-        return (None, None)
+        return (None, None, [])
     corridor_to_explore.remove_child_corridor(0)
     return (corridor_to_explore.children[0].growth_center, corridor_to_explore.children[0], backtracking_corridors)
 
@@ -136,11 +135,12 @@ def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
     '''
     top_left = current_corridor.corners[3]
     top_right = current_corridor.corners[0]
-    a = (top_right[1]-top_left[1])/(top_right[0]-top_left[0])
-    b = -1.
-    c = top_left[1] - a
-    distance_to_end = np.abs(a*current_pos.posx+b*current_pos.posy+c)/np.sqrt(a*a + b*b)
-
-    print(distance_to_end)
+    if np.abs(top_right[0] - top_left[0]) < 1.0e-8:
+        distance_to_end = np.abs(current_pos.posx - top_right[0])
+    else:
+        a = (top_right[1]-top_left[1])/(top_right[0]-top_left[0])
+        b = -1.
+        c = top_left[1] - a
+        distance_to_end = np.abs(a*current_pos.posx+b*current_pos.posy+c)/np.sqrt(a*a + b*b)
 
     return distance_to_end < threshold

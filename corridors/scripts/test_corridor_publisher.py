@@ -13,7 +13,7 @@ import math as m
 import numpy as np
 from barn_challenge.msg import corridor_msg, corridor_list
 from corridor_helpers import *
-import corridor
+from corridor import Corridor
 
 def publishCorridors(corridor, publisher):
     to_send = corridor_msg()
@@ -30,31 +30,30 @@ def publishCorridors(corridor, publisher):
     to_send.corners = xy_corners
 
     publisher.publish(to_send)
+    print("[tester] Published a new corridor")
 
 def main():
 
-    print("[tester] initializing")
-    corridor_list = [corridor(growth_center=[0.0,0.0], center=[0.0,0.0], width=1.0, heigth=2.0, tilt=np.pi/2)]
-    print("[tester] created corridor")
+    corridor_list = [Corridor(center=[0.0,0.0], width=0.2, height=0.5, tilt=np.pi/2)]
 
     # Prepare to publish corridors
     corridor_pub = rospy.Publisher("/corridor", corridor_msg)
-    print("[tester] defined publisher")
 
     rospy.init_node('tester', anonymous=True)
-    rate = rospy.Rate(0.1)
-    print("[tester] defined node and rate")
+    rate = rospy.Rate(2)
 
     # Define variables for the corridor tree
     done = False
+    counter = 0
 
     print('[tester] tester is ready')
     while not rospy.is_shutdown():
         print('[tester] tester looping')
-        if not done:
-            publishCorridors(corridor_list[0])
+        if not done and counter > 10:
+            publishCorridors(corridor_list[0], corridor_pub)
             done = True
 
+        counter += 1
         rate.sleep()
 
 

@@ -13,6 +13,7 @@ import math as m
 import numpy as np
 from barn_challenge.msg import corridor_msg, corridor_list
 from corridor_helpers import *
+from corridor import Corridor
 
 class odomMsgClass():
     def __init__(self):
@@ -24,25 +25,27 @@ class odomMsgClass():
 
 def transformCorridorToWorld(newCorridor, curr_pose):
     # translate the center
-    newCorridor.center[0] += curr_pose.posx
-    newCorridor.center[1] += curr_pose.posy
+    center = [newCorridor.center[0] + curr_pose.posx, newCorridor.center[1] + curr_pose.posy]
 
     # rotate the tilt
     rotation_angle = curr_pose.theta - np.pi/2
-    newCorridor.tilt = newCorridor.tilt + rotation_angle
+    tilt = newCorridor.tilt + rotation_angle
 
     # translate and rotate the growth center
     a = newCorridor.growth_center[0] + curr_pose.posx
     b = newCorridor.growth_center[1] + curr_pose.posy
     c = a*np.cos(rotation_angle)-b*np.sin(rotation_angle)
     d = b*np.cos(rotation_angle)+a*np.sin(rotation_angle)
-    newCorridor.growth_center = [c, d]
+    growth_center = [c, d]
+
+    transformed_corridor = Corridor(center=center, height=newCorridor.height, width=newCorridor.width)
+    transformed_corridor.growth_center = growth_center
 
     # update W and the corners
-    newCorridor.update_W()
-    newCorridor.corners = newCorridor.getCorners()
+    transformed_corridor.update_W()
+    transformed_corridor.corners = get_corners(transformed_corridor.W)
 
-    return newCorridor
+    return transformed_corridor
 
 def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
     # NOTE: It is assumed that this corridor really is new
@@ -50,9 +53,10 @@ def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
 
     # If this is the first corridor ever, start the tree
     if root_corridor is None:
-        root_corridor = newCorridor.corridor_deep_copy()
+        # root_corridor = newCorridor.corridor_deep_copy()
+        root_corridor = newCorridor
         current_corridor = root_corridor
-        return
+        return (root_corridor, current_corridor)
     # Else, check if the new corridor should be added
 
     stuck = check_stuck(current_corridor, newCorridor, 0.25)
@@ -60,22 +64,31 @@ def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
         current_corridor.add_child(newCorridor)
         current_corridor.remove_similar_children()
 
+    return (root_corridor, current_corridor)
+
 def select_child_corridor(current_corridor):
-    if len(select_child_corridor.children) == 0:
+    if len(current_corridor.children) == 0:
         # backtrack
-        return False
+        return (False, current_corridor)
     else:
         current_corridor = current_corridor.children[0]
-        return True
+        return (True, current_corridor)
 
 def corridorCallback(data):
+    print("[manager] Starting corridor callback")
     new_corridor.height = data.height
     new_corridor.width = data.width
     new_corridor.quality = data.quality
     new_corridor.center = data.center
+    new_corridor.growth_center = data.growth_center
     new_corridor.tilt = data.tilt
     new_corridor.corners = data.corners
+
+    global new_corridor_present
     new_corridor_present = True
+
+    # print("[manager] Corridor callback is executed!")
+    # print("[manager] new_corridor_present = ", new_corridor_present)
 
 def yawFromQuaternion(orientation):
     return m.atan2((2.0*(orientation.w * orientation.z +
@@ -131,7 +144,7 @@ def main():
     corridor_pub = rospy.Publisher("/chosen_corridor", corridor_list)
 
     rospy.init_node('manager', anonymous=True)
-    rate = rospy.Rate(1)
+    rate = rospy.Rate(0.5)
 
     # Define variables for the corridor tree
     root_corridor = None
@@ -142,6 +155,9 @@ def main():
     print('[manager] manager ready')
     while not rospy.is_shutdown():
         print("[manager] Manager looping")
+        # print("[manager] Robot position: (", curr_pose.posx, ", ", curr_pose.posy, ")")
+        # print("[manager] Current Corridor: ", current_corridor)
+
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
             if current_corridor.check_inside([[curr_pose.posx, curr_pose.posy]]):
@@ -152,19 +168,22 @@ def main():
         # if a new corridor arrived, potentially add it to the tree
         if new_corridor_present:
             print("[manager] discovered a new corridor!")
-            processNewCorridor(new_corridor, curr_pose, root_corridor, current_corridor)
+            (root_corridor, current_corridor) = processNewCorridor(new_corridor, curr_pose, root_corridor, current_corridor)
             new_corridor_present = False
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
             end_reached = check_end_of_corridor_reached(current_corridor, curr_pose)
             if end_reached:
-                succes = select_child_corridor(current_corridor)
+                (succes, current_corridor) = select_child_corridor(current_corridor)
                 if not succes:
                     # pass the backtracking corridors to the motion planner
                     backtrack_mode_activated = True
                     (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor)
                     publishCorridors(backtracking_corridors, corridor_pub)
+                    if backtrack_point is None:
+                        print("[manager] ERROR: I cannot backtrack because there are no other options")
+                        backtrack_mode_activated = False
                 else:
                     publishCorridors([current_corridor], corridor_pub)
 

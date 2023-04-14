@@ -61,6 +61,7 @@ class Corridor:
         self.W = self._init_W_from_width_height_tilt(
             width, height, *center, tilt)
         self.center = center
+        self.growth_center = center.copy()
         self.tilt = tilt
         self.corners = get_corners(self.W)
         self.corners_world = []
