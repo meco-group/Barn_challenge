@@ -128,7 +128,7 @@ def main():
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
 
     # Prepare to publish corridors
-    corridor_pub = rospy.Publisher("/corridor", corridor_list)
+    corridor_pub = rospy.Publisher("/chosen_corridor", corridor_list)
 
     rospy.init_node('manager', anonymous=True)
     rate = rospy.Rate(1)
