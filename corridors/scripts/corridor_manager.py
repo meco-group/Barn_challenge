@@ -14,6 +14,14 @@ import numpy as np
 from barn_challenge.msg import corridor_msg, corridor_list
 from corridor_helpers import *
 
+class odomMsgClass():
+    def __init__(self):
+        self.velx = 0.0
+        self.rotz = 0.0
+        self.posx = 0.0
+        self.posy = 0.0
+        self.theta = 0.0
+
 def transformCorridorToWorld(newCorridor, curr_pose):
     # translate the center
     newCorridor.center[0] += curr_pose.posx
@@ -114,7 +122,7 @@ def main():
 
     # Subscribe to odometry
     global curr_pose
-    curr_pose = Odometry()
+    curr_pose = odomMsgClass()
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
 
     # Prepare to publish corridors
