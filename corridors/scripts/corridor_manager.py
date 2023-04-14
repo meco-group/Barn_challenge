@@ -139,9 +139,9 @@ def main():
     backtrack_point = None
     backtrack_mode_activated = False
 
-    print('manager ready')
+    print('[manager] manager ready')
     while not rospy.is_shutdown():
-        print("Manager looping")
+        print("[manager] Manager looping")
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
             if current_corridor.check_inside([[curr_pose.posx, curr_pose.posy]]):
@@ -151,6 +151,7 @@ def main():
 
         # if a new corridor arrived, potentially add it to the tree
         if new_corridor_present:
+            print("[manager] discovered a new corridor!")
             processNewCorridor(new_corridor, curr_pose, root_corridor, current_corridor)
             new_corridor_present = False
 
