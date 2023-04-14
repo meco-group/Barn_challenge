@@ -131,6 +131,7 @@ def main():
 
     print('manager ready')
     while not rospy.is_shutdown():
+        print("Manager looping")
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
             if current_corridor.check_inside([[curr_pose.posx, curr_pose.posy]]):

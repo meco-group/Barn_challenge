@@ -38,13 +38,13 @@ def main():
     # Prepare to publish corridors
     corridor_pub = rospy.Publisher("/corridor", corridor_msg)
 
-    rospy.init_node('manager', anonymous=True)
+    rospy.init_node('tester', anonymous=True)
     rate = rospy.Rate(0.1)
 
     # Define variables for the corridor tree
     done = False
 
-    print('tester is ready ready')
+    print('tester is ready')
     while not rospy.is_shutdown():
         if not done:
             publishCorridors(corridor_list[0])
