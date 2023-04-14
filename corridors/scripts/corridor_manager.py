@@ -14,6 +14,14 @@ import numpy as np
 from barn_challenge.msg import corridor_msg, corridor_list
 from corridor_helpers import *
 
+class odomMsgClass():
+    def __init__(self):
+        self.velx = 0.0
+        self.rotz = 0.0
+        self.posx = 0.0
+        self.posy = 0.0
+        self.theta = 0.0
+
 def transformCorridorToWorld(newCorridor, curr_pose):
     # translate the center
     newCorridor.center[0] += curr_pose.posx
@@ -67,7 +75,7 @@ def corridorCallback(data):
     new_corridor.center = data.center
     new_corridor.tilt = data.tilt
     new_corridor.corners = data.corners
-    new_corridor.new = True
+    new_corridor_present = True
 
 def yawFromQuaternion(orientation):
     return m.atan2((2.0*(orientation.w * orientation.z +
@@ -109,16 +117,18 @@ def main():
 
     # Subscribe to corridors published by corridor_fitter    
     global new_corridor
+    global new_corridor_present
+    new_corridor_present = False
     new_corridor = corridor_msg()
     corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback)
 
     # Subscribe to odometry
     global curr_pose
-    curr_pose = Odometry()
+    curr_pose = odomMsgClass()
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
 
     # Prepare to publish corridors
-    corridor_pub = rospy.Publisher("/corridor", corridor_list)
+    corridor_pub = rospy.Publisher("/chosen_corridor", corridor_list)
 
     rospy.init_node('manager', anonymous=True)
     rate = rospy.Rate(1)
@@ -129,8 +139,9 @@ def main():
     backtrack_point = None
     backtrack_mode_activated = False
 
-    print('manager ready')
+    print('[manager] manager ready')
     while not rospy.is_shutdown():
+        print("[manager] Manager looping")
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
             if current_corridor.check_inside([[curr_pose.posx, curr_pose.posy]]):
@@ -139,9 +150,10 @@ def main():
                 continue
 
         # if a new corridor arrived, potentially add it to the tree
-        if new_corridor.new:
+        if new_corridor_present:
+            print("[manager] discovered a new corridor!")
             processNewCorridor(new_corridor, curr_pose, root_corridor, current_corridor)
-            new_corridor.new = False
+            new_corridor_present = False
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
