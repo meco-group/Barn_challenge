@@ -3,6 +3,6 @@
   <arg name="goal_y" default="10" /> 
   
   <node pkg="barn_challenge" type="navigator.py" name="navigator" output="screen" />
-  <node pkg="barn_challenge" type="test_corridor_publisher.py" name="test_corridor_publisher"/>
-  <node pkg="barn_challenge" type="corridor_manager.py" name="corridor_manager"/>
+  <node pkg="barn_challenge" type="test_corridor_publisher.py" name="tester"/>
+  <node pkg="barn_challenge" type="corridor_manager.py" name="manager"/>
 </launch>
