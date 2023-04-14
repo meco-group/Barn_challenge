@@ -38,39 +38,59 @@ def main():
     while not rospy.is_shutdown():
         
         sectors = np.full((sector_num), 1.0)
-        free_angles = []
-        for i in range(sector_num): # loop through sectors
+        prev_sec = 0.0
+        start_angle = 0.0
+        end_angle = 0.0
+        free_angles = np.array([]) # array of free angles to build corridors in those directions
+        opening_found = False
+        for i in range(sector_num): # loop through all sectors
             x = lidar_data[i*sector_size:(i+1)*sector_size]
             x_ordered = np.argsort(x)
-            for j in range(sector_size): # loop through 
+            for j in range(sector_size): # loop through data on a sector
                 x_index = x_ordered[j]
                 arc_length = lidar_resolution*x[x_index]
                 opening_width = arc_length/2
                 opening_found = False
                 for k in range(sector_size):
-                    if x[k] > x[x_index]: #may need an extra condition if values are 'inf'
+                    if x[k] > x[x_index]: #TODO: may need an extra condition if values are 'inf'
                         opening_width = opening_width + arc_length
-                        if opening_width > (2*(robot_radius+safety_radius)):
-                            opening_found = True
-                            free_angles.append(i*lidar_resolution + lidar_resolution/2)
-                            break
+                        if opening_width > (2*(robot_radius+safety_radius)): # compare if space is enough for a corridor
+                            opening_found = True                            
+                            break.
                     else:
                         opening_width = opening_width + arc_length/2
-                        if opening_width > (robot_radius+safety_radius):
+                        if opening_width > (2*(robot_radius+safety_radius)): # compare if space is enough for a corridor
                             opening_found = True
-                            free_angles.append(i*lidar_resolution + lidar_resolution/2)
                             break
                         opening_width = 0.0
-                if opening_found == False:
-                    sectors[i] = 0.0
+                if opening_found == True:
+                    if prev_sec == 0.0: # if it is a new free sector, define start and end angles
+                        start_angle = i*lidar_resolution
+                        end_angle = (i+1)*lidar_resolution
+                    else: # if it is a consecutive sector, only update the end angle
+                        end_angle = (i+1)*lidar_resolution
+                    prev_sec = 1.0
+                    break
+            if opening_found == False: 
+                sectors[i] = 0.0
+                if prev_sec == 1.0: # if the current sector is occupied, but follows free sectors
+                    #free_angles.append((start_angle + end_angle)/2) 
+                    free_angles = np.append(free_angles, (start_angle + end_angle)/2) # add the middle angle of the free sectors
+                prev_sec = 0.0
+        if prev_sec == 1: # if the last sector is free, also send the middle angle of the last consecutive sectors
+            #free_angles.append((start_angle + end_angle)/2)
+            free_angles = np.append(free_angles, (start_angle + end_angle)/2)
 
+        free_angles = free_angles - sensor_span/2 # change angles to range [-135,135] degrees (in radians)
+        
         free_sectors = len(free_angles)
         if (free_sectors != last_free_sectors):
             flag = 1.0
         else:
             flag = 0.0
         last_free_sectors = free_sectors
-
+        print('angles',free_angles)
+        print('flag', flag)
         #publish free_angles
         #publish flag
 
