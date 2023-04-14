@@ -75,7 +75,7 @@ def corridorCallback(data):
     new_corridor.center = data.center
     new_corridor.tilt = data.tilt
     new_corridor.corners = data.corners
-    new_corridor.new = True
+    new_corridor_present = True
 
 def yawFromQuaternion(orientation):
     return m.atan2((2.0*(orientation.w * orientation.z +
@@ -117,6 +117,8 @@ def main():
 
     # Subscribe to corridors published by corridor_fitter    
     global new_corridor
+    global new_corridor_present
+    new_corridor_present = False
     new_corridor = corridor_msg()
     corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback)
 
@@ -148,9 +150,9 @@ def main():
                 continue
 
         # if a new corridor arrived, potentially add it to the tree
-        if new_corridor.new:
+        if new_corridor_present:
             processNewCorridor(new_corridor, curr_pose, root_corridor, current_corridor)
-            new_corridor.new = False
+            new_corridor_present = False
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
