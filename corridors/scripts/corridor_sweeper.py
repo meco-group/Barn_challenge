@@ -7,35 +7,111 @@ Created on Tue April 11, 2023
 """
 
 import rospy
+from geometry_msgs.msg import Point
+from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
+from visualization_msgs.msg import Marker, MarkerArray
 import math as m
 import numpy as np
-from barn_challenge.msg import corridor_msg
 
 class lidarData():
     def __init__(self):
         self.sensor_num = np.int(720)
         self.lidar_data = np.zeros(self.sensor_num)
 
+class odomData():
+    def __init__(self):
+        self.posx = 0.0
+        self.posy = 0.0
+        self.posz = 0.0
+        self.yaw = 0.0
+
+def yawFromQuaternion(orientation):
+    return m.atan2((2.0*(orientation.w * orientation.z +
+                         orientation.x * orientation.y)),
+                   (1.0 - 2.0*(orientation.y * orientation.y +
+                               orientation.z * orientation.z)))
+
+def rotation_matrix(angle):
+    J = np.array([[m.cos(angle), -1*m.sin(angle)],
+                 [m.sin(angle), m.cos(angle)]])
+    return (J)
+
+def local_to_world(x2, y2, angle):
+    p = np.array([x2, y2])
+    J = rotation_matrix(angle)
+    n = J.dot(p)
+    world_x2 = n[0] + odom_data.posx
+    world_y2 = n[1] + odom_data.posy
+    return (world_x2, world_y2)
+
+def wrapToPi(angle):
+    if angle > m.pi:
+        angle -= 2*m.pi
+    elif angle < -m.pi:
+        angle += 2*m.pi
+    return angle
+
 def scanCallback(data):
     lidar_data.lidar_data = np.asarray(data.ranges) #need to confirm if this syntax is correct
-    lidar_data.lidar_data[lidar_data.lidar_data == float('inf')] = 10.
+    lidar_data.lidar_data[lidar_data.lidar_data == float('inf')] = 30.
     #print(lidar_data.lidar_data)
+
+def odomCallback(data):
+    odom_data.posx = data.pose.pose.position.x
+    odom_data.posy = data.pose.pose.position.y
+    odom_data.posz = data.pose.pose.position.z
+    odom_data.yaw = yawFromQuaternion(data.pose.pose.orientation)
+
+def visualizeArrows(angles):
+    marker_array = MarkerArray()
+    for i in range(len(angles)):
+        marker = Marker()
+        if i == 0:
+            marker.action = marker.DELETEALL
+        marker.header.frame_id = 'odom'
+        marker.type = marker.ARROW
+        marker.action = marker.ADD
+        marker.header.stamp = rospy.Time.now()
+        marker.ns = 'points_arrows'
+        marker.id = i
+        marker.color.a = 1.0
+        marker.color.r = 0.0
+        marker.color.g = 1.0
+        marker.color.b = 0.0
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
+        marker.pose.orientation.y = 0.0
+        marker.pose.orientation.w = 1.0
+        tail = Point(odom_data.posx,odom_data.posy,odom_data.posz)
+        free_angle = angles[i]
+        angle = free_angle + odom_data.yaw
+        angle = wrapToPi(angle)
+        x2, y2 = local_to_world(2,0,angle)
+        tip = Point(x2,y2,odom_data.posz)
+        marker.points = [tail, tip]
+        marker_array.markers.append(marker)
+    return marker_array
 
 def main():
     global lidar_data
+    global odom_data
     lidar_data = lidarData()
+    odom_data = odomData()
     sensor_span = (3/2)*(np.pi)
     lidar_resolution = sensor_span/lidar_data.sensor_num #angle resolution in radians
-    sector_num = 5 # number of sectors
+    sector_num = 15 # number of sectors
     sector_size = np.int(lidar_data.sensor_num/sector_num) # number of points per sector
     free_sectors = 0.0
     last_free_sectors = 0.0
     flag = 0.0
 
-    robot_radius = 0.5
-    safety_radius = 0.1
+    robot_radius = 0.2
+    safety_radius = 0.01
     scan_sub = rospy.Subscriber('/front/scan', LaserScan, scanCallback)
+    odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    marker_pub = rospy.Publisher('/angles_marker', MarkerArray, queue_size=10)
 
     rospy.init_node('sweeper', anonymous=True)
     rate = rospy.Rate(10)
@@ -58,7 +134,7 @@ def main():
                 opening_width = arc_length/2
                 opening_found = False
                 for k in range(sector_size):
-                    if x[k] > x[x_index]: #TODO: may need an extra condition if values are 'inf'
+                    if x[k] > x[x_index]:
                         opening_width = opening_width + arc_length
                         if opening_width > (2*(robot_radius+safety_radius)): # compare if space is enough for a corridor
                             opening_found = True                            
@@ -102,6 +178,9 @@ def main():
         print('flag', flag)
         #publish free_angles
         #publish flag
+
+        marker_array = visualizeArrows(free_angles)
+        marker_pub.publish(marker_array)
 
         rate.sleep()
 
