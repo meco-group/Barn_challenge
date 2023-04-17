@@ -67,13 +67,12 @@ def visualizeArrows(angles):
     marker_array = MarkerArray()
     for i in range(len(angles)):
         marker = Marker()
-        if i == 0:
-            marker.action = marker.DELETEALL
         marker.header.frame_id = 'odom'
         marker.type = marker.ARROW
         marker.action = marker.ADD
         marker.header.stamp = rospy.Time.now()
         marker.ns = 'points_arrows'
+        marker.lifetime = rospy.Time(0.1)
         marker.id = i
         marker.color.a = 1.0
         marker.color.r = 0.0
