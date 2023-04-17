@@ -7,9 +7,9 @@ Created on Tue Mar 28 15:38:15 2023
 """
 
 import rospy
-from nav_msgs.msg import Odometry
+from nav_msgs.msg import Odometry, Path
 import sensor_msgs.point_cloud2 as pc2
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, PoseStamped
 import laser_geometry.laser_geometry as lg
 import math as m
 import numpy as np
@@ -17,6 +17,8 @@ import numpy as np
 from corridor import Corridor
 from barn_challenge.msg import corridor_msg
 from barn_challenge.msg import corridor_list
+
+from motion_planner import compute_trajectory
 
 class messageClass():
     def __init__(self):
@@ -41,14 +43,12 @@ def yawFromQuaternion(orientation):
                    (1.0 - 2.0*(orientation.y * orientation.y +
                                orientation.z * orientation.z)))
 
-
 def odomCallback(data):
     message.velx = data.twist.twist.linear.x
     message.rotz = data.twist.twist.angular.z
     message.posx = data.pose.pose.position.x
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
-
 
 def corridorCallback(data):
     b_corridor.height = data.height
@@ -58,20 +58,67 @@ def corridorCallback(data):
     b_corridor.tilt = data.tilt
     b_corridor.corners = data.corners
 
+def corridorListCallback(data):
+    if len(data) > 0:
+        best_corridor = data[0]
+        b_corridor.height = best_corridor.height
+        b_corridor.width = best_corridor.width
+        b_corridor.quality = best_corridor.quality
+        b_corridor.center = best_corridor.center
+        b_corridor.tilt = best_corridor.tilt
+        b_corridor.corners = best_corridor.corners
+    else:
+        # TODO: If more than one corridor is sent, backtrack
+        pass
+
+def generate_path_message(input_path):
+    path = Path() 
+    if input_path.shape[0] == 0:
+        return path
+
+    for i in range(input_path.shape[0]):
+        pose = PoseStamped()
+        pose.header.frame_id = "odom"
+        pose.pose.position.x = input_path[i,0]
+        pose.pose.position.y = input_path[i,1] 
+        pose.pose.position.z = 0
+        pose.header.seq = path.header.seq + 1
+        path.header.frame_id = "odom"
+        path.header.stamp = rospy.Time.now()
+        pose.header.stamp = path.header.stamp
+        path.poses.append(pose)
+
+    return path      
+
 
 def main():
     global message
     message = messageClass()
     global b_corridor
     b_corridor = corridor_msg()
+
+    # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
     corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback)
+    corridor_list_sub = rospy.Subscriber('/chosen_corridor', corridor_list, corridorListCallback)
 
+    # Publishers
     vel_Pub = rospy.Publisher('/jackal_velocity_controller/cmd_vel', Twist,
-                              queue_size=10)
+                              queue_size=10) # Should a maneuver publisher replace this?
+    path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
 
     rospy.init_node('navigator', anonymous=True)
     rate = rospy.Rate(100)
+
+    # TODO: Check this control bounds
+    v_max = 2
+    v_min = -2
+    omega_max = 2
+    omega_min = -2
+    u_bounds = np.array([v_min, v_max, omega_min, omega_max])
+    a = 0.430
+    b = 0.508
+    m = 0.3
 
     maxSpeed = 1
     minSpeed = 0.1
@@ -86,7 +133,14 @@ def main():
     print('I started moving')
     while not rospy.is_shutdown():
 
+
         print('current_position', message.posx, message.posy, message.theta)
+
+        #####################################################
+        # Compute path and maneuver within corridors
+        #####################################################
+
+        computed_maneuver, computed_path = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_converted)
 
         # Start moving slowly.
         twist.linear.x = 0.
@@ -101,8 +155,14 @@ def main():
             print('I arrived')
             isDone = True
 
-        vel_Pub.publish(twist)
+        #####################################################
+        # Node outputs
+        #####################################################
+        vel_Pub.publish(twist) # This should go in a controller node (replace with maneuver publisher)
 
+        path_Pub.publish(generate_path_message(computed_path))
+
+        # Finish execution if goal has been reached
         if isDone:
             rospy.signal_shutdown('Goal Reached')
 
