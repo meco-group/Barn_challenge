@@ -95,7 +95,7 @@ elif test == 3:
     tilt1_local = pi/4        # With respect to the vehicle
     tilt2_local = pi/4 - pi/5 # With respect to the vehicle
 #####################################
-# Test 3: Turn right and then right
+# Test 4: Turn right and then right
 #####################################
 elif test == 4:
     print("Testing right-right")
@@ -143,7 +143,7 @@ y0 = initial_point[1]
 
 # Use compute_trajectory (by Sonia). Be aware that the tilt angle of the vehicle should be measured from the x-axis of the world frame
 sequence_man = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_converted)
-
+# sequence_man = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 
 def plot_corridors(*args):
     '''This function will plot any corridors provided as arguments'''

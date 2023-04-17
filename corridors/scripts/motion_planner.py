@@ -137,8 +137,9 @@ def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1, 
         plt.plot(arc_x1, arc_y1, 'k')
         plt.plot([x_center1 + R * cos(angle1)], [y_center1+R*sin(angle1)], 'r')
 
-        plt.axis('square')
-        plt.legend()
+        # plt.axis('square')
+        ax.set_aspect('equal')
+        # plt.legend()
         plt.show(block=True)
 
 
@@ -384,8 +385,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             maneuver_sequence = np.empty((4,3))
             #Compute the center coordinates
             x_corner, y_corner = get_corner_point(corridor1, corridor2)
-            tilt1 = corridor1.tilt
-            tilt2 = corridor2.tilt
+            tilt1 = corridor1.tilt-pi/2
+            tilt2 = corridor2.tilt-pi/2
             #Compute the coordinates of the center of circle 2
             #angle = (pi - arccos(cos(tilt1)*cos(tilt2)+sin(tilt1)*sin(tilt2)))/2
             angle = (pi - abs(tilt2-tilt1))/2
