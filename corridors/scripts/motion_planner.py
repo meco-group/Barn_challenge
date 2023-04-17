@@ -1,10 +1,8 @@
-from rockit import *
-from casadi import *
 import time
 from timeit import default_timer as timer
 
 import matplotlib.pyplot as plt
-from numpy import pi, cos, sin, tan, sqrt, linspace
+from numpy import pi, cos, sin, tan, sqrt, linspace, arctan2, arcsin
 
 from corridor import *
 from corridor_helpers import get_intersection
@@ -24,7 +22,7 @@ def compute_goal_point(corridor, m):
     :rtype: numpy.ndarray
     '''
     height = corridor.height
-    tilt = corridor.tilt
+    tilt = corridor.tilt - pi/2
     goal_pos = corridor.center + np.array([-(height/2-m)*sin(tilt), (height/2-m)*cos(tilt)])
     return goal_pos
 
@@ -43,7 +41,7 @@ def compute_initial_point(corridor,m):
     :rtype: numpy.ndarray
     '''
     height = corridor.height
-    tilt = corridor.tilt
+    tilt = corridor.tilt - pi/2
     initial_pos = corridor.center + np.array([(height/2-m)*sin(tilt), -(height/2-m)*cos(tilt)])
     return initial_pos
 
@@ -115,10 +113,36 @@ def get_corner_point(parent, child):
     return x_corner, y_corner
 
 
-#Compute analytical solution
-# compute_trajectory(corridor1, corridor2, u_bounds, x0, y0, xf, yf, a, b, m)
+def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1, arc_x1, arc_y1, angle1, **kwargs):
+    corridor2 = kwargs['corridor2'] if 'corridor2' in kwargs else None
 
-def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
+    if corridor2 == None:
+        #Plot solution
+        figure_solution = plt.figure()
+        ax = figure_solution.add_subplot(111)
+        plt.title('x and y position')
+        plt.xlabel('x [m]')
+        plt.ylabel('y [m]')
+
+        corners = corridor1.corners
+        corners.append(corners[0])
+        plt.plot([corner[0] for corner in corners], 
+                [corner[1] for corner in corners],
+                'k--', linewidth=1)
+        #Plot triangle rectangle, just to be sure
+        plt.plot([x1,xf],[y1,yf],'b-', linewidth=0.8)
+        plt.plot(x0,y0, 'ro')
+        plt.plot(x1,y1, 'ro')
+        plt.plot(xf, yf, 'ro')
+        plt.plot(arc_x1, arc_y1, 'k')
+        plt.plot([x_center1 + R * cos(angle1)], [y_center1+R*sin(angle1)], 'r')
+
+        plt.axis('square')
+        plt.legend()
+        plt.show(block=True)
+
+
+def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
     '''
     Given two corridors, compute the trajectory the robot shall follow to go from an initial point to a goal point whithin the two corridors 
     in minimum time. 
@@ -139,6 +163,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
     :type y0: float
     :param theta0: current orientation of the robot
     :type theta0: float
+    :param plot: boolean to plot the corridors
+    :type plot: boolean
 
     :optional param corridor2: arrival corridor. This parameter is provided in case a second corridor is available
     :type corridor2: corridor
@@ -150,8 +176,6 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
     :return: maneuver contains the control inputs and time maneuver = [v, omega, time]
     :rtype: np.array
     '''
-    #Initialize output
-    maneuver = np.empty((0,3))
     #Unpack variables
     v_min = u_bounds[0]
     v_max = u_bounds[1]
@@ -159,57 +183,91 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
     omega_max = u_bounds[3]
     corridor2 = kwargs['corridor2'] if 'corridor2' in kwargs else None
 
+    R = v_max/omega_max
     ## Compute the trajetory in case you have only one corridor
     if corridor2 == None:  
+        #initialize the output with two maneuvers
+        maneuver_sequence = np.empty((2,3))
         goal_pos = compute_goal_point(corridor1,m) #not best implemention, you compute goal_pos but you might not need it 
         xf = kwargs['xf'] if 'xf' in kwargs else goal_pos[0]
         yf = kwargs['yf'] if 'yf' in kwargs else goal_pos[1]
 
-        #Compute distance between the initial and goal position
-        c = sqrt((xf-x0)**2+(yf-y0)**2)
+        
         #Compute the angle with respect to the horizontal of line connecting initial and goal pos
-        gamma = atan2(yf-y0,xf-x0)
-        #Compute the time needed to arrive to goal position in minimum time
-        t1 = v_max * c
-        maneuver = np.array([v_max, 0, t1])
+        ref_orientation = arctan2(yf-y0,xf-x0)
 
-        if theta0 < gamma:
-            t_align = (gamma - theta0)/omega_max
-            maneuver = np.vstack((np.array([0,omega_max,t_align]), maneuver))
-        elif theta0 > gamma:
-            t_align = (theta0-gamma)/omega_min
-            maneuver = np.vstack((np.array([0,omega_min,t_align]), maneuver))
+        if ref_orientation >= theta0:
+
+            #Compute center point of osculating circle
+            x_center1 = x0 - R * sin(theta0)
+            y_center1 = y0 + R * cos(theta0)
+
+            #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
+            a1 = sqrt((xf-x_center1)**2 + (yf-y_center1)**2)
+            c1 = sqrt(a1**2 - R**2) #lenght line segment
+            alfa = arctan2((yf-y_center1),(xf-x_center1))
+            gamma = arcsin(c1/a1)
+            zeta = alfa - gamma
+            x1 = x_center1 + R*cos(zeta)
+            y1 = y_center1 + R*sin(zeta)
+            eta = arctan2((y0 - y_center1), (x0 - x_center1))
+            epsilon = abs(zeta) +abs(eta) #arclength
+            angle1 = linspace(eta, eta + epsilon, 100, endpoint = True)
+            arc_x1 = x_center1+R*cos(angle1)
+            arc_y1 = y_center1+R*sin(angle1)
+
+            t1 = R * epsilon/ v_max
+            t2 = c1 / v_max
+
+            if arctan2((yf-y1),(xf-x1)) >= theta0:
+                omega = omega_max
+            else:
+                omega = omega_min
+
+            maneuver_sequence[0,:] = np.array([v_max, omega, t1])
+            maneuver_sequence[1,:] = np.array([v_max, 0, t2])
+
         else:
-            t_align = 0
+            #Compute center point of osculating circle
+            x_center1 = x0 + R * cos(theta0-pi/2)
+            y_center1 = y0 + R * sin(theta0-pi/2)
 
-        #Plot solution
-        figure_solution = plt.figure()
-        ax = figure_solution.add_subplot(111)
-        plt.title('x and y position')
-        plt.xlabel('x [m]')
-        plt.ylabel('y [m]')
+            #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
+            a1 = sqrt((xf-x_center1)**2 + (yf-y_center1)**2)
+            c1 = sqrt(a1**2 - R**2) #lenght line segment
+            alfa = arctan2((yf-y_center1),(xf-x_center1))
+            gamma = arcsin(c1/a1)
+            zeta = alfa + gamma
+            x1 = x_center1 + R*cos(zeta)
+            y1 = y_center1 + R*sin(zeta)
+            eta = arctan2((y0 - y_center1), (x0 - x_center1))
+            epsilon = pi - abs(eta) + pi - abs(eta) #arclength
+            angle1 = np.hstack((linspace(eta, -pi, 100, endpoint = True), linspace(zeta, pi, 100, endpoint = True)))
+            arc_x1 = x_center1+R*cos(angle1)
+            arc_y1 = y_center1+R*sin(angle1)
 
-        corners = corridor1.corners
-        corners.append(corners[0])
-        plt.plot([corner[0] for corner in corners], 
-                [corner[1] for corner in corners],
-                'k--', linewidth=1)
+            t1 = R * epsilon/ v_max
+            t2 = c1 / v_max
 
-        text = f'Analytical solution \nTotal time = {"{:.8f}".format(t_align + t1)}s'
-        plt.plot([x0,xf],[y0,yf],'b-', linewidth=0.8, label=text)
+            if arctan2((yf-y1),(xf-x1)) >= theta0:
+                omega = omega_max
+            else:
+                omega = omega_min
 
-        plt.axis('square')
-        plt.legend()
-        plt.show(block=True)
+            maneuver_sequence[0,:] = np.array([v_max, omega, t1])
+            maneuver_sequence[1,:] = np.array([v_max, 0, t2])
 
-    #In case you have two corridors available, compute the trajectory whithin the two of them.
+        if plot:
+            plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1, arc_x1, arc_y1, angle1)
+
     else:
         goal_pos = compute_goal_point(corridor2,m)
         xf = kwargs['xf'] if 'xf' in kwargs else goal_pos[0]
         yf = kwargs['yf'] if 'yf' in kwargs else goal_pos[1]
         
-        tilt1 = corridor1.tilt
-        tilt2 = corridor2.tilt
+        tilt1 = corridor1.tilt-pi/2
+        tilt2 = corridor2.tilt-pi/2
+
         turn_left = False
         go_straight = False
         turn_right = False
@@ -220,156 +278,207 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
             go_straight
         else:
             turn_right = True
-        
-        #Analytical solution
-        #Compute the radius
-        R = abs(v_max/omega_max) 
-        circle_center_angle = abs(tilt1 - tilt2)/2
-        #Compute the coordinates of the circle center considering the footprint 
+    
         if turn_left:
-            #Coordinates of the corner point
+            maneuver_sequence = np.empty((4,3))
+            #Compute the center coordinates
             x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            tilt1 = corridor1.tilt-pi/2
+            tilt2 = corridor2.tilt-pi/2
+            #Compute the coordinates of the center of circle 2
+            #angle = (pi - arccos(cos(tilt1)*cos(tilt2)+sin(tilt1)*sin(tilt2)))/2
+            angle = (pi - (tilt2-tilt1))/2
+            xc2 = x_corner + (R-a/2-m)*cos(pi/2 + tilt2 + angle)
+            yc2 = y_corner + (R-a/2-m)*sin(pi/2 + tilt2 + angle)
 
-            #Coordinates of the center of the osculating circle
-            x_center = x_corner - (R-a/2-m)*cos(circle_center_angle)
-            y_center = y_corner - (R-a/2-m)*sin(circle_center_angle)
-            #Compute (x1,y1) 
-            a1 = sqrt((x_center-x0)**2+(y_center-y0)**2)
-            c1 = sqrt(a1**2-R**2)
-            beta1 = arcsin(R/a1)
-            alfa1 = arctan2((y_center-y0),(x_center-x0))
-            gamma1 = alfa1 - beta1
+            if theta0 <= pi/2 or theta0 >= 3*pi/2:
 
-            x1 = x0 + c1*cos(gamma1)
-            y1 = y0+ c1*sin(gamma1)
+                #Compute the coordinates of the center of circle 1
+                xc1 = x0 + R * cos(theta0 + pi/2)
+                yc1 = y0 + R * sin(theta0 + pi/2)
 
-            #Compute (x2,y2)
-            a2 = sqrt((xf-x_center)**2+(yf-y_center)**2)
-            c2 = sqrt(a2**2-R**2)
-            beta2 = arcsin(R/a2)
-            alfa2 = arctan2((xf-x_center),(yf-y_center))
-            gamma2 = alfa2 - beta2
+                c1 = sqrt((yc2 - yc1)**2 + (xc2 - xc1)**2)
+                delta1 = arctan2((yc2 - yc1), (xc2-xc1))
+                epsilon1 = delta1 - pi/2
+                zeta1 = arctan2((y0 - yc1),(x0 - xc1))
+                eta1 = abs(epsilon1) + abs(zeta1)
+                x1 = xc1 + R * cos(epsilon1)
+                y1 = yc1 + R * sin(epsilon1)
+                x2 = x1 + c1 * cos(epsilon1 + pi/2)
+                y2 = y1 + c1 * sin(epsilon1 + pi/2)
 
-            x2 = xf-c2*sin(gamma2)
-            y2 = yf-c2*cos(gamma2)
+                epsilon2 = arctan2((y2 - yc2), (x2 - xc2))
+                delta2 = arctan2((yc2-yf),(xc2-xf))
+                a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
+                c2 = sqrt(a2**2 - R**2)
+                beta2 = arcsin(R/a2)
+                iota2 = delta2 + beta2
+                x3 = xf + c2 * cos(iota2)
+                y3 = yf + c2 * sin(iota2)
+                zeta2 = arctan2((y3-yc2),(x3-xc2))
+                eta2 = zeta2 - epsilon2
 
-            #Compute the curvilinear arc segment
-            chord = sqrt((x2-x1)**2 + (y2-y1)**2)
-            theta = 2*arcsin((chord/2)/R)
-            epsilon = arctan((y_center-y2)/(x_center-x2))
-            angle_arc_segment = linspace(epsilon,epsilon-theta,100, endpoint = True)
-            arc_x = x_center+R*cos(angle_arc_segment)
-            arc_y = y_center+R*sin(angle_arc_segment)
-            angle_complete_circle = linspace(0,2*pi,100)
+                t1 = R * eta1 /v_max
+                t2 = c1/v_max
+                t3 = R*eta2/v_max
+                t4 = c2/v_max
 
-            #Compute control inputs
-            t1 = v_max * c1
-            t2 = v_max * R * theta
-            t3 = v_max * c2  
-            maneuver = np.array([[v_max, 0 , t1],[v_max, omega_max , t2], [v_max, 0 , t3]])
+                maneuver_sequence[0,:] = np.array([v_max, omega_max, t1])
+                maneuver_sequence[1,:] = np.array([v_max, 0, t2])
+                maneuver_sequence[2,:] = np.array([v_max, omega_max, t3])
+                maneuver_sequence[3,:] = np.array([v_max, 0, t4])
 
-            if theta0 < gamma1:
-                t_align = (gamma1 - theta0)/ omega_max
-                maneuver = np.vstack((np.array([0,omega_max,t_align]), maneuver))
-            elif theta0 > gamma1:
-                t_align = abs((theta0-gamma1)/omega_min)
-                maneuver = np.vstack((np.array([0,omega_min,t_align]), maneuver))
+                arc_x1 = xc1 + R * cos(linspace(zeta1, epsilon1, 100))
+                arc_y1 = yc1 + R * sin(linspace(zeta1, epsilon1, 100))
+                arc_x2 = xc2 + R * cos(linspace(epsilon2, zeta2, 100))
+                arc_y2 = yc2 + R * sin(linspace(epsilon2, zeta2, 100))
+            
             else:
-                t_align = 0
+                xc1 = x0 + R*cos(theta0 - pi/2)
+                yc1 = y0 + R*sin(theta0 - pi/2)
+                a1 = sqrt((yc2-yc1)**2+(xc2-xc1)**2)
+                c1 = sqrt(a1**2-R**2)
+                beta1 = arcsin(R/a1)
+                delta1 = arctan2((yc2-yc1),(xc2-xc1))
+                epsilon1 = delta1 - beta1
+                x2 = xc1 + c1*cos(epsilon1)
+                y2 = yc1 + c1*sin(epsilon1)
+                gamma1 = arcsin(R/c1)
+                eta1 = pi/2 - gamma1
+                x1 = xc1 + R * cos(epsilon1 + eta1)
+                y1 = yc1 + R *sin(epsilon1+eta1)
+                dist = sqrt((y2-y1)**2 + (x2-x1)**2)
+                chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
+                zeta1 = 2*arcsin((chord1/2)/R)
+                iota1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi
+
+                epsilon2 = arctan2((y2-yc2),(x2-xc2))
+                delta2 = arctan2((yc2-yf),(xc2-xf))
+                a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
+                c2 = sqrt(a2**2 - R**2)
+                beta2 = arcsin(R/a2)
+                iota2 = delta2 + beta2
+                x3 = xf + c2*cos(iota2)
+                y3 = yf + c2*sin(iota2)
+                zeta2 = arctan2((y3-yc2),(x3-xc2))
+                eta2 = zeta2 - epsilon2
+
+                t1 = R * zeta1 /v_max
+                t2 = dist/v_max
+                t3 = R*eta2/v_max
+                t4 = c2/v_max
+
+                maneuver_sequence[0,:] = np.array([v_max, omega_min, t1])
+                maneuver_sequence[1,:] = np.array([v_max, 0, t2])
+                maneuver_sequence[2,:] = np.array([v_max, omega_max, t3])
+                maneuver_sequence[3,:] = np.array([v_max, 0, t4])
+
+                arc_x1 = xc1 + R * cos(linspace(iota1, iota1 - zeta1, 100))
+                arc_y1 = yc1 + R * sin(linspace(iota1, iota1 - zeta1, 100))
+                arc_x2 = xc2 + R * cos(linspace(epsilon2, zeta2, 100))
+                arc_y2 = yc2 + R * sin(linspace(epsilon2, zeta2, 100))
+
+            angle_complete_circle = linspace(0,2*pi,100)
 
         elif turn_right:
-        #Coordinates of the corner point
-            x_corner, y_corner =get_corner_point(corridor1, corridor2)
+            maneuver_sequence = np.empty((4,3))
+            #Compute the center coordinates
+            x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            tilt1 = corridor1.tilt
+            tilt2 = corridor2.tilt
+            #Compute the coordinates of the center of circle 2
+            #angle = (pi - arccos(cos(tilt1)*cos(tilt2)+sin(tilt1)*sin(tilt2)))/2
+            angle = (pi - abs(tilt2-tilt1))/2
+            xc2 = x_corner + (R-a/2-m)*cos(pi/2 + tilt2 - angle)
+            yc2 = y_corner + (R-a/2-m)*sin(pi/2 + tilt2 - angle)
 
-            #Coordinates of the center of the osculating circle
-            x_center = x_corner + (R-a/2-m)*cos(circle_center_angle)
-            y_center = y_corner - (R-a/2-m)*sin(circle_center_angle)
-            #Compute (x1,y1) 
-            a1 = sqrt((x_center-x0)**2+(y_center-y0)**2)
-            c1 = sqrt(a1**2-R**2)
-            beta1 = arcsin(R/a1)
-            alfa1 = arctan2((y_center-y0),(x_center-x0))
-            gamma1 = alfa1 + beta1
+            if theta0 <= pi/2 or theta0 >= 3*pi/2:
+                xc1 = x0 + cos(theta0 + pi/2)
+                yc1 = y0 + sin(theta0 + pi/2)
+                a1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)/2
+                c1 = sqrt(a1**2 - R**2)
+                delta1 = arctan2((y0-yc1),(x0-xc1))
+                epsilon1 = arctan2((yc2-yc1),(xc2-xc1))
+                gamma1 = arcsin(c1/a1)
 
-            x1 = x0+ c1*cos(gamma1)
-            y1 = y0+ c1*sin(gamma1)
+                eta1 = epsilon1 - gamma1
+                x1 = xc1 + R*cos(eta1)
+                y1 = yc1 + R*sin(eta1)
+                x2 = x1+2*c1*cos(eta1 + pi/2)
+                y2 = y1 + 2*c1*sin(eta1+pi/2)
+                delta2 = arctan2((y2-yc2),(x2-xc2))
+                epsilon2 = arctan2((yc2-yf),(xc2-xf))
+                a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
+                c2 = sqrt(a2**2-R**2)
+                beta2 = arcsin(R/a2)
+                x3 = xf + c2*cos(epsilon2 - beta2)
+                y3 = yf + c2*sin(epsilon2-beta2)
+                eta2 = arctan2((y3-yc2),(x3-xc2))
+                
+                chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
+                iota1 = 2*arcsin((chord1/2)/R)
+                chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
+                iota2 = 2*arcsin((chord2/2)/R)
 
-            #Compute (x2,y2)
-            a2 = sqrt((xf-x_center)**2+(yf-y_center)**2)
-            c2 = sqrt(a2**2-R**2)
-            beta2 = arcsin(R/a2)
-            alfa2 = arctan2((y_center-yf), (x_center-xf))
-            # gamma2 =abs(alfa2 - beta2) - pi/2
+                t1 = R * iota1 /v_max
+                t2 = 2*c1/v_max
+                t3 = R*iota2/v_max
+                t4 = c2/v_max
 
-            # x2 = xf-c2*sin(gamma2)
-            # y2 = yf-c2*cos(gamma2)
-            gamma2 = alfa2 = beta2
-            x2 = xf + c2*cos(gamma2)
-            y2 = yf + c2*sin(gamma2)
+                maneuver_sequence[0,:] = np.array([v_max, omega_max, t1])
+                maneuver_sequence[1,:] = np.array([v_max, 0, t2])
+                maneuver_sequence[2,:] = np.array([v_max, omega_min, t3])
+                maneuver_sequence[3,:] = np.array([v_max, 0, t4])
 
-            #Compute the curvilinear arc segment
-            chord = sqrt((x2-x1)**2 + (y2-y1)**2)
-            theta = 2*arcsin((chord/2)/R)
-            epsilon = abs(arctan((y_center-y2)/(x_center-x2)))
-            epsilon2 = abs(arctan((y_center-y1)/(x_center-x1)))
-            angle_arc_segment = linspace(epsilon2, epsilon, 100, endpoint = True)
-            arc_x = x_center-R*cos(angle_arc_segment)
-            arc_y = y_center+R*sin(angle_arc_segment)
+                arc_x1 = xc1 + R * cos(linspace(delta1, eta1,100))
+                arc_y1 = yc1 + R * sin(linspace(delta1, eta1,100))
+                arc_x2 = xc2 + R * cos(linspace(delta2 + 2*pi, eta2,100))
+                arc_y2 = yc2 + R * sin(linspace(delta2 +2*pi, eta2,100))
+
+            else:
+                xc1 = x0 + R*cos(theta0 - pi/2)
+                yc1 = y0 + R*sin(theta0-pi/2)
+                c1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)
+                a1 = sqrt(c1**2-R**2)
+                delta1 = arctan2((yc2-yc1),(xc2-xc1))
+                beta1 = arcsin(R/a1)
+                x1 = xc1 + R*cos(delta1+pi/2)
+                y1 = yc1 + R*sin(delta1+pi/2)
+                epsilon1 = arctan2((y0-yc1),(x0-xc1))
+                x2 = x1 + c1*cos(delta1)
+                y2 = y1 + c1*sin(delta1)
+                delta2 = arctan2((yc2-yf),(xc2-xf))
+                a2 = sqrt((yf-yc2)**2 + (xf-xc2)**2)
+                c2 = sqrt(a2**2 - R**2)
+                beta2 = arcsin(R/a2)
+                x3 = xf + c2*cos(delta2-beta2)
+                y3 = yf + c2*sin(delta2-beta2)
+                epsilon2 = arctan2((y2-yc2),(x2-xc2))
+                zeta2 = arctan2((y3-yc2),(x3-xc2))
+
+                chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
+                iota1 = 2*arcsin((chord1/2)/R)
+                chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
+                iota2 = 2*arcsin((chord2/2)/R)
+                t1 = R * iota1 /v_max
+                t2 = 2*c1/v_max
+                t3 = R*iota2/v_max
+                t4 = c2/v_max
+
+                maneuver_sequence[0,:] = np.array([v_max, omega_min, t1])
+                maneuver_sequence[1,:] = np.array([v_max, 0, t2])
+                maneuver_sequence[2,:] = np.array([v_max, omega_min, t3])
+                maneuver_sequence[3,:] = np.array([v_max, 0, t4])
+
+                arc_x1 = xc1 + R * cos(linspace(epsilon1 + 2*pi, delta1 + pi/2,100))
+                arc_y1 = yc1 + R * sin(linspace(epsilon1 + 2*pi, delta1 + pi/2,100))
+                arc_x2 = xc2 + R * cos(linspace(epsilon2 + 2*pi, epsilon2 + 2*pi - iota2,100))
+                arc_y2 = yc2 + R * sin(linspace(epsilon2 + 2*pi, epsilon2 + 2*pi - iota2 ,100))
+
+        if plot:
+            #Plot solution
+            figure_solution = plt.figure()
             angle_complete_circle = linspace(0,2*pi,100)
-
-            if theta0 < gamma1:
-                t_align = (gamma1 - theta0)/ omega_max
-                maneuver = np.array(0,omega_max,t_align)
-            elif theta0 > gamma1:
-                t_align = abs((theta0-gamma1)/omega_min)
-                maneuver = np.array(0,omega_max,t_align)
-            else:
-                t_align = 0
-
-        elif go_straight:
-            #Compute distance between the initial and goal position
-            c = sqrt((xf-x0)**2+(yf-y0)**2)
-            gamma = atan2(yf-y0,xf-x0)
-
-            if theta0 < gamma:
-                t_align = (gamma - theta0)/omega_max
-                maneuver = np.array(0,omega_max,t_align)
-            elif theta0 > gamma:
-                t_align = (theta0-gamma)/omega_min
-                maneuver = np.array(0,omega_min,t_align)
-            else:
-                t_align = 0
-            #Compute the time needed to arrive to goal position in minimum time
-            t1 = v_max * c
-            maneuver = np.array([v_max, 0, t1])
-           
-            #Plot solution
-            figure_solution = plt.figure()
-            ax = figure_solution.add_subplot(111)
-            plt.title('x and y position')
-            plt.xlabel('x [m]')
-            plt.ylabel('y [m]')
-
-            corners = corridor1.corners
-            corners.append(corners[0])
-            plt.plot([corner[0] for corner in corners], 
-                    [corner[1] for corner in corners],
-                    'k--', linewidth=1)
-
-            #Plot solution
-            text = f'Analytical solution \nTotal time = {"{:.8f}".format(t1)}s'
-            plt.plot([x0,xf],[y0,yf],'b-', linewidth=0.8, label=text)
-
-            plt.axis('square')
-            plt.legend()
-            plt.show(block=True)
-
-        #Compute the time instants in which to start and stop steering, plus final time
-        #Formula = v_max * length 
-        if turn_right or turn_left: 
-
-            #Plot solution
-            figure_solution = plt.figure()
             ax = figure_solution.add_subplot(111)
             plt.title('x and y position')
             plt.xlabel('x [m]')
@@ -386,22 +495,46 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, **kwargs):
             plt.plot([corner[0] for corner in corners], 
                     [corner[1] for corner in corners],
                     'k--', linewidth=1)
-                    #Plot solution
-            text = f'Analytical solution \nTotal time = {"{:.8f}".format(t3)}s \nt1 = {"{:.3f}".format(t1)}s \nt2 = {"{:.2f}".format(t2)}s'
-            plt.plot(arc_x, arc_y, 'b', linewidth=0.8, label=text)
-            plt.plot([x1, x0], [y1,y0], 'b', linewidth=0.8)
-            plt.plot([x2, xf], [y2,yf], 'b', linewidth=0.8)
-            plt.plot([x0,xf],[y0,yf],'ro')
-            plt.plot([x_center],[y_center],'go')
-            plt.plot([x_corner],[y_corner],'ro')
-            plt.plot(x_center+R*cos(angle_complete_circle), y_center + R*sin(angle_complete_circle), 'k--')
-            plt.axis('square')
-            plt.legend()
+            size_dots = 3
+            #Plot points
+            plt.plot(x0,y0, 'o', color = '#FA8072', label = '(x0,y0)', markersize = size_dots)
+            plt.plot(xc1,yc1, 'o', color = '#EE82EE', label = '(xc1, yc1)', markersize = size_dots)
+            plt.plot(x1,y1, 'o', color = '#9A0EEA', label = '(x1,y1)', markersize = size_dots)
+            plt.plot(x2,y2, 'o', color = 'b', label = '(x2,y2)', markersize = size_dots) #color = '#580F41'
+            plt.plot(x3,y3, 'o', color = '#650021', label = '(x3,y3)' ,markersize = size_dots)
+            plt.plot(xc2, yc2, 'o', color = 'g', label = '(xc2, yc2)',markersize = size_dots ) #color = '#800000'
+            plt.plot(x_corner, y_corner, 'o', color = '#A52A2A', label = '(x_corner, y_corner)',markersize = size_dots )
+            plt.plot(xf,yf, 'o', color = '#DC143C', label = '(xf, yf)', markersize = size_dots )
+
+            #Plot solution
+            plt.plot(arc_x1, arc_y1, 'b', linewidth=0.8)
+            plt.plot(arc_x2, arc_y2, 'b', linewidth=0.8)
+
+            plt.plot([x1, x2], [y1,y2], 'b', linewidth=0.8)
+            plt.plot([x3, xf], [y3,yf], 'b', linewidth=0.8)
+
+            plt.plot(xc1+R*cos(angle_complete_circle), yc1 + R*sin(angle_complete_circle), 'k--', linewidth = 0.5)
+            plt.plot(xc2+R*cos(angle_complete_circle), yc2+ R*sin(angle_complete_circle), 'k--', linewidth = 0.5)
+            
+            # plt.axis('square')
+            ax.set_aspect('equal')
+            # plt.legend()
+
+            # control_solution = plt.figure()
+            # #ax = figure_solution.add_subplot(111)
+            # plt.title('Angular velocity')
+            # plt.xlabel('omega [rad/s]')
+            # plt.ylabel('time [s]')
+            # delta_t1 = np.array([0,t1])
+            # delta_t2 = np.array([t1,t1 + t2])
+            # delta_t3 = np.array([t1 + t2, t1 + t2 + t3])
+            # delta_t4 = np.array([t1 + t2 + t3, t1 + t2 + t3 + t4])
+
+            # plt.plot(delta_t1, [maneuver_sequence[0,1], maneuver_sequence[0,1]])
+            # plt.plot(delta_t2, [maneuver_sequence[1,1], maneuver_sequence[1,1]])
+            # plt.plot(delta_t3, [maneuver_sequence[2,1], maneuver_sequence[2,1]])
+            # plt.plot(delta_t4, [maneuver_sequence[3,1], maneuver_sequence[3,1]])
 
             plt.show(block=True)
-        return maneuver
 
-
-
-
-
+    return maneuver_sequence
