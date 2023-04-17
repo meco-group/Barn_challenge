@@ -33,12 +33,6 @@ def yawFromQuaternion(orientation):
                                orientation.z * orientation.z)))
 
 def rotation_matrix(angle):
-    '''
-    @name: rotation_matrix
-    @brief: Transformation matrix template.
-    @param: angle: angle of rotation
-    @return: J: transformation matrix
-    '''
     J = np.array([[m.cos(angle), -1*m.sin(angle)],
                  [m.sin(angle), m.cos(angle)]])
     return (J)
@@ -73,6 +67,8 @@ def visualizeArrows(angles):
     marker_array = MarkerArray()
     for i in range(len(angles)):
         marker = Marker()
+        if i == 0:
+            marker.action = marker.DELETEALL
         marker.header.frame_id = 'odom'
         marker.type = marker.ARROW
         marker.action = marker.ADD
