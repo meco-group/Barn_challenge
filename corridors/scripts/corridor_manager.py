@@ -109,6 +109,9 @@ def corridorCallback(data):
     global new_corridor_present
     new_corridor_present = True
 
+    global new_corridor_list
+    new_corridor_list.append(new_corridor)
+
     # print("[manager] Corridor callback is executed!")
     # print("[manager] new_corridor_present = ", new_corridor_present)
 
@@ -206,6 +209,7 @@ def main():
 
     # Subscribe to corridors published by corridor_fitter    
     global new_corridor
+    global new_corridor_list
     global new_corridor_present
     new_corridor_present = False
     new_corridor = corridor_msg()
@@ -243,9 +247,13 @@ def main():
 
         # if a new corridor arrived, potentially add it to the tree
         if new_corridor_present:
-            print("[manager] discovered a new corridor!")
-            (root_corridor, current_corridor) = processNewCorridor(new_corridor, curr_pose, root_corridor, current_corridor)
+            print("[manager] discovered ",len(new_corridor_list), " new corridor(s)!")
+
+            for c in new_corridor_list:
+                (root_corridor, current_corridor) = processNewCorridor(c, curr_pose, root_corridor, current_corridor)
+            
             new_corridor_present = False
+            new_corridor_list = []
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
