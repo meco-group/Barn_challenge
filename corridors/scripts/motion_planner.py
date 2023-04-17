@@ -476,6 +476,18 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 arc_x2 = xc2 + R * cos(linspace(epsilon2 + 2*pi, epsilon2 + 2*pi - iota2,100))
                 arc_y2 = yc2 + R * sin(linspace(epsilon2 + 2*pi, epsilon2 + 2*pi - iota2 ,100))
 
+        
+        
+        computed_path = np.vstack((
+            np.array([arc_x1,arc_y1]).T, 
+            [x1,y1], 
+            [x2,y2],
+            np.array([arc_x2,arc_y2]).T,
+            [x3,y3],
+            [xf,yf]
+        ))
+
+
         if plot:
             #Plot solution
             figure_solution = plt.figure()
@@ -538,4 +550,4 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
             plt.show(block=True)
 
-    return maneuver_sequence
+    return maneuver_sequence, computed_path

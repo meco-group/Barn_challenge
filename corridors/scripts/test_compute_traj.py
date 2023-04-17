@@ -147,10 +147,11 @@ y0 = initial_point[1]
 
 
 # Use compute_trajectory (by Sonia). Be aware that the tilt angle of the vehicle should be measured from the x-axis of the world frame
-sequence_man = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_converted)
+sequence_man, computed_path = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_converted)
 # sequence_man = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 
-def plot_corridors(*args):
+
+def plot_corridors(path, *args):
     '''This function will plot any corridors provided as arguments'''
     figure_solution = plt.figure()
     ax = figure_solution.add_subplot(111)
@@ -162,9 +163,14 @@ def plot_corridors(*args):
                 [corner[1] for corner in corners],
                 'k--', linewidth=1)
 
+    if path is not None:
+        plt.plot(path[:,0],path[:,1], 'g', linewidth=0.8)
+
     ax.set_aspect('equal')
     plt.show(block=True)
 
-# plot_corridors(corridor1_local, corridor2_local) 
-# plot_corridors(corridor1_world, corridor2_world)
-# plot_corridors(corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
+
+plot_corridors(computed_path, corridor1_converted, corridor2_converted)
+# plot_corridors(None, corridor1_local, corridor2_local) 
+# plot_corridors(None, corridor1_world, corridor2_world)
+# plot_corridors(None, corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
