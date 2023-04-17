@@ -126,6 +126,7 @@ def main():
         start_angle = 0.0
         end_angle = 0.0
         free_angles = np.array([]) # array of free angles to build corridors in those directions
+        free_angles_all = np.array([]) 
         opening_found = False
         for i in range(sector_num): # loop through all sectors
             x = lidar_data.lidar_data[i*sector_size:(i+1)*sector_size]
@@ -139,12 +140,14 @@ def main():
                     if x[k] > x[x_index]:
                         opening_width = opening_width + arc_length
                         if opening_width > (2*(robot_radius+safety_radius)): # compare if space is enough for a corridor
-                            opening_found = True                            
+                            opening_found = True
+                            free_angles_all = np.append(free_angles_all, ((i*lidar_resolution*sector_size)+((i+1)*lidar_resolution*sector_size))/2)                            
                             break
                     else:
                         opening_width = opening_width + arc_length/2
                         if opening_width > (2*(robot_radius+safety_radius)): # compare if space is enough for a corridor
                             opening_found = True
+                            free_angles_all = np.append(free_angles_all, ((i*lidar_resolution*sector_size)+((i+1)*lidar_resolution*sector_size))/2)                            
                             break
                         opening_width = 0.0
                 if opening_found == True:
@@ -166,6 +169,7 @@ def main():
             free_angles = np.append(free_angles, (start_angle + end_angle)/2)
 
         free_angles = free_angles - sensor_span/2 # change angles to range [-135,135] degrees (in radians)
+        free_angles_all = free_angles_all - sensor_span/2 # change angles to range [-135,135] degrees (in radians)
         
         free_sectors = len(free_angles)
         if (free_sectors != last_free_sectors):
@@ -174,16 +178,18 @@ def main():
             flag = 0.0
         last_free_sectors = free_sectors
         print('sectors',sectors)
-        print('angles',free_angles)
+        #print('angles',free_angles)
+        print('angles',free_angles_all)
         print('flag', flag)
 
         #publish free_angles
         #publish flag
-        angle_list = angle_list()
-        angle_list.angles.append(free_angles)
-        angle_pub.publish(angle_list)
+        angle_list_msg = angle_list()
+        angle_list_msg.angles.append(free_angles)
+        angle_pub.publish(angle_list_msg)
 
-        marker_array = visualizeArrows(free_angles)
+        #marker_array = visualizeArrows(free_angles)
+        marker_array = visualizeArrows(free_angles_all)
         marker_pub.publish(marker_array)
 
         rate.sleep()
