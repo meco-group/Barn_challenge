@@ -1,25 +1,29 @@
 import matplotlib.pyplot as plt
 from numpy import pi, cos, sin, tan, sqrt, linspace, arctan, arctan2
-from motion_planner import get_corner_point, compute_goal_point, compute_initial_point, compute_trajectory
+from motion_planner import compute_initial_point, compute_trajectory
 from corridor import *
 
-def transformCorridorToWorld2(newCorridor, posx, posy, theta):
+from barn_challenge.msg import corridor_msg
+from nav_msgs.msg import Odometry
+from corridor_manager import transformCorridorToWorld, odomMsgClass
 
-    L = sqrt(newCorridor.center[0]**2 + newCorridor.center[1]**2)
-    phi = arctan2(newCorridor.center[1],newCorridor.center[0]) - pi/2  + theta 
-    newCorridor.center = [posx - L*sin(phi), posy + L*cos(phi)]
+def convertCorridorToCorridorMsg(corr):
+    new_message = corridor_msg()
+    new_message.height = corr.height
+    new_message.width = corr.width
+    new_message.quality = corr.quality
+    new_message.center = corr.center
+    new_message.growth_center = corr.growth_center
+    new_message.tilt = corr.tilt
+    new_message.corners = corr.corners
+    return new_message
 
-    L_growth = sqrt(newCorridor.growth_center[0]**2 + newCorridor.growth_center[1]**2)
-    phi_growth = arctan2(newCorridor.growth_center[1],newCorridor.growth_center[0]) - pi/2  + theta 
-    newCorridor.growth_center = [posx - L_growth*sin(phi_growth), posy + L_growth*cos(phi_growth)]
-
-    newCorridor.tilt = newCorridor.tilt + theta
-
-    newCorridor.update_W()
-
-    newCorridor.corners = newCorridor.get_corners()
-    
-    return newCorridor
+def convertOdometryToOdometryMsg(posx, posy, theta):
+    curr_pose = odomMsgClass()
+    curr_pose.posx = posx
+    curr_pose.posy = posy
+    curr_pose.theta = theta
+    return curr_pose
 
 
 #PARAMETERS
@@ -132,8 +136,9 @@ corridor1_world = Corridor(width1, height1, center1_world, tilt1_world+pi/2) # N
 corridor2_world = Corridor(width2, height2, center2_world, tilt2_world+pi/2)
 
 # Check conversion from local to world frame (same as implemented in corridor_manager)
-corridor1_converted = transformCorridorToWorld2(corridor1_local.corridor_copy(), veh_posx, veh_posy, veh_tilt)
-corridor2_converted = transformCorridorToWorld2(corridor2_local.corridor_copy(), veh_posx, veh_posy, veh_tilt)
+robot_odometry = convertOdometryToOdometryMsg(veh_posx, veh_posy, veh_tilt)
+corridor1_converted = transformCorridorToWorld(convertCorridorToCorridorMsg(corridor1_local.corridor_copy()), robot_odometry)
+corridor2_converted = transformCorridorToWorld(convertCorridorToCorridorMsg(corridor2_local.corridor_copy()), robot_odometry)
 
 
 initial_point = compute_initial_point(corridor1_world, m)
@@ -163,4 +168,3 @@ def plot_corridors(*args):
 # plot_corridors(corridor1_local, corridor2_local) 
 # plot_corridors(corridor1_world, corridor2_world)
 # plot_corridors(corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
-
