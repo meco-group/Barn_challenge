@@ -108,7 +108,7 @@ def main():
     path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
 
     rospy.init_node('navigator', anonymous=True)
-    rate = rospy.Rate(100)
+    rate = rospy.Rate(100) # TODO: maybe this fast rate is not needed (due to the controller? node)
 
     # TODO: Check this control bounds
     v_max = 2
