@@ -31,51 +31,11 @@ u_bounds = np.array([v_min, v_max, omega_min, omega_max])
 a = 0.430
 b = 0.508
 m = 0.3
-#test1: turn left, orientation = pi/3 < 90 
-#test2: turn left, orientation = 2*pi/3 > 90
-#test3: turn right, orientation = pi/3 <90
-#test4: turn right, orientatiom = 2*pi/3 >90
-#test5: turn left, orientation = pi/3 (same test1), L-shaped turn
-#test6: turn right, orientation =  2*pi/3 (same test4), L-shaped turn
 
-# test = 1
-# #DEFINE TWO CORRIDORS
-# if test ==1:
-#     theta0 = pi/3
-#     tilt1 = 0
-#     tilt2 = pi/12
-#     corridor1 = Corridor( 1, 5.5,np.array([0.5, 5.5/2]),tilt1)
-#     corridor2 = Corridor( 1, 5.5,np.array([0.5 - cos(abs(tilt2)), 4.5 + 5.5 *sin(abs(tilt2))]),tilt2)
-# elif test == 2:
-#     theta0 = 2*pi/3
-#     tilt1 = -pi/12
-#     tilt2 = pi/6
-#     corridor1 = Corridor( 1, 5.5,np.array([0.5, 5.5/2]),tilt1)
-#     corridor2 = Corridor( 1, 5.5,np.array([0.5 - cos(abs(tilt2)), 4.5 + 5.5 *sin(abs(tilt2))]),tilt2)
-# elif test == 3:
-#     theta0 = pi/3
-#     tilt1 = 0
-#     tilt2 = -pi/12
-#     corridor1 = Corridor( 1, 5.5,np.array([0.5, 5.5/2]),tilt1)
-#     corridor2 = Corridor( 1.5, 5.5,np.array([1.5 - cos(abs(tilt2)), 5 + 5.5 *sin(abs(tilt2))]),tilt2)
-# elif test == 4:
-#     theta0 = 2*pi/3
-#     tilt1 = 0
-#     tilt2 = -pi/12
-#     corridor1 = Corridor( 1, 5.5,np.array([0.5, 5.5/2]),tilt1)
-#     corridor2 = Corridor( 1.5, 5.5,np.array([1.5 - cos(abs(tilt2)), 5 + 5.5 *sin(abs(tilt2))]),tilt2)
-# elif test ==5:
-#     theta0 = pi/3
-#     tilt1 = 0
-#     tilt2 = pi/2
-#     corridor1 = Corridor( 1, 5.5,np.array([0.5, 5.5/2]),tilt1)
-#     corridor2 = Corridor( 1, 5.5,np.array([-2.5, 5]),tilt2)
-# elif test ==6:
-#     theta0 = 2*pi/3
-#     tilt1 = 0
-#     tilt2 = -pi/2
-#     corridor1 = Corridor( 1, 5.5,np.array([0.5, 5.5/2]),tilt1)
-#     corridor2 = Corridor( 1, 5.5,np.array([2.5, 5]),tilt2)
+#######################################################################
+# Run this test by using `python3 test_compute_traj.py {test_number}` 
+# where {test_number} can be replaced by an integer.
+#######################################################################
 
 import sys
 test = int(sys.argv[1]) if len(sys.argv) > 1 else 1
@@ -87,6 +47,7 @@ test = int(sys.argv[1]) if len(sys.argv) > 1 else 1
 # Test 1: Turn left and then left
 #####################################
 if test == 1:
+    print("Testing left-left")
     # vehicle pose
     veh_posx = 1
     veh_posy = 3 
@@ -103,6 +64,7 @@ if test == 1:
 # Test 2: Turn right and then left
 #####################################
 elif test == 2: 
+    print("Testing right-left")
     # vehicle pose
     veh_posx = 1
     veh_posy = 3 
@@ -119,6 +81,7 @@ elif test == 2:
 # Test 3: Turn left and then right
 #####################################
 elif test == 3:
+    print("Testing left-right")
     # vehicle pose
     veh_posx = 1
     veh_posy = 3 
@@ -135,6 +98,7 @@ elif test == 3:
 # Test 3: Turn right and then right
 #####################################
 elif test == 4:
+    print("Testing right-right")
     # vehicle pose
     veh_posx = 1
     veh_posy = 3 
