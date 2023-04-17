@@ -83,7 +83,7 @@ def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
 
     stuck = check_stuck(current_corridor, newCorridor, 0.25)
     if not stuck:
-        current_corridor.add_child(newCorridor)
+        current_corridor.add_child_corridor(newCorridor)
         current_corridor.remove_similar_children()
 
     return (root_corridor, current_corridor)

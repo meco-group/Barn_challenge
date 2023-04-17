@@ -5,7 +5,7 @@ import time
 import matplotlib.pyplot as plt
 from copy import copy
 
-from corridor_helpers import get_corners, get_center
+from corridor_helpers import get_corners, get_center, check_significantly_different
 
 
 GOAL = (-2, 13)
