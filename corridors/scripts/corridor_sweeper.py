@@ -13,6 +13,8 @@ from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker, MarkerArray
 import math as m
 import numpy as np
+from barn_challenge.msg import angle_list
+
 
 class lidarData():
     def __init__(self):
@@ -111,6 +113,7 @@ def main():
     scan_sub = rospy.Subscriber('/front/scan', LaserScan, scanCallback)
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
     marker_pub = rospy.Publisher('/angles_marker', MarkerArray, queue_size=10)
+    angle_pub = rospy.Publisher('/angle_list', angle_list, queue_size=10)
 
     rospy.init_node('sweeper', anonymous=True)
     rate = rospy.Rate(10)
@@ -170,13 +173,15 @@ def main():
         else:
             flag = 0.0
         last_free_sectors = free_sectors
-        print(start_angle)
-        print(end_angle)
         print('sectors',sectors)
         print('angles',free_angles)
         print('flag', flag)
+
         #publish free_angles
         #publish flag
+        angle_list = angle_list()
+        angle_list.angles.append(free_angles)
+        angle_pub.publish(angle_list)
 
         marker_array = visualizeArrows(free_angles)
         marker_pub.publish(marker_array)
