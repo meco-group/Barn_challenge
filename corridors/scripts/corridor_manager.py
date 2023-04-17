@@ -8,7 +8,7 @@ Created on Tue Mar 28 15:38:15 2023
 
 import rospy
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Point
 import math as m
 import numpy as np
 from barn_challenge.msg import corridor_msg, corridor_list
@@ -151,6 +151,11 @@ def publishCorridors(corridors, publisher):
 def visualize_rectangle(rect, i, r, g, b):
     '''Visualize corridors.
     '''
+
+    corners = []
+    for k in range(len(rect)):
+        corners.append(Point(rect[k][0], rect[k][1], 0))
+
     rect_marker = Marker()
     rect_marker.header.stamp = rospy.Time.now()
     rect_marker.header.frame_id = 'odom'
@@ -165,7 +170,7 @@ def visualize_rectangle(rect, i, r, g, b):
     rect_marker.pose.orientation.w = 1
     rect_marker.lifetime = rospy.Duration(0)
     rect_marker.type = 4  # Line Strip
-    rect_marker.points = rect + [rect[0]]
+    rect_marker.points = corners + [corners[0]]
 
     name = '/rect'
     marker_pub = rospy.Publisher(name, MarkerArray, queue_size=0)
