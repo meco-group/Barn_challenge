@@ -12,17 +12,23 @@ import math as m
 import numpy as np
 from barn_challenge.msg import corridor_msg
 
+class lidarData():
+    def __init__(self):
+        self.sensor_num = np.int(720)
+        self.lidar_data = np.zeros(self.sensor_num)
+
 def scanCallback(data):
-    lidar_data = data.ranges #need to confirm if this syntax is correct
+    lidar_data.lidar_data = np.asarray(data.ranges) #need to confirm if this syntax is correct
+    lidar_data.lidar_data[lidar_data.lidar_data == float('inf')] = 10.
+    #print(lidar_data.lidar_data)
 
 def main():
     global lidar_data
-    lidar_data = []
-    sensor_num = np.int(720)
+    lidar_data = lidarData()
     sensor_span = (3/2)*(np.pi)
-    lidar_resolution = sensor_span/sensor_num #angle resolution in radians
-    sector_num = 15 # number of sectors
-    sector_size = np.int(sensor_num/sector_num) # number of points per sector
+    lidar_resolution = sensor_span/lidar_data.sensor_num #angle resolution in radians
+    sector_num = 5 # number of sectors
+    sector_size = np.int(lidar_data.sensor_num/sector_num) # number of points per sector
     free_sectors = 0.0
     last_free_sectors = 0.0
     flag = 0.0
@@ -44,7 +50,7 @@ def main():
         free_angles = np.array([]) # array of free angles to build corridors in those directions
         opening_found = False
         for i in range(sector_num): # loop through all sectors
-            x = lidar_data[i*sector_size:(i+1)*sector_size]
+            x = lidar_data.lidar_data[i*sector_size:(i+1)*sector_size]
             x_ordered = np.argsort(x)
             for j in range(sector_size): # loop through data on a sector
                 x_index = x_ordered[j]
@@ -56,7 +62,7 @@ def main():
                         opening_width = opening_width + arc_length
                         if opening_width > (2*(robot_radius+safety_radius)): # compare if space is enough for a corridor
                             opening_found = True                            
-                            break.
+                            break
                     else:
                         opening_width = opening_width + arc_length/2
                         if opening_width > (2*(robot_radius+safety_radius)): # compare if space is enough for a corridor
@@ -65,10 +71,10 @@ def main():
                         opening_width = 0.0
                 if opening_found == True:
                     if prev_sec == 0.0: # if it is a new free sector, define start and end angles
-                        start_angle = i*lidar_resolution
-                        end_angle = (i+1)*lidar_resolution
+                        start_angle = i*lidar_resolution*sector_size
+                        end_angle = (i+1)*lidar_resolution*sector_size
                     else: # if it is a consecutive sector, only update the end angle
-                        end_angle = (i+1)*lidar_resolution
+                        end_angle = (i+1)*lidar_resolution*sector_size
                     prev_sec = 1.0
                     break
             if opening_found == False: 
@@ -89,6 +95,9 @@ def main():
         else:
             flag = 0.0
         last_free_sectors = free_sectors
+        print(start_angle)
+        print(end_angle)
+        print('sectors',sectors)
         print('angles',free_angles)
         print('flag', flag)
         #publish free_angles

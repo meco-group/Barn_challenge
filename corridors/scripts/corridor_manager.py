@@ -60,12 +60,12 @@ def transformCorridorToWorld(newCorridor, curr_pose):
     phi_growth = np.arctan2(newCorridor.growth_center[1],newCorridor.growth_center[0]) - np.pi/2 + curr_pose.theta
     growth_center = [curr_pose.posx - L_growth*np.sin(phi_growth), curr_pose.posy + L_growth*np.cos(phi_growth)] 
     
-    transformed_corridor = Corridor(center=center, tilt=tilt, heigth=newCorridor.heigth, width=newCorridor.width)
+    transformed_corridor = Corridor(center=center, tilt=tilt, height=newCorridor.height, width=newCorridor.width)
     transformed_corridor.growth_center = growth_center
     
     transformed_corridor.update_W()
-    transformed_corridor.corners = newCorridor.get_corners()
-    
+    transformed_corridor.corners = transformed_corridor.get_corners()
+
     return transformed_corridor
 
 def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
