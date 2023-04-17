@@ -34,7 +34,11 @@ def publishCorridors(corridor, publisher):
 
 def main():
 
-    corridor_list = [Corridor(center=[0.0,0.0], width=0.2, height=0.5, tilt=np.pi/2)]
+    c = Corridor(center=[0.0,0.0], width=0.5, height=2., tilt=0)
+    c.add_child_corridor(Corridor(center=[0.0,0.8], width=0.4, height=2.5, tilt=np.pi/6))
+    c.add_child_corridor(Corridor(center=[0.0,0.8], width=0.6, height=1.5, tilt=-np.pi/4))
+
+    corridor_list = [c.children[0]]
 
     # Prepare to publish corridors
     corridor_pub = rospy.Publisher("/corridor", corridor_msg)

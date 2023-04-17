@@ -8,12 +8,13 @@ Created on Tue Mar 28 15:38:15 2023
 
 import rospy
 from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Point
 import math as m
 import numpy as np
 from barn_challenge.msg import corridor_msg, corridor_list
 from corridor_helpers import *
 from corridor import Corridor
+from visualization_msgs.msg import Marker, MarkerArray
 
 class odomMsgClass():
     def __init__(self):
@@ -64,8 +65,8 @@ def transformCorridorToWorld(newCorridor, curr_pose):
     transformed_corridor.growth_center = growth_center
     
     transformed_corridor.update_W()
-    transformed_corridor.corners = transformed_corridor.get_corners()
-
+    transformed_corridor.world_corners = transformed_corridor.get_corners()
+    
     return transformed_corridor
 
 def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
@@ -147,6 +148,60 @@ def publishCorridors(corridors, publisher):
 
     publisher.publish(to_send_list)
 
+def visualize_rectangle(rect, i, r, g, b):
+    '''Visualize corridors.
+    '''
+    corners = []
+    for k in range(len(rect)):
+        corners.append(Point(rect[k][0], rect[k][1], 0))
+
+    rect_marker = Marker()
+    rect_marker.header.stamp = rospy.Time.now()
+    rect_marker.header.frame_id = 'odom'
+    rect_marker.ns = 'rect'
+    rect_marker.id = i
+    rect_marker.action = 0
+    rect_marker.scale.x = 0.03
+    rect_marker.color.r = r
+    rect_marker.color.g = g
+    rect_marker.color.b = b
+    rect_marker.color.a = 1.0
+    rect_marker.pose.orientation.w = 1
+    rect_marker.lifetime = rospy.Duration(0)
+    rect_marker.type = 4  # Line Strip
+    rect_marker.points = corners + [corners[0]]
+
+    name = '/rect'
+    marker_pub = rospy.Publisher(name, MarkerArray, queue_size=10)
+    marker_arr = MarkerArray()
+
+    marker_arr.markers.append(rect_marker)
+    marker_pub.publish(marker_arr)
+
+def visualize_corridor_tree(root_corridor, current_corridor):
+    current_color = [0,0,1]
+    branch_color  = [1,1,1]
+    root_color  = [1,1,1]
+    options_color = [1,0,0]
+
+    # visualize current corridor
+    visualize_rectangle(current_corridor.corners, 0, current_color[0], current_color[1], current_color[2])
+    
+    # visualize current branch and all other children
+    id = 1
+    to_visualize = current_corridor
+    while to_visualize.parent is not None:
+        to_visualize = current_corridor.parent
+        visualize_rectangle(to_visualize.corners, id, branch_color[0], branch_color[1], branch_color[2])
+
+        for k in range(1,len(to_visualize.children)):
+            visualize_rectangle(to_visualize.children[k].corners, id+k, options_color[0], options_color[1], options_color[2])
+        
+        id += len(to_visualize.children)+1
+
+    # visualize root corridor
+    visualize_rectangle(root_corridor.corners, id, root_color[0], root_color[1], root_color[2])
+
 def main():
 
     # Subscribe to corridors published by corridor_fitter    
@@ -194,7 +249,7 @@ def main():
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
-            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose)
+            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, -1.0)
             if end_reached:
                 (succes, current_corridor) = select_child_corridor(current_corridor)
                 if not succes:
@@ -207,6 +262,8 @@ def main():
                         backtrack_mode_activated = False
                 else:
                     publishCorridors([current_corridor], corridor_pub)
+
+            visualize_corridor_tree(root_corridor, current_corridor)
 
         rate.sleep()
 
