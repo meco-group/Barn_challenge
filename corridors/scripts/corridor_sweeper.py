@@ -73,7 +73,7 @@ def visualizeArrows(angles):
     marker_array = MarkerArray()
     for i in range(len(angles)):
         marker = Marker()
-        marker.header.frame_id = '/odom'
+        marker.header.frame_id = 'odom'
         marker.type = marker.ARROW
         marker.action = marker.ADD
         marker.header.stamp = rospy.Time.now()
@@ -82,10 +82,10 @@ def visualizeArrows(angles):
         marker.color.a = 1.0
         marker.color.r = 0.0
         marker.color.g = 1.0
-        marker.color.b = 0.0,
-        marker.scale.x = 1.0
-        marker.scale.y = 1.0
-        marker.scale.z = 1.0
+        marker.color.b = 0.0
+        marker.scale.x = 0.1
+        marker.scale.y = 0.1
+        marker.scale.z = 0.1
         marker.pose.orientation.y = 0.0
         marker.pose.orientation.w = 1.0
         tail = Point(odom_data.posx,odom_data.posy,odom_data.posz)
@@ -105,7 +105,7 @@ def main():
     odom_data = odomData()
     sensor_span = (3/2)*(np.pi)
     lidar_resolution = sensor_span/lidar_data.sensor_num #angle resolution in radians
-    sector_num = 5 # number of sectors
+    sector_num = 15 # number of sectors
     sector_size = np.int(lidar_data.sensor_num/sector_num) # number of points per sector
     free_sectors = 0.0
     last_free_sectors = 0.0
