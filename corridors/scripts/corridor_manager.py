@@ -65,7 +65,7 @@ def transformCorridorToWorld(newCorridor, curr_pose):
     transformed_corridor.growth_center = growth_center
     
     transformed_corridor.update_W()
-    transformed_corridor.world_corners = transformed_corridor.get_corners()
+    transformed_corridor.world_corners = transformed_corridor.get_corners().copy()
     
     return transformed_corridor
 
@@ -142,18 +142,19 @@ def publishCorridors(corridors, publisher):
         to_send.height = corridors[k].height
         to_send.width = corridors[k].width
         to_send.quality = corridors[k].quality
-        to_send.center = corridors[k].center
-        to_send.growth_center = corridors[k].growth_center
+        to_send.center = corridors[k].center.copy()
+        to_send.growth_center = corridors[k].growth_center.copy()
         to_send.tilt = corridors[k].tilt
         xy_corners = []
-        for xy in corridors[k].corners_world:
+        for xy in corridors[k].corners:
             xy_corners.append(xy.x)
             xy_corners.append(xy.y)
-        to_send.corners = xy_corners
+        to_send.corners = xy_corners.copy()
 
         to_send_list.len += 1
         to_send_list.corridors.append(to_send)
 
+    print("[manager] Published ", to_send_list.len, " corridor(s)")
     publisher.publish(to_send_list)
 
 def visualize_rectangle(rect, i, r, g, b):
@@ -233,7 +234,7 @@ def main():
     corridor_pub = rospy.Publisher("/chosen_corridor", corridor_list)
 
     rospy.init_node('manager', anonymous=True)
-    rate = rospy.Rate(0.5)
+    rate = rospy.Rate(1)
 
     # Define variables for the corridor tree
     root_corridor = None
@@ -244,12 +245,13 @@ def main():
     print('[manager] manager ready')
     while not rospy.is_shutdown():
         print("[manager] Manager looping")
-        # print("[manager] Robot position: (", curr_pose.posx, ", ", curr_pose.posy, ")")
-        # print("[manager] Current Corridor: ", current_corridor)
+        print("[manager] Robot position: (", curr_pose.posx, ", ", curr_pose.posy, ")")
+        print("[manager] Current Corridor: ", current_corridor)
 
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
-            if current_corridor.check_inside([[curr_pose.posx, curr_pose.posy]]):
+            print("[manager] Backtracking...")
+            if current_corridor.check_inside(np.array([[curr_pose.posx], [curr_pose.posy], [1]])):
                 backtrack_mode_activated = False
             else:
                 continue
@@ -272,6 +274,7 @@ def main():
             if end_reached:
                 (succes, current_corridor) = select_child_corridor(current_corridor)
                 if not succes:
+                    print("[manager] Need to backtrack!")
                     # pass the backtracking corridors to the motion planner
                     backtrack_mode_activated = True
                     (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor)

@@ -210,6 +210,7 @@ class Corridor:
         Wtransp = self.W.T
         t0 = time.time()
         # Check if datapoints are inside the corridor
+        print("here: ", np.size(datapoints))
         for i in range(np.size(datapoints, 1)):
             if np.all(Wtransp @ datapoints[:, i] <= 0):
                 t1 = time.time()

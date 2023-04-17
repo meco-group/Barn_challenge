@@ -131,8 +131,10 @@ def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
         Compute the distance from the current position to the edge of the corridor
         It is assumed that the current position is inside the current corridor
     '''
-    top_left = current_corridor.corners[3]
-    top_right = current_corridor.corners[0]
+    print(current_corridor.corners_world)
+    print(current_corridor.corners)
+    top_left = current_corridor.corners_world[3]
+    top_right = current_corridor.corners_world[0]
     if np.abs(top_right[0] - top_left[0]) < 1.0e-8:
         distance_to_end = np.abs(current_pos.posx - top_right[0])
     else:
