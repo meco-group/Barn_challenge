@@ -152,12 +152,20 @@ def main():
     corridor_0.corners_world = get_points_for_visualization(corridor_0)
     visualize_rectangle(corridor_0.corners_world, 100, 0.7, 0.7, 0.7)
     best_corridor = [corridor_0]
+    best_cor = best_corridor[-1]
+    active = 1
 
     print('Corridor node started')
-    while not rospy.is_shutdown():
+    while not rospy.is_shutdown() and active:
         # Convert laser scan data to point cloud and homogenous coordinates.
         for i, corridor in enumerate(best_corridor):
             visualize_rectangle(corridor.corners_world, 100+i, 0.7, 0.7, 0.7)
+
+        for xy in best_cor.corners_world:
+            print(xy.x)
+            if xy.x > 8:
+                active = 0
+                print('finishing and building last corridor')
 
         point_generator = pc2.read_points(message.pointcloud)
         xyh = []
