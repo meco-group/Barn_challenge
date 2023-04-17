@@ -173,7 +173,7 @@ def visualize_rectangle(rect, i, r, g, b):
     rect_marker.points = corners + [corners[0]]
 
     name = '/rect'
-    marker_pub = rospy.Publisher(name, MarkerArray, queue_size=0)
+    marker_pub = rospy.Publisher(name, MarkerArray, queue_size=10)
     marker_arr = MarkerArray()
 
     marker_arr.markers.append(rect_marker)
@@ -198,10 +198,10 @@ def visualize_corridor_tree(root_corridor, current_corridor):
         for k in range(1,len(to_visualize.children)):
             visualize_rectangle(to_visualize.children[k].corners, id+k, options_color[0], options_color[1], options_color[2])
         
-        id += len(to_visualize.children)
+        id += len(to_visualize.children)+1
 
     # visualize root corridor
-    visualize_rectangle(root_corridor.corners, id+1, root_color[0], root_color[1], root_color[2])
+    visualize_rectangle(root_corridor.corners, id+2, root_color[0], root_color[1], root_color[2])
 
 def main():
 
@@ -250,7 +250,7 @@ def main():
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
-            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose)
+            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, -1.0)
             if end_reached:
                 (succes, current_corridor) = select_child_corridor(current_corridor)
                 if not succes:
@@ -264,6 +264,7 @@ def main():
                 else:
                     publishCorridors([current_corridor], corridor_pub)
 
+            print("current_corridor: ", current_corridor)
             visualize_corridor_tree(root_corridor, current_corridor)
 
         rate.sleep()
