@@ -151,7 +151,6 @@ def publishCorridors(corridors, publisher):
 def visualize_rectangle(rect, i, r, g, b):
     '''Visualize corridors.
     '''
-
     corners = []
     for k in range(len(rect)):
         corners.append(Point(rect[k][0], rect[k][1], 0))
@@ -201,7 +200,7 @@ def visualize_corridor_tree(root_corridor, current_corridor):
         id += len(to_visualize.children)+1
 
     # visualize root corridor
-    visualize_rectangle(root_corridor.corners, id+2, root_color[0], root_color[1], root_color[2])
+    visualize_rectangle(root_corridor.corners, id, root_color[0], root_color[1], root_color[2])
 
 def main():
 
@@ -264,7 +263,6 @@ def main():
                 else:
                     publishCorridors([current_corridor], corridor_pub)
 
-            print("current_corridor: ", current_corridor)
             visualize_corridor_tree(root_corridor, current_corridor)
 
         rate.sleep()
