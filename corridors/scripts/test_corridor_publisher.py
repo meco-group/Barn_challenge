@@ -34,9 +34,9 @@ def publishCorridors(corridor, publisher):
 
 def main():
 
-    c = Corridor(center=[0.0,0.0], width=0.5, height=2., tilt=0)
-    c.add_child_corridor(Corridor(center=[0.0,0.8], width=0.4, height=2.5, tilt=np.pi/6))
-    c.add_child_corridor(Corridor(center=[0.0,0.8], width=0.6, height=1.5, tilt=-np.pi/4))
+    c = Corridor(center=[0.0,0.0], width=0.5, height=2., tilt=np.pi/2)
+    c.add_child_corridor(Corridor(center=[0.0,1.0], width=0.8, height=5.5, tilt=np.pi/2+np.pi/6))
+    c.add_child_corridor(Corridor(center=[0.0,1.0], width=0.9, height=3.5, tilt=np.pi/2-np.pi/4))
 
     corridor_list = [c.children[0]]
 
@@ -44,7 +44,7 @@ def main():
     corridor_pub = rospy.Publisher("/corridor", corridor_msg)
 
     rospy.init_node('tester', anonymous=True)
-    rate = rospy.Rate(2)
+    rate = rospy.Rate(3)
 
     # Define variables for the corridor tree
     done = False
@@ -53,9 +53,14 @@ def main():
     print('[tester] tester is ready')
     while not rospy.is_shutdown():
         print('[tester] tester looping')
-        if not done and counter > 10:
-            publishCorridors(corridor_list[0], corridor_pub)
-            done = True
+        if not done and counter == 8:
+            # publishCorridors(corridor_list[0], corridor_pub)
+            publishCorridors(Corridor(center=[0.0,0.0], width=0.5, height=2., tilt=np.pi/2), corridor_pub)
+        # if not done and counter == 9:
+        #     publishCorridors(Corridor(center=[0.0,1.0], width=0.8, height=5.5, tilt=np.pi/2+np.pi/6), corridor_pub)
+        # if not done and counter == 10:
+        #     publishCorridors(Corridor(center=[0.0,1.0], width=0.9, height=3.5, tilt=np.pi/2-np.pi/4), corridor_pub)
+        #     done = True
 
         counter += 1
         rate.sleep()

@@ -78,13 +78,17 @@ def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
         # root_corridor = newCorridor.corridor_deep_copy()
         root_corridor = newCorridor
         current_corridor = root_corridor
+        print("[manager] Root corridor is now created")
         return (root_corridor, current_corridor)
     # Else, check if the new corridor should be added
 
     stuck = check_stuck(current_corridor, newCorridor, 0.25)
     if not stuck:
+        print("[manager] Child corridor is added to the tree")
         current_corridor.add_child_corridor(newCorridor)
         current_corridor.remove_similar_children()
+    else:
+        print("[manager] Discarding a corridor because it does not improve enough")
 
     return (root_corridor, current_corridor)
 
@@ -98,16 +102,20 @@ def select_child_corridor(current_corridor):
 
 def corridorCallback(data):
     print("[manager] Starting corridor callback")
-    new_corridor.height = data.height
-    new_corridor.width = data.width
-    new_corridor.quality = data.quality
-    new_corridor.center = data.center
-    new_corridor.growth_center = data.growth_center
-    new_corridor.tilt = data.tilt
-    new_corridor.corners = data.corners
+    new_message = corridor_msg()
+    new_message.height = data.height
+    new_message.width = data.width
+    new_message.quality = data.quality
+    new_message.center = data.center
+    new_message.growth_center = data.growth_center
+    new_message.tilt = data.tilt
+    new_message.corners = data.corners
 
     global new_corridor_present
     new_corridor_present = True
+
+    global new_corridor_list
+    new_corridor_list.append(new_message)
 
     # print("[manager] Corridor callback is executed!")
     # print("[manager] new_corridor_present = ", new_corridor_present)
@@ -131,20 +139,20 @@ def publishCorridors(corridors, publisher):
     to_send_list = corridor_list()
     for k in range(len(corridors)):
         to_send = corridor_msg()
-        to_send.height = corridors.height
-        to_send.width = corridors.width
-        to_send.quality = corridors.quality
-        to_send.center = corridors.center
-        to_send.growth_center = corridors.growth_center
-        to_send.tilt = corridors.tilt
+        to_send.height = corridors[k].height
+        to_send.width = corridors[k].width
+        to_send.quality = corridors[k].quality
+        to_send.center = corridors[k].center
+        to_send.growth_center = corridors[k].growth_center
+        to_send.tilt = corridors[k].tilt
         xy_corners = []
-        for xy in corridors.corners_world:
+        for xy in corridors[k].corners_world:
             xy_corners.append(xy.x)
             xy_corners.append(xy.y)
         to_send.corners = xy_corners
 
         to_send_list.len += 1
-        to_send_list.corridor_msg.append(to_send)
+        to_send_list.corridors.append(to_send)
 
     publisher.publish(to_send_list)
 
@@ -179,10 +187,10 @@ def visualize_rectangle(rect, i, r, g, b):
     marker_pub.publish(marker_arr)
 
 def visualize_corridor_tree(root_corridor, current_corridor):
-    current_color = [0,0,1]
-    branch_color  = [1,1,1]
-    root_color  = [1,1,1]
-    options_color = [1,0,0]
+    current_color = [0,0,1] # blue
+    branch_color  = [1,1,1] # white
+    root_color  = [1,1,1]   # white
+    options_color = [1,0,0] # optional branches
 
     # visualize current corridor
     visualize_rectangle(current_corridor.corners, 0, current_color[0], current_color[1], current_color[2])
@@ -205,10 +213,15 @@ def visualize_corridor_tree(root_corridor, current_corridor):
 def main():
 
     # Subscribe to corridors published by corridor_fitter    
-    global new_corridor
+    # global new_corridor
+    # new_corridor = corridor_msg()
+    
+    global new_corridor_list
+    new_corridor_list = []
+
     global new_corridor_present
     new_corridor_present = False
-    new_corridor = corridor_msg()
+    
     corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback)
 
     # Subscribe to odometry
@@ -243,13 +256,19 @@ def main():
 
         # if a new corridor arrived, potentially add it to the tree
         if new_corridor_present:
-            print("[manager] discovered a new corridor!")
-            (root_corridor, current_corridor) = processNewCorridor(new_corridor, curr_pose, root_corridor, current_corridor)
+            print("[manager] discovered ",len(new_corridor_list), " new corridor(s)!")
+
+            print(new_corridor_list)
+            for c in new_corridor_list:
+                # print("[manager] processing corridor (", c.width, ", ", c.height, ", ", c.center, ")")
+                (root_corridor, current_corridor) = processNewCorridor(c, curr_pose, root_corridor, current_corridor)
+            
             new_corridor_present = False
+            new_corridor_list = []
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
-            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, -1.0)
+            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, 0.2)
             if end_reached:
                 (succes, current_corridor) = select_child_corridor(current_corridor)
                 if not succes:
@@ -263,6 +282,7 @@ def main():
                 else:
                     publishCorridors([current_corridor], corridor_pub)
 
+        if current_corridor is not None:
             visualize_corridor_tree(root_corridor, current_corridor)
 
         rate.sleep()

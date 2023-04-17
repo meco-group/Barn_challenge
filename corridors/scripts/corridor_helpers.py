@@ -77,8 +77,6 @@ def check_stuck(parent, child, threshold=0.3):
     else:
         d_improvement = max(0,H2-(H1-y1)/np.cos(tilt2-tilt1))
 
-    print("Stuck detection -- d_improvement: ", d_improvement)
-
     return d_improvement < threshold
 
 def check_significantly_different(corridor1, corridor2, distance_threshold=0.2, tilt_threshold=np.pi/6):
@@ -142,5 +140,7 @@ def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
         b = -1.
         c = top_left[1] - a
         distance_to_end = np.abs(a*current_pos.posx+b*current_pos.posy+c)/np.sqrt(a*a + b*b)
+
+    print("[manager] distance to end of corridor: ", round(distance_to_end, 3))
 
     return distance_to_end < threshold
