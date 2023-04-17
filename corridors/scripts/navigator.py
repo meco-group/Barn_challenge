@@ -99,12 +99,12 @@ def main():
 
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
-    corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback)
+    corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback) # TODO: This subscriber is not needed (?)
     corridor_list_sub = rospy.Subscriber('/chosen_corridor', corridor_list, corridorListCallback)
 
     # Publishers
     vel_Pub = rospy.Publisher('/jackal_velocity_controller/cmd_vel', Twist,
-                              queue_size=10) # Should a maneuver publisher replace this?
+                              queue_size=10) # TODO:  Should a maneuver publisher replace this?
     path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
 
     rospy.init_node('navigator', anonymous=True)
@@ -140,7 +140,26 @@ def main():
         # Compute path and maneuver within corridors
         #####################################################
 
-        computed_maneuver, computed_path = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_converted)
+        # Generate corridor instances from corridor messages
+        corridor1 = Corridor(width1, height1, center1_world, tilt1_world + pi/2) # TODO: The variables defining the corridors are just placeholders
+        corridor2 = Corridor(width2, height2, center2_world, tilt2_world + pi/2) # Notice the addition of pi/2
+
+        # Compute the maneuvers within the corridors
+        computed_maneuver, computed_path = compute_trajectory(
+            corridor1 = corridor1, 
+            u_bounds = u_bounds, 
+            a = a, 
+            b = b, 
+            m = m, 
+            x0 = message.posx, 
+            y0 = message.posy, 
+            theta0 = message.theta + m.pi/2, # TODO: Check this
+            plot = False, 
+            corridor2 = corridor2
+        )
+
+        # The computed maneuver should be sent to the controller, which will 
+        # define the instantaneous twist to be sent to the robot
 
         # Start moving slowly.
         twist.linear.x = 0.
@@ -159,7 +178,7 @@ def main():
         # Node outputs
         #####################################################
         vel_Pub.publish(twist) # This should go in a controller node (replace with maneuver publisher)
-
+        # Publish the computed path for debugging
         path_Pub.publish(generate_path_message(computed_path))
 
         # Finish execution if goal has been reached
