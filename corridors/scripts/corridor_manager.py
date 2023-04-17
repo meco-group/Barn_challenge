@@ -14,6 +14,7 @@ import numpy as np
 from barn_challenge.msg import corridor_msg, corridor_list
 from corridor_helpers import *
 from corridor import Corridor
+from visualization_msgs.msg import Marker, MarkerArray
 
 class odomMsgClass():
     def __init__(self):
@@ -60,11 +61,11 @@ def transformCorridorToWorld(newCorridor, curr_pose):
     phi_growth = np.arctan2(newCorridor.growth_center[1],newCorridor.growth_center[0]) - np.pi/2 + curr_pose.theta
     growth_center = [curr_pose.posx - L_growth*np.sin(phi_growth), curr_pose.posy + L_growth*np.cos(phi_growth)] 
     
-    transformed_corridor = Corridor(center=center, tilt=tilt, heigth=newCorridor.heigth, width=newCorridor.width)
+    transformed_corridor = Corridor(center=center, tilt=tilt, height=newCorridor.height, width=newCorridor.width)
     transformed_corridor.growth_center = growth_center
     
     transformed_corridor.update_W()
-    transformed_corridor.corners = newCorridor.get_corners()
+    transformed_corridor.world_corners = transformed_corridor.get_corners()
     
     return transformed_corridor
 
@@ -147,6 +148,56 @@ def publishCorridors(corridors, publisher):
 
     publisher.publish(to_send_list)
 
+def visualize_rectangle(rect, i, r, g, b):
+    '''Visualize corridors.
+    '''
+    rect_marker = Marker()
+    rect_marker.header.stamp = rospy.Time.now()
+    rect_marker.header.frame_id = 'odom'
+    rect_marker.ns = 'rect'
+    rect_marker.id = i
+    rect_marker.action = 0
+    rect_marker.scale.x = 0.03
+    rect_marker.color.r = r
+    rect_marker.color.g = g
+    rect_marker.color.b = b
+    rect_marker.color.a = 1.0
+    rect_marker.pose.orientation.w = 1
+    rect_marker.lifetime = rospy.Duration(0)
+    rect_marker.type = 4  # Line Strip
+    rect_marker.points = rect + [rect[0]]
+
+    name = '/rect'
+    marker_pub = rospy.Publisher(name, MarkerArray, queue_size=0)
+    marker_arr = MarkerArray()
+
+    marker_arr.markers.append(rect_marker)
+    marker_pub.publish(marker_arr)
+
+def visualize_corridor_tree(root_corridor, current_corridor):
+    current_color = [0,0,1]
+    branch_color  = [1,1,1]
+    root_color  = [1,1,1]
+    options_color = [1,0,0]
+
+    # visualize current corridor
+    visualize_rectangle(current_corridor.corners, 0, current_color[0], current_color[1], current_color[2])
+    
+    # visualize current branch and all other children
+    id = 1
+    to_visualize = current_corridor
+    while to_visualize.parent is not None:
+        to_visualize = current_corridor.parent
+        visualize_rectangle(to_visualize.corners, id, branch_color[0], branch_color[1], branch_color[2])
+
+        for k in range(1,len(to_visualize.children)):
+            visualize_rectangle(to_visualize.children[k].corners, id+k, options_color[0], options_color[1], options_color[2])
+        
+        id += len(to_visualize.children)
+
+    # visualize root corridor
+    visualize_rectangle(root_corridor.corners, id+1, root_color[0], root_color[1], root_color[2])
+
 def main():
 
     # Subscribe to corridors published by corridor_fitter    
@@ -207,6 +258,8 @@ def main():
                         backtrack_mode_activated = False
                 else:
                     publishCorridors([current_corridor], corridor_pub)
+
+            visualize_corridor_tree(root_corridor, current_corridor)
 
         rate.sleep()
 
