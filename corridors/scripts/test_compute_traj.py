@@ -77,38 +77,97 @@ m = 0.3
 #     corridor1 = Corridor( 1, 5.5,np.array([0.5, 5.5/2]),tilt1)
 #     corridor2 = Corridor( 1, 5.5,np.array([2.5, 5]),tilt2)
 
-test = 1
-#DEFINE TWO CORRIDORS
-if test ==1:
+import sys
+test = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+
+# The local tilt angle (wrt the body frame) is measured wrt the forward direction (x-axis in the body frame)
+# To use the compute_trajectory function (by Sonia) the tilt angle must, however, be measured from the right direction (x-axis in the world frame)
+
+#####################################
+# Test 1: Turn left and then left
+#####################################
+if test == 1:
     # vehicle pose
     veh_posx = 1
     veh_posy = 3 
-    veh_tilt = -pi/8 # Vehicle tilt with respect to the world frame
+    veh_tilt = -pi/4 # Vehicle tilt with respect to the world frame
     # corridors
     width1 = 1
     height1 = 5.5
     width2 = 1
     height2 = 5.5
     # In local frame
-    tilt1_local = pi/8         # With respect to the vehicle
-    tilt2_local = pi/8 + pi/12 # With respect to the vehicle
+    tilt1_local = pi/4         # With respect to the vehicle
+    tilt2_local = pi/4 + pi/5 # With respect to the vehicle
+#####################################
+# Test 2: Turn right and then left
+#####################################
+elif test == 2: 
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = -pi/4         # With respect to the vehicle
+    tilt2_local = -pi/4 + pi/5 # With respect to the vehicle
+#####################################
+# Test 3: Turn left and then right
+#####################################
+elif test == 3:
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = -pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = pi/4        # With respect to the vehicle
+    tilt2_local = pi/4 - pi/5 # With respect to the vehicle
+#####################################
+# Test 3: Turn right and then right
+#####################################
+elif test == 4:
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = -pi/4        # With respect to the vehicle
+    tilt2_local = -pi/4 - pi/5 # With respect to the vehicle
 
-center1_local = np.array([-(height1/2)*sin(abs(tilt1_local)), (height1/2)*cos(abs(tilt1_local))])
-center2_local = center1_local + np.array([-2.0*sin(tilt1_local)-(height2/2)*sin(abs(tilt2_local)), 2.0*cos(tilt1_local)+(height2/2)*cos(abs(tilt2_local))])
 
-corridor1_local = Corridor( width1, height1, center1_local, tilt1_local+pi/2)
+# Compute center of the corridors wrt body frame
+center1_local = np.array([-(height1/2)*sin(tilt1_local), (height1/2)*cos(tilt1_local)])
+center2_local = center1_local + np.array([-2.0*sin(tilt1_local)-(height2/2)*sin(tilt2_local), 2.0*cos(tilt1_local)+(height2/2)*cos(tilt2_local)])
+
+corridor1_local = Corridor( width1, height1, center1_local, tilt1_local+pi/2) # Notice the addition of pi/2
 corridor2_local = Corridor( width2, height2, center2_local, tilt2_local+pi/2)
 
 # In world frame
 tilt1_world = veh_tilt + tilt1_local
 tilt2_world = veh_tilt + tilt2_local
 
+# Compute center of the corridors wrt world frame
 center1_world = np.array([veh_posx, veh_posy]) + np.array([-(height1/2)*sin(tilt1_world), (height1/2)*cos(tilt1_world)])
 center2_world = center1_world + np.array([-2.0*sin(tilt1_world)-(height2/2)*sin(tilt2_world), 2.0*cos(tilt1_world)+(height2/2)*cos(tilt2_world)])
 
-corridor1_world = Corridor(width1, height1, center1_world, tilt1_world+pi/2)
+corridor1_world = Corridor(width1, height1, center1_world, tilt1_world+pi/2) # Notice the addition of pi/2
 corridor2_world = Corridor(width2, height2, center2_world, tilt2_world+pi/2)
 
+# Check conversion from local to world frame (same as implemented in corridor_manager)
 corridor1_converted = transformCorridorToWorld2(corridor1_local.corridor_copy(), veh_posx, veh_posy, veh_tilt)
 corridor2_converted = transformCorridorToWorld2(corridor2_local.corridor_copy(), veh_posx, veh_posy, veh_tilt)
 
@@ -117,10 +176,13 @@ initial_point = compute_initial_point(corridor1_world, m)
 x0 = initial_point[0]
 y0 = initial_point[1]
 
+
+# Use compute_trajectory (by Sonia). Be aware that the tilt angle of the vehicle should be measured from the x-axis of the world frame
 sequence_man = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_converted)
 
+
 def plot_corridors(*args):
-    #Plot solution
+    '''This function will plot any corridors provided as arguments'''
     figure_solution = plt.figure()
     ax = figure_solution.add_subplot(111)
 
@@ -137,4 +199,4 @@ def plot_corridors(*args):
 # plot_corridors(corridor1_local, corridor2_local) 
 # plot_corridors(corridor1_world, corridor2_world)
 # plot_corridors(corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
-# a=1
+
