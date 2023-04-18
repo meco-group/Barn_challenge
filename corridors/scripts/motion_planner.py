@@ -298,6 +298,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             yc2 = y_corner + (R-a/2-m)*sin(pi/2 + tilt2 + angle)
 
             if theta0 <= pi/2 or theta0 >= 3*pi/2:
+            # if cos(theta0) >= 0:
 
                 #Compute the coordinates of the center of circle 1
                 xc1 = x0 + R * cos(theta0 + pi/2)
@@ -399,6 +400,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             yc2 = y_corner + (R-a/2-m)*sin(pi/2 + tilt2 - angle)
 
             if theta0 <= pi/2 or theta0 >= 3*pi/2:
+            # if cos(theta0) >= 0:
                 xc1 = x0 + cos(theta0 + pi/2)
                 yc1 = y0 + sin(theta0 + pi/2)
                 a1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)/2
