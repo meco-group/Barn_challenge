@@ -51,79 +51,20 @@ def odomCallback(data):
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
 
-def corridorCallback(data):
-    b_corridor.height = data.height
-    b_corridor.width = data.width
-    b_corridor.quality = data.quality
-    b_corridor.center = data.center
-    b_corridor.tilt = data.tilt
-    b_corridor.corners = data.corners
-
-
-def corridorListCallback(data):
-    if len(data) > 0:
-        best_corridor = data[0]
-        b_corridor.height = best_corridor.height
-        b_corridor.width = best_corridor.width
-        b_corridor.quality = best_corridor.quality
-        b_corridor.center = best_corridor.center
-        b_corridor.tilt = best_corridor.tilt
-        b_corridor.corners = best_corridor.corners
-    else:
-        # TODO: If more than one corridor is sent, backtrack
-        pass
-
-
-def generate_path_message(input_path):
-    path = Path() 
-    if input_path.shape[0] == 0:
-        return path
-
-    for i in range(input_path.shape[0]):
-        pose = PoseStamped()
-        pose.header.frame_id = "odom"
-        pose.pose.position.x = input_path[i,0]
-        pose.pose.position.y = input_path[i,1] 
-        pose.pose.position.z = 0
-        pose.header.seq = path.header.seq + 1
-        path.header.frame_id = "odom"
-        path.header.stamp = rospy.Time.now()
-        pose.header.stamp = path.header.stamp
-        path.poses.append(pose)
-
-    return path
-
-
 def main():
     global message
     message = messageClass()
 
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
-    corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback) # TODO: This subscriber is not needed (?)
-    corridor_list_sub = rospy.Subscriber('/chosen_corridor', corridor_list, corridorListCallback)
 
     # Publishers
     vel_Pub = rospy.Publisher('/jackal_velocity_controller/cmd_vel', Twist,
-                              queue_size=10) # TODO:  Should a maneuver publisher replace this?
-    path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
+                              queue_size=10)
 
     rospy.init_node('navigator', anonymous=True)
-    rate = rospy.Rate(100) # TODO: maybe this fast rate is not needed (due to the controller? node)
+    rate = rospy.Rate(100)
 
-    # TODO: Check this control bounds
-    v_max = 2
-    v_min = -2
-    omega_max = 2
-    omega_min = -2
-    u_bounds = np.array([v_min, v_max, omega_min, omega_max])
-    a = 0.430
-    b = 0.508
-    m = 0.3
-
-    maxSpeed = 1
-    minSpeed = 0.1
-    maxTurn = m.pi/2
     isDone = False
     twist = Twist()
     twist.linear.x = 0.
@@ -131,19 +72,32 @@ def main():
     message.goalx = message.posx
     message.goaly = message.posy + 10
 
-    v_vec = [2., 2., 2., 2.]
-    w_vec = [2., 0., -2., 0.]
-    t_vec = [0.02299621, 0.39827842, 0.3595246, 0.42189393]
+    v_compact = [.5, .5, .5, .5]
+    w_compact = [1.57, 0., 1.57, 0.]
+    t_compact = [0.51383007, 8.24802881, 0.38729874, 10.19587506]
+
+    v_full = []
+    w_full = []
+
+    for time, v, w in zip(t_compact, v_compact, w_compact):
+        while time > 0:
+            time = time - .01
+            v_full.append(v)
+            w_full.append(w)
 
     print('I started moving')
     while not rospy.is_shutdown():
-
+        if len(v_full) > 0:
+            twist.linear.x = v_full.pop(0)
+            twist.angular.z = w_full.pop(0)
+        else:
+            twist.linear.x = 0.
+            twist.angular.z = 0.
 
         print('current_position', message.posx, message.posy, message.theta)
+        print('current_velocity', twist.linear.x, twist.angular.z)
 
-        # Start moving slowly.
-        twist.linear.x = 0.
-        twist.angular.z = 0.
+        vel_Pub.publish(twist)  # This should go in a controller node (replace with maneuver publisher)
 
         distToGoal = distance((message.goalx, message.goaly),
                               (message.posx, message.posy))
@@ -153,11 +107,6 @@ def main():
             twist.angular.z = 0.
             print('I arrived')
             isDone = True
-
-        #####################################################
-        # Node outputs
-        #####################################################
-        vel_Pub.publish(twist) # This should go in a controller node (replace with maneuver publisher)
 
         # Finish execution if goal has been reached
         if isDone:
