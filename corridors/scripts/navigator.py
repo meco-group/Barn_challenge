@@ -71,7 +71,6 @@ def generate_path_message(input_path): # TODO: check that it works correctly wit
     path = Path() 
     if input_path.shape[0] == 0:
         return path
-
     for i in range(input_path.shape[0]):
         pose = PoseStamped()
         pose.header.frame_id = "odom"
