@@ -65,7 +65,7 @@ def transformCorridorToWorld(newCorridor, curr_pose):
     transformed_corridor.growth_center = growth_center
     
     transformed_corridor.update_W()
-    transformed_corridor.world_corners = transformed_corridor.get_corners().copy()
+    transformed_corridor.corners_world = transformed_corridor.get_corners().copy()
     
     return transformed_corridor
 
@@ -87,6 +87,7 @@ def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
         print("[manager] Child corridor is added to the tree")
         current_corridor.add_child_corridor(newCorridor)
         current_corridor.remove_similar_children()
+        current_corridor.sort_children()
     else:
         print("[manager] Discarding a corridor because it does not improve enough")
 
@@ -147,8 +148,7 @@ def publishCorridors(corridors, publisher):
         to_send.tilt = corridors[k].tilt
         xy_corners = []
         for xy in corridors[k].corners:
-            xy_corners.append(xy.x)
-            xy_corners.append(xy.y)
+            xy_corners.append(xy)
         to_send.corners = xy_corners.copy()
 
         to_send_list.len += 1
@@ -176,7 +176,8 @@ def visualize_rectangle(rect, i, r, g, b):
     rect_marker.color.b = b
     rect_marker.color.a = 1.0
     rect_marker.pose.orientation.w = 1
-    rect_marker.lifetime = rospy.Duration(0)
+    # rect_marker.lifetime = rospy.Duration(0)
+    rect_marker.lifetime = rospy.Time(1)
     rect_marker.type = 4  # Line Strip
     rect_marker.points = corners + [corners[0]]
 
@@ -193,29 +194,51 @@ def visualize_corridor_tree(root_corridor, current_corridor):
     root_color  = [1,1,1]   # white
     options_color = [1,0,0] # optional branches
 
+    global id
+
     # visualize current corridor
-    visualize_rectangle(current_corridor.corners, 0, current_color[0], current_color[1], current_color[2])
+    visualize_rectangle(current_corridor.corners, id, current_color[0], current_color[1], current_color[2])
+    id += 1
     
     # visualize current branch and all other children
-    id = 1
     to_visualize = current_corridor
     while to_visualize.parent is not None:
         to_visualize = current_corridor.parent
         visualize_rectangle(to_visualize.corners, id, branch_color[0], branch_color[1], branch_color[2])
+        id += 1
 
         for k in range(1,len(to_visualize.children)):
-            visualize_rectangle(to_visualize.children[k].corners, id+k, options_color[0], options_color[1], options_color[2])
-        
-        id += len(to_visualize.children)+1
+            visualize_rectangle(to_visualize.children[k].corners, id, options_color[0], options_color[1], options_color[2])
+            id += 1
 
     # visualize root corridor
     visualize_rectangle(root_corridor.corners, id, root_color[0], root_color[1], root_color[2])
+    id += 1
+
+    return
+
+def visualize_backtracking_corridors(backtracking_corridors, current_corridor):
+    backtrack_color = [0.6,0.6,0.6] # dark grey
+    
+    global id
+    for c in backtracking_corridors:
+        visualize_rectangle(c.corners, id, backtrack_color[0], backtrack_color[1], backtrack_color[2])
+        id += 1
+
+    visualize_rectangle(current_corridor.corners, id, 0,0,1)
+    id += 1
+
+    return
+
 
 def main():
 
     # Subscribe to corridors published by corridor_fitter    
     # global new_corridor
     # new_corridor = corridor_msg()
+
+    global id
+    id = 0
     
     global new_corridor_list
     new_corridor_list = []
@@ -245,22 +268,23 @@ def main():
     print('[manager] manager ready')
     while not rospy.is_shutdown():
         print("[manager] Manager looping")
-        print("[manager] Robot position: (", curr_pose.posx, ", ", curr_pose.posy, ")")
-        print("[manager] Current Corridor: ", current_corridor)
+        # print("[manager] Robot position: (", curr_pose.posx, ", ", curr_pose.posy, ")")
+        # print("[manager] Current Corridor: ", current_corridor)
 
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
             print("[manager] Backtracking...")
+            visualize_backtracking_corridors(backtracking_corridors, current_corridor)
             if current_corridor.check_inside(np.array([[curr_pose.posx], [curr_pose.posy], [1]])):
                 backtrack_mode_activated = False
             else:
+                rate.sleep()
                 continue
 
         # if a new corridor arrived, potentially add it to the tree
         if new_corridor_present:
             print("[manager] discovered ",len(new_corridor_list), " new corridor(s)!")
 
-            print(new_corridor_list)
             for c in new_corridor_list:
                 # print("[manager] processing corridor (", c.width, ", ", c.height, ", ", c.center, ")")
                 (root_corridor, current_corridor) = processNewCorridor(c, curr_pose, root_corridor, current_corridor)
@@ -270,7 +294,7 @@ def main():
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
-            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, 0.2)
+            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, 0.4)
             if end_reached:
                 (succes, current_corridor) = select_child_corridor(current_corridor)
                 if not succes:

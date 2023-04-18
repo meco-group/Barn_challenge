@@ -87,12 +87,12 @@ if __name__ == "__main__":
     ## (Customize this block to add your own navigation stack)
     ##########################################################################################
     
-    # launch_file = join(base_path, '..', 'jackal_helper/launch/corridor_manager.launch')
-    # # launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_DWA.launch')
-    # nav_stack_process = subprocess.Popen([
-    #     'roslaunch',
-    #     launch_file,
-    # ])
+    launch_file = join(base_path, '..', 'jackal_helper/launch/corridor_manager.launch')
+    # launch_file = join(base_path, '..', 'jackal_helper/launch/move_base_DWA.launch')
+    nav_stack_process = subprocess.Popen([
+        'roslaunch',
+        launch_file,
+    ])
 
     # Make sure your navigation stack recives a goal of (0, 10, 0), which is 10 meters away
     # along postive y-axis.

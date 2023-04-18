@@ -57,9 +57,9 @@ def main():
             # publishCorridors(corridor_list[0], corridor_pub)
             publishCorridors(Corridor(center=[0.0,0.0], width=0.5, height=2., tilt=0), corridor_pub)
         if not done and counter == 9:
-            publishCorridors(Corridor(center=[1.0,0.0], width=0.8, height=4.5, tilt=np.pi/6), corridor_pub)
+            publishCorridors(Corridor(center=[1.0,0.0], width=0.8, height=3.5, tilt=np.pi/6), corridor_pub)
         if not done and counter == 10:
-            publishCorridors(Corridor(center=[1.0,0.0], width=0.9, height=3.5, tilt=-np.pi/4), corridor_pub)
+            publishCorridors(Corridor(center=[1.0,0.0], width=0.9, height=4.5, tilt=-np.pi/4), corridor_pub)
             done = True
 
         counter += 1
