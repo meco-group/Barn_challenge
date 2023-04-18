@@ -110,7 +110,7 @@ def get_back_track_point(current_corridor):
     corridor_to_explore = current_corridor.parent
     previous_point = current_corridor.growth_center
 
-    backtracking_corridors = [corridor_to_explore]
+    backtracking_corridors = [current_corridor, corridor_to_explore]
 
     while not corridor_to_explore is None and len(corridor_to_explore.children) <= 1:
         if corridor_to_explore is None:
@@ -131,18 +131,23 @@ def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
         Compute the distance from the current position to the edge of the corridor
         It is assumed that the current position is inside the current corridor
     '''
-    print(current_corridor.corners_world)
-    print(current_corridor.corners)
+   
     top_left = current_corridor.corners_world[3]
     top_right = current_corridor.corners_world[0]
-    if np.abs(top_right[0] - top_left[0]) < 1.0e-8:
-        distance_to_end = np.abs(current_pos.posx - top_right[0])
-    else:
-        a = (top_right[1]-top_left[1])/(top_right[0]-top_left[0])
-        b = -1.
-        c = top_left[1] - a
-        distance_to_end = np.abs(a*current_pos.posx+b*current_pos.posy+c)/np.sqrt(a*a + b*b)
+    top_center = [(top_left[0]+top_right[0])/2, (top_left[1]+top_right[1])/2]
+
+    # if np.abs(top_right[0] - top_left[0]) < 1.0e-8:
+    #     distance_to_end = np.abs(current_pos.posx - top_right[0])
+    # else:
+    #     a = (top_right[1]-top_left[1])/(top_right[0]-top_left[0])
+    #     b = -1.
+    #     c = top_left[1] - a
+    #     distance_to_end = np.abs(a*current_pos.posx+b*current_pos.posy+c)/np.sqrt(a*a + b*b)
+
+    distance_to_end = np.sqrt((top_center[0]-current_pos.posx)**2 + (top_center[1]-current_pos.posy)**2)
 
     print("[manager] distance to end of corridor: ", round(distance_to_end, 3))
+
+    # print("[manager] distance to top right: ", np.sqrt((top_right[0]-current_pos.posx)**2 + (top_right[1]-current_pos.posy)**2))
 
     return distance_to_end < threshold

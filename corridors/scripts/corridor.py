@@ -130,7 +130,6 @@ class Corridor:
         self.children[child_ind].parent = None
         self.children.pop(child_ind)
 
-
     def remove_similar_children(self):
         for i in range(len(self.children)-1,-1,-1):
             for j in range(i):
@@ -139,6 +138,8 @@ class Corridor:
                     self.remove_child_corridor(i)
                     break # break from outer loop
 
+    def sort_children(self):
+        self.children.sort(key = lambda x : max([x.corners[k][1] for k in range(len(x.corners))]), reverse=True)
 
     def grow_edge(self, datapoints, edge):
         '''Grow specified edge of the corridor.
