@@ -311,10 +311,11 @@ def main():
                     # pass the backtracking corridors to the motion planner
                     backtrack_mode_activated = True
                     (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR)
-                    publishCorridors(backtracking_corridors, corridor_pub)
                     if backtrack_point is None:
                         print("[manager] ERROR: I cannot backtrack because there are no other options")
                         backtrack_mode_activated = False
+                    else:
+                        publishCorridors(backtracking_corridors, corridor_pub)
                 else:
                     publishCorridors([current_corridor], corridor_pub)
 

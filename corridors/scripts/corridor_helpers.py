@@ -115,7 +115,7 @@ def get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR):
 
         while not corridor_to_explore is None and len(corridor_to_explore.children) <= 1:
             if corridor_to_explore is None:
-                return (None, None, [])
+                return (None, current_corridor, [])
             
             previous_point = corridor_to_explore.growth_center
             corridor_to_explore = corridor_to_explore.parent
@@ -123,13 +123,13 @@ def get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR):
             backtracking_corridors.append(corridor_to_explore)
 
         if corridor_to_explore is None:
-            return (None, None, [])
+            return (None, current_corridor, [])
         corridor_to_explore.remove_child_corridor(0)
         return (corridor_to_explore.children[0].growth_center, corridor_to_explore.children[0], backtracking_corridors)
     
     else:
         if current_corridor.parent is None:
-            return (None, None, [])
+            return (None, current_corridor, [])
         else:
             parent = current_corridor.parent
             current_corridor.parent.remove_child_corridor(0)
