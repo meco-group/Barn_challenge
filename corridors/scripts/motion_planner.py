@@ -258,6 +258,11 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             maneuver_sequence[0,:] = np.array([v_max, omega, t1])
             maneuver_sequence[1,:] = np.array([v_max, 0, t2])
 
+        computed_path = np.vstack((
+            np.array([arc_x1,arc_y1]).T, 
+            [xf,yf]
+        ))
+
         if plot:
             plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1, arc_x1, arc_y1, angle1)
 
