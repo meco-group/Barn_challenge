@@ -49,23 +49,19 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
-def corridorCallback(data):
-    b_corridor.height = data.height
-    b_corridor.width = data.width
-    b_corridor.quality = data.quality
-    b_corridor.center = data.center
-    b_corridor.tilt = data.tilt
-    b_corridor.corners = data.corners
+# def corridorCallback(data):
+#     b_corridor.height = data.height
+#     b_corridor.width = data.width
+#     b_corridor.quality = data.quality
+#     b_corridor.center = data.center
+#     b_corridor.tilt = data.tilt
+#     b_corridor.corners = data.corners
 
 def corridorListCallback(data):
-    if len(data) > 0:
-        best_corridor = data[0]
-        b_corridor.height = best_corridor.height
-        b_corridor.width = best_corridor.width
-        b_corridor.quality = best_corridor.quality
-        b_corridor.center = best_corridor.center
-        b_corridor.tilt = best_corridor.tilt
-        b_corridor.corners = best_corridor.corners
+    if data.len > 0:
+        for corridor_message in data.corridors
+            corridor_instance = Corridor(corridor_message.width, corridor_message.height, corridor_message.center, corridor_message.tilt + pi/2)
+            list_of_corridors.append(corridor_instance)
     else:
         # TODO: If more than one corridor is sent, backtrack
         pass
@@ -105,9 +101,12 @@ def main():
     global b_corridor
     b_corridor = corridor_msg()
 
+    global list_of_corridors
+    list_of_corridors = []
+
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
-    corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback) # TODO: This subscriber is not needed (?)
+    # corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback) # TODO: This subscriber is not needed (?)
     corridor_list_sub = rospy.Subscriber('/chosen_corridor', corridor_list, corridorListCallback)
 
     # Publishers
@@ -118,18 +117,18 @@ def main():
     rate = rospy.Rate(100) # TODO: maybe this fast rate is not needed (due to the controller? node)
 
     # TODO: Check this control bounds
-    v_max = 2
-    v_min = -2
-    omega_max = 2
-    omega_min = -2
+    v_max = 0.5
+    v_min = -0.5
+    omega_max = 1.57
+    omega_min = -1.57
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
     a = 0.430
     b = 0.508
     m = 0.3
 
-    maxSpeed = 1
-    minSpeed = 0.1
-    maxTurn = m.pi/2
+    # maxSpeed = 1
+    # minSpeed = 0.1
+    # maxTurn = m.pi/2
     isDone = False
     message.goalx = message.posx
     message.goaly = message.posy + 10
@@ -141,27 +140,32 @@ def main():
         #####################################################
 
         # Generate corridor instances from corridor messages
-        corridor1 = Corridor(width1, height1, center1_world, tilt1_world + pi/2) # TODO: The variables defining the corridors are just placeholders
-        corridor2 = Corridor(width2, height2, center2_world, tilt2_world + pi/2) # Notice the addition of pi/2
+        # corridor1 = Corridor(width1, height1, center1_world, tilt1_world + pi/2) # TODO: The variables defining the corridors are just placeholders
+        # corridor2 = Corridor(width2, height2, center2_world, tilt2_world + pi/2) # Notice the addition of pi/2
+        
+        if len(list_of_corridors) > 0:
 
-        # Compute the maneuvers within the corridors
-        computed_maneuver, computed_path = compute_trajectory(
-            corridor1 = corridor1, 
-            u_bounds = u_bounds, 
-            a = a, 
-            b = b, 
-            m = m, 
-            x0 = message.posx, 
-            y0 = message.posy, 
-            theta0 = message.theta + m.pi/2, # TODO: Check this
-            plot = False, 
-            corridor2 = corridor2
-        )
+            corridor1 = list_of_corridors.pop(0)
+            corridor2 = list_of_corridors.pop(0) if len(list_of_corridors) > 0 else None
 
-        # The computed maneuver should be sent to the controller, which will 
-        # define the instantaneous twist to be sent to the robot
-        maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
-        path_Pub.publish(generate_path_message(computed_path))
+            # Compute the maneuvers within the corridors
+            computed_maneuver, computed_path = compute_trajectory(
+                corridor1 = corridor1, 
+                u_bounds = u_bounds, 
+                a = a, 
+                b = b, 
+                m = m, 
+                x0 = message.posx, 
+                y0 = message.posy, 
+                theta0 = message.theta + m.pi/2, # TODO: Check this
+                plot = False, 
+                corridor2 = corridor2
+            )
+
+            # The computed maneuver should be sent to the controller, which will 
+            # define the instantaneous twist to be sent to the robot
+            maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
+            path_Pub.publish(generate_path_message(computed_path))
 
         # Finish execution if goal has been reached
         if isDone:
