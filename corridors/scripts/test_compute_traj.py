@@ -115,11 +115,27 @@ elif test == 4:
     # In local frame
     tilt1_local = -pi/4        # With respect to the vehicle
     tilt2_local = -pi/4 - pi/5 # With respect to the vehicle
-
+#####################################
+# Test 5: Turn right and then right (shorter)
+#####################################
+elif test == 5:
+    print("Testing right-right (shorter)")
+    # vehicle pose
+    veh_posx = -0.5
+    veh_posy = 0 
+    veh_tilt = -pi/8 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 2
+    width2 = 1
+    height2 = 1.5
+    # In local frame
+    tilt1_local = 0        # With respect to the vehicle
+    tilt2_local = 0 - pi/5 # With respect to the vehicle
 
 # Compute center of the corridors wrt body frame
 center1_local = np.array([-(height1/2)*sin(tilt1_local), (height1/2)*cos(tilt1_local)])
-center2_local = center1_local + np.array([-2.0*sin(tilt1_local)-(height2/2)*sin(tilt2_local), 2.0*cos(tilt1_local)+(height2/2)*cos(tilt2_local)])
+center2_local = center1_local + np.array([-0.5*sin(tilt1_local)-(height2/2)*sin(tilt2_local), 0.5*cos(tilt1_local)+(height2/2)*cos(tilt2_local)])
 
 corridor1_local = Corridor( width1, height1, center1_local, tilt1_local+pi/2) # Notice the addition of pi/2
 corridor2_local = Corridor( width2, height2, center2_local, tilt2_local+pi/2)
@@ -150,6 +166,7 @@ y0 = initial_point[1]
 sequence_man, computed_path = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_converted)
 # sequence_man = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 
+print(sequence_man)
 
 def plot_corridors(path, *args):
     '''This function will plot any corridors provided as arguments'''
@@ -174,3 +191,60 @@ plot_corridors(computed_path, corridor1_converted, corridor2_converted)
 # plot_corridors(None, corridor1_local, corridor2_local) 
 # plot_corridors(None, corridor1_world, corridor2_world)
 # plot_corridors(None, corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
+
+
+
+
+##########################################################
+# Test 
+##########################################################
+import rospy
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped, Vector3
+from barn_challenge.msg import maneuver
+
+def generate_path_message(input_path):
+    path = Path() 
+    if input_path.shape[0] == 0:
+        return path
+
+    for i in range(input_path.shape[0]):
+        pose = PoseStamped()
+        pose.header.frame_id = "odom"
+        pose.pose.position.x = input_path[i,0]
+        pose.pose.position.y = input_path[i,1] 
+        pose.pose.position.z = 0
+        pose.header.seq = path.header.seq + 1
+        path.header.frame_id = "odom"
+        path.header.stamp = rospy.Time.now()
+        pose.header.stamp = path.header.stamp
+        path.poses.append(pose)
+
+    return path    
+
+def generate_maneuver_message(maneuver_array):
+    maneuver_msg = maneuver()
+
+    maneuver_msg.len = maneuver_array.shape[0]
+
+    for i in range(maneuver_array.shape[0]):
+        part_maneuver = Vector3()
+        part_maneuver.x = maneuver_array[i,0]
+        part_maneuver.y = maneuver_array[i,1]
+        part_maneuver.z = maneuver_array[i,2]
+        maneuver_msg.maneuver.append(part_maneuver)
+    
+    return maneuver_msg
+
+rospy.init_node('path_node', anonymous=True)
+rate = rospy.Rate(1) 
+
+path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
+
+maneuver_Pub = rospy.Publisher('/maneuver', maneuver, queue_size=1)
+
+
+while not rospy.is_shutdown():
+    path_Pub.publish(generate_path_message(computed_path))
+    maneuver_Pub.publish(generate_maneuver_message(sequence_man))
+    rate.sleep()
