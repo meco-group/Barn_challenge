@@ -9,14 +9,13 @@ Created on Tue Mar 28 15:38:15 2023
 import rospy
 from nav_msgs.msg import Odometry, Path
 import sensor_msgs.point_cloud2 as pc2
-from geometry_msgs.msg import Twist, PoseStamped
+from geometry_msgs.msg import Twist, PoseStamped, Vector3
 import laser_geometry.laser_geometry as lg
 import math as m
 import numpy as np
 
 from corridor import Corridor
-from barn_challenge.msg import corridor_msg
-from barn_challenge.msg import corridor_list
+from barn_challenge.msg import corridor_msg, corridor_list, maneuver
 
 from motion_planner import compute_trajectory
 
@@ -87,9 +86,18 @@ def generate_path_message(input_path):
         path.header.stamp = rospy.Time.now()
         pose.header.stamp = path.header.stamp
         path.poses.append(pose)
-
     return path      
 
+def generate_maneuver_message(maneuver_array):
+    maneuver_msg = maneuver()
+    maneuver_msg.len = maneuver_array.shape[0]
+    for i in range(maneuver_array.shape[0]):
+        part_maneuver = Vector3()
+        part_maneuver.x = maneuver_array[i,0]
+        part_maneuver.y = maneuver_array[i,1]
+        part_maneuver.z = maneuver_array[i,2]
+        maneuver_msg.maneuver.append(part_maneuver)
+    return maneuver_msg
 
 def main():
     global message
@@ -104,6 +112,7 @@ def main():
 
     # Publishers
     path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
+    maneuver_Pub = rospy.Publisher('/maneuver', maneuver, queue_size=1)
 
     rospy.init_node('navigator', anonymous=True)
     rate = rospy.Rate(100) # TODO: maybe this fast rate is not needed (due to the controller? node)
@@ -151,6 +160,8 @@ def main():
 
         # The computed maneuver should be sent to the controller, which will 
         # define the instantaneous twist to be sent to the robot
+        maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
+        path_Pub.publish(generate_path_message(computed_path))
 
         # Finish execution if goal has been reached
         if isDone:
