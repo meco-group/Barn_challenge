@@ -69,7 +69,7 @@ def transformCorridorToWorld(newCorridor, curr_pose):
     
     return transformed_corridor
 
-def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
+def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor, EXPLORE_FULL_CORRIDOR):
     # NOTE: It is assumed that this corridor really is new
     newCorridor = transformCorridorToWorld(newCorridor, curr_pose)
 
@@ -82,12 +82,16 @@ def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor):
         return (root_corridor, current_corridor)
     # Else, check if the new corridor should be added
 
-    stuck = check_stuck(current_corridor, newCorridor, 0.25)
+    c = current_corridor
+    if EXPLORE_FULL_CORRIDOR and not current_corridor.check_inside(np.array([[curr_pose.posx], [curr_pose.posy], [1]])):
+        c = current_corridor.parent
+
+    stuck = check_stuck(c, newCorridor, 0.25)
     if not stuck:
         print("[manager] Child corridor is added to the tree")
-        current_corridor.add_child_corridor(newCorridor)
-        current_corridor.remove_similar_children()
-        current_corridor.sort_children()
+        c.add_child_corridor(newCorridor)
+        c.remove_similar_children()
+        c.sort_children()
     else:
         print("[manager] Discarding a corridor because it does not improve enough")
 
@@ -203,6 +207,7 @@ def visualize_corridor_tree(root_corridor, current_corridor):
     # visualize current branch and all other children
     to_visualize = current_corridor
     while to_visualize.parent is not None:
+        # print("[manager] looping visualization (", current_corridor, ")")
         to_visualize = current_corridor.parent
         visualize_rectangle(to_visualize.corners, id, branch_color[0], branch_color[1], branch_color[2])
         id += 1
@@ -233,13 +238,14 @@ def visualize_backtracking_corridors(backtracking_corridors, current_corridor):
 
 def main():
 
-    # Subscribe to corridors published by corridor_fitter    
-    # global new_corridor
-    # new_corridor = corridor_msg()
-
-    global id
+    global id # visualization id
     id = 0
+
+    # If set to True, a child corridor will only be when the end of the current corridor is reached
+    # If set to False, a child is selected as soon as its available, should only be used for debugging
+    EXPLORE_FULL_CORRIDOR = True
     
+    # Subscribe to incoming new corridors
     global new_corridor_list
     new_corridor_list = []
 
@@ -268,8 +274,6 @@ def main():
     print('[manager] manager ready')
     while not rospy.is_shutdown():
         print("[manager] Manager looping")
-        # print("[manager] Robot position: (", curr_pose.posx, ", ", curr_pose.posy, ")")
-        # print("[manager] Current Corridor: ", current_corridor)
 
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
@@ -287,7 +291,7 @@ def main():
 
             for c in new_corridor_list:
                 # print("[manager] processing corridor (", c.width, ", ", c.height, ", ", c.center, ")")
-                (root_corridor, current_corridor) = processNewCorridor(c, curr_pose, root_corridor, current_corridor)
+                (root_corridor, current_corridor) = processNewCorridor(c, curr_pose, root_corridor, current_corridor, EXPLORE_FULL_CORRIDOR)
             
             new_corridor_present = False
             new_corridor_list = []
@@ -295,13 +299,15 @@ def main():
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
             end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, 0.4)
-            if end_reached:
+            if end_reached or (not EXPLORE_FULL_CORRIDOR and len(current_corridor.children) > 0):
+                print("[manager] selecting child corridor")
                 (succes, current_corridor) = select_child_corridor(current_corridor)
+                print("[manager] child corridor selected! (", succes, ")")
                 if not succes:
                     print("[manager] Need to backtrack!")
                     # pass the backtracking corridors to the motion planner
                     backtrack_mode_activated = True
-                    (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor)
+                    (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR)
                     publishCorridors(backtracking_corridors, corridor_pub)
                     if backtrack_point is None:
                         print("[manager] ERROR: I cannot backtrack because there are no other options")
