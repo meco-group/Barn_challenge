@@ -49,17 +49,19 @@ class odomMsgClass():
 
 #     return transformed_corridor
 
-def transformCorridorToWorld(newCorridor, curr_pose):
+def transformCorridorToWorld(newCorridor):
     # Correct transformation by Alejandro
-    L = np.sqrt(newCorridor.center[0]**2 + newCorridor.center[1]**2)
-    phi = np.arctan2(newCorridor.center[1],newCorridor.center[0]) - np.pi/2 + curr_pose.theta
-    center = [curr_pose.posx - L*np.sin(phi), curr_pose.posy + L*np.cos(phi)]
     
-    tilt = newCorridor.tilt + curr_pose.theta
+    print('corr init pos', newCorridor.init_pos)
+    L = np.sqrt(newCorridor.center[0]**2 + newCorridor.center[1]**2)
+    phi = np.arctan2(newCorridor.center[1],newCorridor.center[0]) - np.pi/2 + newCorridor.init_pos[2]
+    center = [newCorridor.init_pos[0] - L*np.sin(phi), newCorridor.init_pos[1] + L*np.cos(phi)]
+    
+    tilt = newCorridor.tilt + newCorridor.init_pos[2]
 
     L_growth = np.sqrt(newCorridor.growth_center[0]**2 + newCorridor.growth_center[1]**2)
-    phi_growth = np.arctan2(newCorridor.growth_center[1],newCorridor.growth_center[0]) - np.pi/2 + curr_pose.theta
-    growth_center = [curr_pose.posx - L_growth*np.sin(phi_growth), curr_pose.posy + L_growth*np.cos(phi_growth)] 
+    phi_growth = np.arctan2(newCorridor.growth_center[1],newCorridor.growth_center[0]) - np.pi/2 + newCorridor.init_pos[2]
+    growth_center = [newCorridor.init_pos[0] - L_growth*np.sin(phi_growth), newCorridor.init_pos[1] + L_growth*np.cos(phi_growth)] 
     
     transformed_corridor = Corridor(center=center, tilt=tilt, height=newCorridor.height, width=newCorridor.width)
     transformed_corridor.growth_center = growth_center
@@ -71,7 +73,7 @@ def transformCorridorToWorld(newCorridor, curr_pose):
 
 def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor, EXPLORE_FULL_CORRIDOR):
     # NOTE: It is assumed that this corridor really is new
-    newCorridor = transformCorridorToWorld(newCorridor, curr_pose)
+    newCorridor = transformCorridorToWorld(newCorridor)
 
     # If this is the first corridor ever, start the tree
     if root_corridor is None:
@@ -115,6 +117,7 @@ def corridorCallback(data):
     new_message.growth_center = data.growth_center
     new_message.tilt = data.tilt
     new_message.corners = data.corners
+    new_message.init_pos = data.init_pos
 
     global new_corridor_present
     new_corridor_present = True
@@ -193,10 +196,10 @@ def visualize_rectangle(rect, i, r, g, b):
     marker_pub.publish(marker_arr)
 
 def visualize_corridor_tree(root_corridor, current_corridor):
-    current_color = [0,0,1] # blue
-    branch_color  = [1,1,1] # white
-    root_color  = [1,1,1]   # white
-    options_color = [1,0,0] # optional branches
+    current_color = [1,0,0] # blue
+    branch_color  = [0,1,0] # white
+    root_color  = [0,1,0]   # white
+    options_color = [1,1,0] # optional branches
 
     global id
 
@@ -298,7 +301,7 @@ def main():
 
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
-            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, 0.4)
+            end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, 0.7)
             if end_reached or (not EXPLORE_FULL_CORRIDOR and len(current_corridor.children) > 0):
                 print("[manager] selecting child corridor")
                 (succes, current_corridor) = select_child_corridor(current_corridor)

@@ -112,7 +112,7 @@ def visualize_rectangle(rect, i, r, g, b):
     rect_marker = Marker()
     rect_marker.header.stamp = rospy.Time.now()
     rect_marker.header.frame_id = 'odom'
-    rect_marker.ns = 'rect'
+    rect_marker.ns = 'rect_fitter'
     rect_marker.id = i
     rect_marker.action = 0
     rect_marker.scale.x = 0.03
@@ -125,7 +125,7 @@ def visualize_rectangle(rect, i, r, g, b):
     rect_marker.type = 4  # Line Strip
     rect_marker.points = rect + [rect[0]]
 
-    name = '/rect'
+    name = '/rect_fitter'
     marker_pub = rospy.Publisher(name, MarkerArray, queue_size=0)
     marker_arr = MarkerArray()
 
@@ -150,7 +150,7 @@ def main():
                           tilt=0, copy=True)
     message.corridors.append(corridor_0)
     corridor_0.corners_world = get_points_for_visualization(corridor_0)
-    visualize_rectangle(corridor_0.corners_world, 100, 0.7, 0.7, 0.7)
+    # visualize_rectangle(corridor_0.corners_world, 100, 0.7, 0.7, 0.7)
     best_corridor = [corridor_0]
     best_cor = best_corridor[-1]
     active = 1
@@ -204,6 +204,8 @@ def main():
         b_corridor.center = best_cor.center
         b_corridor.growth_center = best_cor.growth_center
         b_corridor.tilt = best_cor.tilt
+        b_corridor.init_pos = [message.posx, message.posy, message.theta]
+        print(b_corridor.init_pos)
         xy_corners = []
         for xy in best_cor.corners_world:
             xy_corners.append(xy.x)
