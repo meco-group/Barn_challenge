@@ -99,32 +99,41 @@ def check_significantly_different(corridor1, corridor2, distance_threshold=0.2, 
 
     return distance_bool and tilt_bool
 
-def get_back_track_point(current_corridor):
+def get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR):
     '''
         Given the corridor the robot is currently in, this function
         returns the point to backtrack to from which we can get to another
         branch
     '''
-    # we know this current corridor is a dead end, so we have to start 
-    # checking for other options at the parent level
-    corridor_to_explore = current_corridor.parent
-    previous_point = current_corridor.growth_center
+    if EXPLORE_FULL_CORRIDOR:
+        # we know this current corridor is a dead end, so we have to start 
+        # checking for other options at the parent level
+        corridor_to_explore = current_corridor.parent
+        previous_point = current_corridor.growth_center
 
-    backtracking_corridors = [current_corridor, corridor_to_explore]
+        backtracking_corridors = [current_corridor, corridor_to_explore]
 
-    while not corridor_to_explore is None and len(corridor_to_explore.children) <= 1:
+        while not corridor_to_explore is None and len(corridor_to_explore.children) <= 1:
+            if corridor_to_explore is None:
+                return (None, None, [])
+            
+            previous_point = corridor_to_explore.growth_center
+            corridor_to_explore = corridor_to_explore.parent
+
+            backtracking_corridors.append(corridor_to_explore)
+
         if corridor_to_explore is None:
             return (None, None, [])
-        
-        previous_point = corridor_to_explore.growth_center
-        corridor_to_explore = corridor_to_explore.parent
-
-        backtracking_corridors.append(corridor_to_explore)
-
-    if corridor_to_explore is None:
-        return (None, None, [])
-    corridor_to_explore.remove_child_corridor(0)
-    return (corridor_to_explore.children[0].growth_center, corridor_to_explore.children[0], backtracking_corridors)
+        corridor_to_explore.remove_child_corridor(0)
+        return (corridor_to_explore.children[0].growth_center, corridor_to_explore.children[0], backtracking_corridors)
+    
+    else:
+        if current_corridor.parent is None:
+            return (None, None, [])
+        else:
+            parent = current_corridor.parent
+            current_corridor.parent.remove_child_corridor(0)
+            return (current_corridor.growth_center, parent, [current_corridor, parent])
 
 def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
     '''
