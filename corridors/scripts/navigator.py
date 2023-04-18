@@ -60,13 +60,14 @@ def odomCallback(data):
 def corridorListCallback(data):
     if data.len > 0:
         for corridor_message in data.corridors
-            corridor_instance = Corridor(corridor_message.width, corridor_message.height, corridor_message.center, corridor_message.tilt + pi/2)
+            corridor_instance = Corridor(corridor_message.width, corridor_message.height, corridor_message.center, corridor_message.tilt + pi/2) 
+            # Notice the addition of pi/2 on the corridor tilt
             list_of_corridors.append(corridor_instance)
     else:
         # TODO: If more than one corridor is sent, backtrack
         pass
 
-def generate_path_message(input_path):
+def generate_path_message(input_path): # TODO: check that it works correctly with the world frame
     path = Path() 
     if input_path.shape[0] == 0:
         return path
@@ -140,13 +141,17 @@ def main():
         #####################################################
 
         # Generate corridor instances from corridor messages
-        # corridor1 = Corridor(width1, height1, center1_world, tilt1_world + pi/2) # TODO: The variables defining the corridors are just placeholders
+        # corridor1 = Corridor(width1, height1, center1_world, tilt1_world + pi/2) # The variables defining the corridors are just placeholders
         # corridor2 = Corridor(width2, height2, center2_world, tilt2_world + pi/2) # Notice the addition of pi/2
         
         if len(list_of_corridors) > 0:
 
-            corridor1 = list_of_corridors.pop(0)
-            corridor2 = list_of_corridors.pop(0) if len(list_of_corridors) > 0 else None
+            corridor1 = list_of_corridors[0]
+            corridor2 = list_of_corridors[1] if len(list_of_corridors) > 1 else None
+
+            # TODO: implement the logic on removing first corridor from list (.pop(0)) and 
+            # shifting the corridors. First corridor should always be the one where the robot is.
+            # Maybe use check_inside_one_point() from motion_planner.py
 
             # Compute the maneuvers within the corridors
             computed_maneuver, computed_path = compute_trajectory(
@@ -165,6 +170,7 @@ def main():
             # The computed maneuver should be sent to the controller, which will 
             # define the instantaneous twist to be sent to the robot
             maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
+            # Publish computed path for visualization on RViz
             path_Pub.publish(generate_path_message(computed_path))
 
         # Finish execution if goal has been reached
