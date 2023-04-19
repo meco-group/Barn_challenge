@@ -13,12 +13,12 @@ from sensor_msgs.msg import LaserScan
 from visualization_msgs.msg import Marker, MarkerArray
 import math as m
 import numpy as np
-from barn_challenge.msg import angle_list
+from barn_challenge.msg import AngleListMsg
 
 
 class lidarData():
     def __init__(self):
-        self.sensor_num = np.int(720)
+        self.sensor_num = np.int(360)
         self.lidar_data = np.zeros(self.sensor_num)
 
 class odomData():
@@ -55,7 +55,7 @@ def wrapToPi(angle):
     return angle
 
 def scanCallback(data):
-    lidar_data.lidar_data = np.asarray(data.ranges) #need to confirm if this syntax is correct
+    lidar_data.lidar_data = np.asarray(data.ranges[(0+180):(719-180)]) #need to confirm if this syntax is correct
     lidar_data.lidar_data[lidar_data.lidar_data == float('inf')] = 10.
     #print(lidar_data.lidar_data)
 
@@ -100,9 +100,9 @@ def main():
     global odom_data
     lidar_data = lidarData()
     odom_data = odomData()
-    sensor_span = (3/2)*(np.pi)
-    lidar_resolution = sensor_span/lidar_data.sensor_num #angle resolution in radians
-    sector_num = 10 # number of sectors
+    sensor_span = (3/2)*(np.pi)/2
+    lidar_resolution = sensor_span/lidar_data.sensor_num  #angle resolution in radians
+    sector_num = 5 # number of sectors
     sector_size = np.int(lidar_data.sensor_num/sector_num) # number of points per sector
     free_sectors = 0.0
     last_free_sectors = 0.0
@@ -113,7 +113,7 @@ def main():
     scan_sub = rospy.Subscriber('/front/scan', LaserScan, scanCallback)
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
     marker_pub = rospy.Publisher('/angles_marker', MarkerArray, queue_size=10)
-    angle_pub = rospy.Publisher('/angle_list', angle_list, queue_size=10)
+    angle_pub = rospy.Publisher('/angle_list', AngleListMsg, queue_size=10)
 
     rospy.init_node('sweeper', anonymous=True)
     rate = rospy.Rate(10)
@@ -196,8 +196,8 @@ def main():
 
         #publish free_angles
         #publish flag
-        angle_list_msg = angle_list()
-        angle_list_msg.angles.append(free_angles)
+        angle_list_msg = AngleListMsg()
+        angle_list_msg.angles = free_angles_all
         angle_pub.publish(angle_list_msg)
 
         #marker_array = visualizeArrows(free_angles)

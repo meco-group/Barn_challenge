@@ -91,7 +91,7 @@ def check_significantly_different(corridor1, corridor2, distance_threshold=0.2, 
     corners2 = get_corners(corridor2.W)
 
     indx1 = 0
-    indx2 = 1
+    indx2 = 3
 
     distance_bool = np.sqrt(np.power(corners1[indx1][0]-corners2[indx1][0], 2) + np.power(corners1[indx1][1]-corners2[indx1][1], 2)) + \
         np.sqrt(np.power(corners1[indx2][0]-corners2[indx2][0], 2) + np.power(corners1[indx2][1]-corners2[indx2][1], 2)) > distance_threshold
@@ -132,7 +132,7 @@ def get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR):
             return (None, current_corridor, [])
         else:
             parent = current_corridor.parent
-            current_corridor.parent.remove_child_corridor(0)
+            parent.remove_child_corridor(0)
             return (current_corridor.growth_center, parent, [current_corridor, parent])
 
 def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
@@ -140,9 +140,9 @@ def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
         Compute the distance from the current position to the edge of the corridor
         It is assumed that the current position is inside the current corridor
     '''
-   
+    print(current_corridor.corners)
     top_left = current_corridor.corners[0]
-    top_right = current_corridor.corners[1]
+    top_right = current_corridor.corners[3]
     top_center = [(top_left[0]+top_right[0])/2, (top_left[1]+top_right[1])/2]
 
     # if np.abs(top_right[0] - top_left[0]) < 1.0e-8:

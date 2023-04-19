@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 
 import numpy as np
+import rospy
 import time
 import matplotlib.pyplot as plt
 from copy import copy
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker, MarkerArray
 
-from corridor_helpers import get_corners, get_center, check_significantly_different
+from corridor_helpers import *
 
 
 GOAL = (-2, 13)
@@ -72,12 +75,10 @@ class CorridorWorld:
         if copy:
             self.original = self.corridor_copy()
 
-
     def corridor_copy(self):
         '''Make a copy of the original corridor without reference.
         '''
         return copy(self)
-
 
     def _init_W_from_width_height_tilt(self, width, height, xcenter, ycenter,
                                        tilt):
@@ -110,14 +111,14 @@ class CorridorWorld:
 
         return W
 
-
     def add_child_corridor(self, child):
-        '''Add child corridor to this corridor and add this 
+        '''Add child corridor to this corridor and add this
         corridor as parent to the child
         '''
-        self.children.append(child)
-        child.parent = self
-
+        if (max([child.corners[k][1] for k in range(4)]) >
+           max([self.corners[k][1] for k in range(4)])):
+            self.children.append(child)
+            child.parent = self
 
     def remove_child_corridor(self, child_ind):
         '''Remove the child corridor with given index in the list
@@ -126,19 +127,19 @@ class CorridorWorld:
         self.children[child_ind].parent = None
         self.children.pop(child_ind)
 
-
     def remove_similar_children(self):
-        for i in range(len(self.children)-1,-1,-1):
+        for i in range(len(self.children) - 1, -1, -1):
             for j in range(i):
-                if not check_significantly_different(self.children[i], self.children[j], 0.1):
-                    print("removing too similar child")
+                if not check_significantly_different(self.children[i],
+                                                     self.children[j]):
+                    print("Removing too similar child")
                     self.remove_child_corridor(i)
-                    break # break from outer loop
-
+                    break  # break from outer loop
 
     def sort_children(self):
-        self.children.sort(key = lambda x : max([x.corners[k][1] for k in range(len(x.corners))]), reverse=True)
-
+        self.children.sort(key=lambda x: max([x.corners[k][1]
+                                              for k in range(len(x.corners))]),
+                           reverse=True)
 
     def check_inside(self, datapoints):
         '''Check if datapoints are inside the corridor.
@@ -153,18 +154,11 @@ class CorridorWorld:
         :rtype: bool
         '''
         Wtransp = self.W.T
-        t0 = time.time()
         # Check if datapoints are inside the corridor
         for i in range(np.size(datapoints, 1)):
             if np.all(Wtransp @ datapoints[:, i] <= 0):
-                t1 = time.time()
-
                 return True
-        t1 = time.time()
-        self.t_check_inside.append(t1-t0)
-
         return False
-
 
     def get_corners(self):
         '''Get corners of the corridor and store them as self.corners.
@@ -175,7 +169,6 @@ class CorridorWorld:
         self.corners = get_corners(self.W)
         return self.corners
 
-
     def get_center(self):
         '''Get center of the corridor and store it as self.center.
 
@@ -185,3 +178,32 @@ class CorridorWorld:
         self.center = get_center(self.corners)
         return self.center
 
+    def rviz_visualization(self, name, i, r, g, b, lifetime):
+        '''Visualize corridors.
+        '''
+        vertices = []
+        for vertex in self.corners:
+            vertices.append(Point(vertex[0], vertex[1], 0.05))
+
+        rect_marker = Marker()
+        rect_marker.header.stamp = rospy.Time.now()
+        rect_marker.header.frame_id = 'odom'
+        rect_marker.ns = name
+        rect_marker.id = i
+        rect_marker.action = 0
+        rect_marker.scale.x = 0.03
+        rect_marker.color.r = r
+        rect_marker.color.g = g
+        rect_marker.color.b = b
+        rect_marker.color.a = 1.0
+        rect_marker.pose.orientation.w = 1
+        rect_marker.lifetime = rospy.Time(lifetime)
+        rect_marker.type = 4  # Line Strip
+        rect_marker.points = vertices + [vertices[0]]
+
+        name = '/' + rect_marker.ns
+        marker_pub = rospy.Publisher(name, MarkerArray, queue_size=10)
+        marker_arr = MarkerArray()
+
+        marker_arr.markers.append(rect_marker)
+        marker_pub.publish(marker_arr)

@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
 import numpy as np
+import rospy
 import time
-import matplotlib.pyplot as plt
 from copy import copy
+from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker, MarkerArray
 
-from corridor_helpers import get_corners, get_center, check_significantly_different
+from corridor_helpers import *
 
 
 GOAL = (-2, 13)
@@ -144,7 +146,7 @@ class Corridor:
                         self.corners = get_corners(self.W)
                     break
 
-        # Recompute the corridorvcorners and center
+        # Recompute the corridor corners and center
         self.height = - self.wf[2] - self.wb[2]
         self.width = - self.wr[2] - self.wl[2]
         self.center = self.get_center()
@@ -165,7 +167,7 @@ class Corridor:
 
         # Rotate corridor only if width becomes larger than height
         if self.width > self.height:
-            print('rotate')
+            print('rotate corridor')
             self.rotate_corridor()
 
     def check_inside(self, datapoints):
@@ -227,8 +229,10 @@ class Corridor:
         self.height, self.width = self.width, self.height
         if self.tilt > 0:
             self.W = self.W[:, [1, 2, 3, 0]]
+            self.tilt -= np.pi/2
         else:
             self.W = self.W[:, [3, 0, 1, 2]]
+            self.tilt += np.pi/2
 
         self.wf, self.wr, self.wb, self.wl = self.W.T
 
@@ -269,3 +273,43 @@ class Corridor:
                        [corner[1] for corner in corners],
                        color=color, linestyle=linestyle, linewidth=linewidth)
         return plt
+
+    def get_vertices_for_visualization(self, x, y, theta):
+        '''Get corridor corners in world frame for visualization.
+        '''
+        vertices = []
+        R = np.array([[np.cos(theta), -np.sin(theta)],
+                      [np.sin(theta), np.cos(theta)]])
+
+        for vertex in self.corners:
+            vertex_transf = R @ np.array([[vertex[0]], [vertex[1]]]) + \
+                            np.array([[x], [y]])
+            vertices.append(Point(vertex_transf[0], vertex_transf[1], 0))
+
+        self.corners_world = vertices
+
+    def rviz_visualization(self, name, i, r, g, b, lifetime):
+        '''Visualize corridors.
+        '''
+        rect_marker = Marker()
+        rect_marker.header.stamp = rospy.Time.now()
+        rect_marker.header.frame_id = 'odom'
+        rect_marker.ns = name
+        rect_marker.id = i
+        rect_marker.action = 0
+        rect_marker.scale.x = 0.03
+        rect_marker.color.r = r
+        rect_marker.color.g = g
+        rect_marker.color.b = b
+        rect_marker.color.a = 1.0
+        rect_marker.pose.orientation.w = 1
+        rect_marker.lifetime = rospy.Time(lifetime)
+        rect_marker.type = 4  # Line Strip
+        rect_marker.points = self.corners_world + [self.corners_world[0]]
+
+        name = '/' + rect_marker.ns
+        marker_pub = rospy.Publisher(name, MarkerArray, queue_size=0)
+        marker_arr = MarkerArray()
+
+        marker_arr.markers.append(rect_marker)
+        marker_pub.publish(marker_arr)

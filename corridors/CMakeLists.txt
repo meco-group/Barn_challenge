@@ -54,11 +54,11 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   corridor_msg.msg
-   corridor_list.msg
-   corridor_world_msg.msg
-   angle_list.msg
-   maneuver.msg
+   CorridorLocalMsg.msg
+   CorridorWorldListMsg.msg
+   CorridorWorldMsg.msg
+   AngleListMsg.msg
+   ManeuverMsg.msg
 #   Message1.msg
 #   Message2.msg
  )
