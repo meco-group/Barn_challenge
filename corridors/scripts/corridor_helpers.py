@@ -91,7 +91,7 @@ def check_significantly_different(corridor1, corridor2, distance_threshold=0.2, 
     corners2 = get_corners(corridor2.W)
 
     indx1 = 0
-    indx2 = 3
+    indx2 = 1
 
     distance_bool = np.sqrt(np.power(corners1[indx1][0]-corners2[indx1][0], 2) + np.power(corners1[indx1][1]-corners2[indx1][1], 2)) + \
         np.sqrt(np.power(corners1[indx2][0]-corners2[indx2][0], 2) + np.power(corners1[indx2][1]-corners2[indx2][1], 2)) > distance_threshold
@@ -141,8 +141,8 @@ def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
         It is assumed that the current position is inside the current corridor
     '''
    
-    top_left = current_corridor.corners_world[3]
-    top_right = current_corridor.corners_world[0]
+    top_left = current_corridor.corners[0]
+    top_right = current_corridor.corners[1]
     top_center = [(top_left[0]+top_right[0])/2, (top_left[1]+top_right[1])/2]
 
     # if np.abs(top_right[0] - top_left[0]) < 1.0e-8:

@@ -1,8 +1,8 @@
-float32 height
-float32 width
-float32 quality
-float32[] center
-float32[] growth_center
-float32 tilt
-float32[] corners
-float32[] init_pos
+float32 height_local
+float32 width_local
+float32 quality_local
+float32[] center_local
+float32[] growth_center_local
+float32 tilt_local
+float32[] corners_local
+float32[] init_pos_global

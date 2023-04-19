@@ -56,6 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    corridor_msg.msg
    corridor_list.msg
+   corridor_world_msg.msg
    angle_list.msg
    maneuver.msg
 #   Message1.msg

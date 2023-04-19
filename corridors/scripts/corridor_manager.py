@@ -11,9 +11,9 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist, Point
 import math as m
 import numpy as np
-from barn_challenge.msg import corridor_msg, corridor_list
+from barn_challenge.msg import corridor_msg, corridor_world_msg, corridor_list
 from corridor_helpers import *
-from corridor import Corridor
+from corridor_world import CorridorWorld
 from visualization_msgs.msg import Marker, MarkerArray
 
 class odomMsgClass():
@@ -24,51 +24,24 @@ class odomMsgClass():
         self.posy = 0.0
         self.theta = 0.0
 
-### OLD ###
-# def transformCorridorToWorld(newCorridor, curr_pose):
-#     # translate the center
-#     center = [newCorridor.center[0] + curr_pose.posx, newCorridor.center[1] + curr_pose.posy]
-
-#     # rotate the tilt
-#     rotation_angle = curr_pose.theta - np.pi/2
-#     tilt = newCorridor.tilt + rotation_angle
-
-#     # translate and rotate the growth center
-#     a = newCorridor.growth_center[0] + curr_pose.posx
-#     b = newCorridor.growth_center[1] + curr_pose.posy
-#     c = a*np.cos(rotation_angle)-b*np.sin(rotation_angle)
-#     d = b*np.cos(rotation_angle)+a*np.sin(rotation_angle)
-#     growth_center = [c, d]
-
-#     transformed_corridor = Corridor(center=center, height=newCorridor.height, width=newCorridor.width)
-#     transformed_corridor.growth_center = growth_center
-
-#     # update W and the corners
-#     transformed_corridor.update_W()
-#     transformed_corridor.corners = get_corners(transformed_corridor.W)
-
-#     return transformed_corridor
 
 def transformCorridorToWorld(newCorridor):
     # Correct transformation by Alejandro
     
-    print('corr init pos', newCorridor.init_pos)
-    L = np.sqrt(newCorridor.center[0]**2 + newCorridor.center[1]**2)
-    phi = np.arctan2(newCorridor.center[1],newCorridor.center[0]) - np.pi/2 + newCorridor.init_pos[2]
-    center = [newCorridor.init_pos[0] - L*np.sin(phi), newCorridor.init_pos[1] + L*np.cos(phi)]
+    print('corr init pos', newCorridor.init_pos_global)
+    L = np.sqrt(newCorridor.center_local[0]**2 + newCorridor.center_local[1]**2)
+    phi = np.arctan2(newCorridor.center_local[1],newCorridor.center_local[0]) - np.pi/2 + newCorridor.init_pos_global[2]
+    center = [newCorridor.init_pos_global[0] - L*np.sin(phi), newCorridor.init_pos_global[1] + L*np.cos(phi)]
     
-    tilt = newCorridor.tilt + newCorridor.init_pos[2]
+    tilt = newCorridor.tilt_local + newCorridor.init_pos_global[2]
 
-    L_growth = np.sqrt(newCorridor.growth_center[0]**2 + newCorridor.growth_center[1]**2)
-    phi_growth = np.arctan2(newCorridor.growth_center[1],newCorridor.growth_center[0]) - np.pi/2 + newCorridor.init_pos[2]
-    growth_center = [newCorridor.init_pos[0] - L_growth*np.sin(phi_growth), newCorridor.init_pos[1] + L_growth*np.cos(phi_growth)] 
+    L_growth = np.sqrt(newCorridor.growth_center_local[0]**2 + newCorridor.growth_center_local[1]**2)
+    phi_growth = np.arctan2(newCorridor.growth_center_local[1],newCorridor.growth_center_local[0]) - np.pi/2 + newCorridor.init_pos_global[2]
+    growth_center = [newCorridor.init_pos_global[0] - L_growth*np.sin(phi_growth), newCorridor.init_pos_global[1] + L_growth*np.cos(phi_growth)] 
     
-    transformed_corridor = Corridor(center=center, tilt=tilt, height=newCorridor.height, width=newCorridor.width)
+    transformed_corridor = CorridorWorld(center=center, tilt=tilt, height=newCorridor.width_local, width=newCorridor.height_local)
     transformed_corridor.growth_center = growth_center
-    
-    transformed_corridor.update_W()
-    transformed_corridor.corners_world = transformed_corridor.get_corners().copy()
-    
+   
     return transformed_corridor
 
 def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor, EXPLORE_FULL_CORRIDOR):
@@ -85,7 +58,7 @@ def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor, 
     # Else, check if the new corridor should be added
 
     c = current_corridor
-    if EXPLORE_FULL_CORRIDOR and not current_corridor.check_inside(np.array([[curr_pose.posx], [curr_pose.posy], [1]])):
+    if not EXPLORE_FULL_CORRIDOR and current_corridor is not None and not current_corridor.check_inside(np.array([[curr_pose.posx], [curr_pose.posy], [1]])):
         c = current_corridor.parent
 
     stuck = check_stuck(c, newCorridor, 0.25)
@@ -110,14 +83,14 @@ def select_child_corridor(current_corridor):
 def corridorCallback(data):
     print("[manager] Starting corridor callback")
     new_message = corridor_msg()
-    new_message.height = data.height
-    new_message.width = data.width
-    new_message.quality = data.quality
-    new_message.center = data.center
-    new_message.growth_center = data.growth_center
-    new_message.tilt = data.tilt
-    new_message.corners = data.corners
-    new_message.init_pos = data.init_pos
+    new_message.height_local = data.height_local
+    new_message.width_local = data.width_local
+    new_message.quality_local = data.quality_local
+    new_message.center_local = data.center_local
+    new_message.growth_center_local = data.growth_center_local
+    new_message.tilt_local = data.tilt_local
+    new_message.corners_local = data.corners_local
+    new_message.init_pos_global = data.init_pos_global
 
     global new_corridor_present
     new_corridor_present = True
@@ -146,17 +119,17 @@ def publishCorridors(corridors, publisher):
     
     to_send_list = corridor_list()
     for k in range(len(corridors)):
-        to_send = corridor_msg()
-        to_send.height = corridors[k].height
-        to_send.width = corridors[k].width
-        to_send.quality = corridors[k].quality
-        to_send.center = corridors[k].center.copy()
-        to_send.growth_center = corridors[k].growth_center.copy()
-        to_send.tilt = corridors[k].tilt
+        to_send = corridor_world_msg()
+        to_send.height_global = corridors[k].height
+        to_send.width_global = corridors[k].width
+        to_send.quality_global = corridors[k].quality
+        to_send.center_global = corridors[k].center.copy()
+        to_send.growth_center_global = corridors[k].growth_center.copy()
+        to_send.tilt_global = corridors[k].tilt
         xy_corners = []
         for xy in corridors[k].corners:
             xy_corners.append(xy)
-        to_send.corners = xy_corners.copy()
+        to_send.corners_global = xy_corners.copy()
 
         to_send_list.len += 1
         to_send_list.corridors.append(to_send)

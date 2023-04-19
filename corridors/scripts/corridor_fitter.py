@@ -198,19 +198,19 @@ def main():
 
         # Create corridor message for communication
         b_corridor = corridor_msg()
-        b_corridor.height = best_cor.height
-        b_corridor.width = best_cor.width
-        b_corridor.quality = best_cor.quality
-        b_corridor.center = best_cor.center
-        b_corridor.growth_center = best_cor.growth_center
-        b_corridor.tilt = best_cor.tilt
-        b_corridor.init_pos = [message.posx, message.posy, message.theta]
-        print(b_corridor.init_pos)
+        b_corridor.height_local = best_cor.height
+        b_corridor.width_local = best_cor.width
+        b_corridor.quality_local = best_cor.quality
+        b_corridor.center_local = best_cor.center
+        b_corridor.growth_center_local = best_cor.growth_center
+        b_corridor.tilt_local = best_cor.tilt
+        b_corridor.init_pos_global = [message.posx, message.posy, message.theta]
+
         xy_corners = []
         for xy in best_cor.corners_world:
             xy_corners.append(xy.x)
             xy_corners.append(xy.y)
-        b_corridor.corners = xy_corners
+        b_corridor.corners_local = xy_corners
         corridor_pub.publish(b_corridor)
 
         rate.sleep()

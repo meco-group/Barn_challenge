@@ -113,34 +113,6 @@ class Corridor:
 
         return W
 
-    def update_W(self):
-        self.W = self._init_W_from_width_height_tilt(self.width, self.height, self.center[0], self.center[1], self.tilt)
-
-    def add_child_corridor(self, child):
-        '''Add child corridor to this corridor and add this 
-        corridor as parent to the child
-        '''
-        self.children.append(child)
-        child.parent = self
-
-    def remove_child_corridor(self, child_ind):
-        '''Remove the child corridor with given index in the list
-        of children and remove this corridor as parent of the child
-        '''
-        self.children[child_ind].parent = None
-        self.children.pop(child_ind)
-
-    def remove_similar_children(self):
-        for i in range(len(self.children)-1,-1,-1):
-            for j in range(i):
-                if not check_significantly_different(self.children[i], self.children[j], 0.1):
-                    print("removing too similar child")
-                    self.remove_child_corridor(i)
-                    break # break from outer loop
-
-    def sort_children(self):
-        self.children.sort(key = lambda x : max([x.corners[k][1] for k in range(len(x.corners))]), reverse=True)
-
     def grow_edge(self, datapoints, edge):
         '''Grow specified edge of the corridor.
 
