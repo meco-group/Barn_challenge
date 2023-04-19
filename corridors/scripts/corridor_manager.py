@@ -25,54 +25,81 @@ class odomMsgClass():
         self.theta = 0.0
 
 
-def transformCorridorToWorld(newCorridor):
-    # Correct transformation by Alejandro
+def transform_corridor_to_world(new_corridor):
+    '''
+        Function takes the local corridor message (new_corridor) and creates a 
+        CorridorWorld object from this
+    '''
     
-    print('corr init pos', newCorridor.init_pos_global)
-    L = np.sqrt(newCorridor.center_local[0]**2 + newCorridor.center_local[1]**2)
-    phi = np.arctan2(newCorridor.center_local[1],newCorridor.center_local[0]) - np.pi/2 + newCorridor.init_pos_global[2]
-    center = [newCorridor.init_pos_global[0] - L*np.sin(phi), newCorridor.init_pos_global[1] + L*np.cos(phi)]
+    L = np.sqrt(new_corridor.center_local[0]**2 +
+                new_corridor.center_local[1]**2)
+    phi = np.arctan2(new_corridor.center_local[1],new_corridor.center_local[0])\
+        - np.pi/2 + new_corridor.init_pos_global[2]
+    center = [new_corridor.init_pos_global[0] - L*np.sin(phi), 
+              new_corridor.init_pos_global[1] + L*np.cos(phi)]
     
-    tilt = -np.pi/2 + newCorridor.tilt_local + newCorridor.init_pos_global[2]
+    tilt = -np.pi/2 + new_corridor.tilt_local + new_corridor.init_pos_global[2]
 
-    L_growth = np.sqrt(newCorridor.growth_center_local[0]**2 + newCorridor.growth_center_local[1]**2)
-    phi_growth = np.arctan2(newCorridor.growth_center_local[1],newCorridor.growth_center_local[0]) - np.pi/2 + newCorridor.init_pos_global[2]
-    growth_center = [newCorridor.init_pos_global[0] - L_growth*np.sin(phi_growth), newCorridor.init_pos_global[1] + L_growth*np.cos(phi_growth)] 
+    L_growth = np.sqrt(new_corridor.growth_center_local[0]**2 + 
+                       new_corridor.growth_center_local[1]**2)
+    phi_growth = np.arctan2(new_corridor.growth_center_local[1], 
+                            new_corridor.growth_center_local[0]) - np.pi/2 + \
+                                new_corridor.init_pos_global[2]
+    growth_center = [new_corridor.init_pos_global[0] - \
+                        L_growth*np.sin(phi_growth), 
+                     new_corridor.init_pos_global[1] + \
+                        L_growth*np.cos(phi_growth)] 
     
-    transformed_corridor = CorridorWorld(center=center, tilt=tilt, height=newCorridor.height_local, width=newCorridor.width_local)
+    transformed_corridor = CorridorWorld(center=center, tilt=tilt, 
+                                         height=new_corridor.height_local, 
+                                         width=new_corridor.width_local)
     transformed_corridor.growth_center = growth_center
    
     return transformed_corridor
 
-def processNewCorridor(newCorridor, curr_pose, root_corridor, current_corridor, EXPLORE_FULL_CORRIDOR):
-    # NOTE: It is assumed that this corridor really is new
-    newCorridor = transformCorridorToWorld(newCorridor)
+def process_new_corridor(new_corridor, curr_pose, root_corridor, 
+                         current_corridor, explore_full_corridor):
+    '''
+        This function takes a new corridor message (new_corridor) and decides
+        wether or not to put it in the corridor tree
+    '''
+    new_corridor = transform_corridor_to_world(new_corridor)
 
     # If this is the first corridor ever, start the tree
     if root_corridor is None:
-        # root_corridor = newCorridor.corridor_deep_copy()
-        root_corridor = newCorridor
+        # root_corridor = new_corridor.corridor_deep_copy()
+        root_corridor = new_corridor
         current_corridor = root_corridor
         print("[manager] Root corridor is now created")
         return (root_corridor, current_corridor)
     # Else, check if the new corridor should be added
 
+    # If we are not yet in the current_corridor, this new corridor should be
+    # added as a child to the parent of the current_corridor
     c = current_corridor
-    if not EXPLORE_FULL_CORRIDOR and current_corridor is not None and not current_corridor.check_inside(np.array([[curr_pose.posx], [curr_pose.posy], [1]])):
+    if not explore_full_corridor and current_corridor is not None and \
+        not current_corridor.check_inside(np.array([[curr_pose.posx], 
+                                                    [curr_pose.posy], [1]])):
         c = current_corridor.parent
 
-    stuck = check_stuck(c, newCorridor, 0.25)
+    # Check if this new corridor improves enough
+    stuck = check_stuck(c, new_corridor, 0.25)
     if not stuck:
         print("[manager] Child corridor is added to the tree")
-        c.add_child_corridor(newCorridor)
+        c.add_child_corridor(new_corridor)
         c.remove_similar_children()
         c.sort_children()
     else:
-        print("[manager] Discarding a corridor because it does not improve enough")
+        print("[manager] Discarding a corridor because it does not improve \
+              enough")
 
     return (root_corridor, current_corridor)
 
 def select_child_corridor(current_corridor):
+    '''
+        Based on the current corridor tree, this function selects a child to
+        proceed
+    '''
     if len(current_corridor.children) == 0:
         # backtrack
         return (False, current_corridor)
@@ -101,7 +128,7 @@ def corridorCallback(data):
     # print("[manager] Corridor callback is executed!")
     # print("[manager] new_corridor_present = ", new_corridor_present)
 
-def yawFromQuaternion(orientation):
+def yaw_from_quaternion(orientation):
     return m.atan2((2.0*(orientation.w * orientation.z +
                          orientation.x * orientation.y)),
                    (1.0 - 2.0*(orientation.y * orientation.y +
@@ -111,9 +138,13 @@ def odomCallback(data):
     curr_pose.rotz = data.twist.twist.angular.z
     curr_pose.posx = data.pose.pose.position.x
     curr_pose.posy = data.pose.pose.position.y
-    curr_pose.theta = yawFromQuaternion(data.pose.pose.orientation)
+    curr_pose.theta = yaw_from_quaternion(data.pose.pose.orientation)
 
-def publishCorridors(corridors, publisher):
+def publish_corridors(corridors, publisher):
+    '''
+        This function publishes the list of corridors so the navigator can use
+        them
+    '''
     if len(corridors) == 0:
         return
     
@@ -169,10 +200,14 @@ def visualize_rectangle(rect, i, r, g, b):
     marker_pub.publish(marker_arr)
 
 def visualize_corridor_tree(root_corridor, current_corridor):
-    current_color = [1,0,0] # blue
-    branch_color  = [0,1,0] # white
-    root_color  = [0,1,0]   # white
-    options_color = [1,1,0] # optional branches
+    '''
+        Visualization for debugging purposes. The current branch along with
+        other options is shown in different colors
+    '''
+    current_color = [1,0,0] # red
+    branch_color  = [0,1,0] # green
+    root_color  = [0,1,0]   # green
+    options_color = [1,1,0]
 
     global id
 
@@ -199,6 +234,10 @@ def visualize_corridor_tree(root_corridor, current_corridor):
     return
 
 def visualize_backtracking_corridors(backtracking_corridors, current_corridor):
+    '''
+        For debugging purposes, this function visualizes the backtracking
+        corridors
+    '''
     backtrack_color = [0.6,0.6,0.6] # dark grey
     
     global id
@@ -219,7 +258,7 @@ def main():
 
     # If set to True, a child corridor will only be when the end of the current corridor is reached
     # If set to False, a child is selected as soon as its available, should only be used for debugging
-    EXPLORE_FULL_CORRIDOR = True
+    explore_full_corridor = True
     
     # Subscribe to incoming new corridors
     global new_corridor_list
@@ -267,7 +306,7 @@ def main():
 
             for c in new_corridor_list:
                 # print("[manager] processing corridor (", c.width, ", ", c.height, ", ", c.center, ")")
-                (root_corridor, current_corridor) = processNewCorridor(c, curr_pose, root_corridor, current_corridor, EXPLORE_FULL_CORRIDOR)
+                (root_corridor, current_corridor) = process_new_corridor(c, curr_pose, root_corridor, current_corridor, explore_full_corridor)
             
             new_corridor_present = False
             new_corridor_list = []
@@ -275,7 +314,7 @@ def main():
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
             end_reached = check_end_of_corridor_reached(current_corridor, curr_pose, 0.7)
-            if end_reached or (not EXPLORE_FULL_CORRIDOR and len(current_corridor.children) > 0):
+            if end_reached or (not explore_full_corridor and len(current_corridor.children) > 0):
                 print("[manager] selecting child corridor")
                 (succes, current_corridor) = select_child_corridor(current_corridor)
                 print("[manager] child corridor selected! (", succes, ")")
@@ -283,14 +322,14 @@ def main():
                     print("[manager] Need to backtrack!")
                     # pass the backtracking corridors to the motion planner
                     backtrack_mode_activated = True
-                    (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR)
+                    (backtrack_point, current_corridor, backtracking_corridors) = get_back_track_point(current_corridor, explore_full_corridor)
                     if backtrack_point is None:
                         print("[manager] ERROR: I cannot backtrack because there are no other options")
                         backtrack_mode_activated = False
                     else:
-                        publishCorridors(backtracking_corridors, corridor_pub)
+                        publish_corridors(backtracking_corridors, corridor_pub)
                 else:
-                    publishCorridors([current_corridor], corridor_pub)
+                    publish_corridors([current_corridor], corridor_pub)
 
         if current_corridor is not None:
             visualize_corridor_tree(root_corridor, current_corridor)
