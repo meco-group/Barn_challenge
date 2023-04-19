@@ -158,6 +158,8 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
             man_seq, path = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
         else:
             x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            # test_point = compute_initial_point(corridor2, 0)
+            # x_corner, y_corner = test_point[0], test_point[1]
             psi = arctan2((y_corner - y0),(x_corner - x0)) - pi/2
             UpFRONT = sin(theta0 - psi) >= 0 # TODO: FIX THIS
             if UpFRONT:

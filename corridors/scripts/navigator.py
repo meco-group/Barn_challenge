@@ -15,9 +15,9 @@ import math as m
 import numpy as np
 
 from corridor import Corridor
-from barn_challenge.msg import corridor_msg, corridor_list, maneuver
+from barn_challenge.msg import CorridorLocalMsg, CorridorLocalListMsg, ManeuverMsg
 
-from motion_planner import compute_trajectory
+from motion_planner import planner, check_inside_one_point
 
 class messageClass():
     def __init__(self):
@@ -58,12 +58,11 @@ def odomCallback(data):
 #     b_corridor.corners = data.corners
 
 def corridorListCallback(data):
-    if data.len > 0:
-        for corridor_message in data.corridors
-            corridor_instance = Corridor(corridor_message.width, corridor_message.height, corridor_message.center, corridor_message.tilt + pi/2) 
-            # Notice the addition of pi/2 on the corridor tilt
+    if data.len == 1:
+        for corridor_message in data.corridors:
+            corridor_instance = Corridor(corridor_message.width, corridor_message.height, corridor_message.center, corridor_message.tilt) 
             list_of_corridors.append(corridor_instance)
-    else:
+    elif data.len > 1:
         # TODO: If more than one corridor is sent, backtrack
         pass
 
@@ -85,7 +84,7 @@ def generate_path_message(input_path): # TODO: check that it works correctly wit
     return path      
 
 def generate_maneuver_message(maneuver_array):
-    maneuver_msg = maneuver()
+    maneuver_msg = ManeuverMsg()
     maneuver_msg.len = maneuver_array.shape[0]
     for i in range(maneuver_array.shape[0]):
         part_maneuver = Vector3()
@@ -99,24 +98,25 @@ def main():
     global message
     message = messageClass()
     global b_corridor
-    b_corridor = corridor_msg()
+    b_corridor = CorridorLocalMsg()
 
     global list_of_corridors
     list_of_corridors = []
 
+    navigator_rate = 50
+
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
-    # corridor_sub = rospy.Subscriber('/corridor', corridor_msg, corridorCallback) # TODO: This subscriber is not needed (?)
-    corridor_list_sub = rospy.Subscriber('/chosen_corridor', corridor_list, corridorListCallback)
+    # corridor_sub = rospy.Subscriber('/corridor', CorridorLocalMsg, corridorCallback) # TODO: This subscriber is not needed (?)
+    corridor_list_sub = rospy.Subscriber('/chosen_corridor', CorridorLocalListMsg, corridorListCallback)
 
     # Publishers
     path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
-    maneuver_Pub = rospy.Publisher('/maneuver', maneuver, queue_size=1)
+    maneuver_Pub = rospy.Publisher('/maneuver', ManeuverMsg, queue_size=1)
 
     rospy.init_node('navigator', anonymous=True)
-    rate = rospy.Rate(100) # TODO: maybe this fast rate is not needed (due to the controller? node)
+    rate = rospy.Rate(navigator_rate)
 
-    # TODO: Check this control bounds
     v_max = 0.5
     v_min = -0.5
     omega_max = 1.57
@@ -148,12 +148,15 @@ def main():
             corridor1 = list_of_corridors[0]
             corridor2 = list_of_corridors[1] if len(list_of_corridors) > 1 else None
 
-            # TODO: implement the logic on removing first corridor from list (.pop(0)) and 
+            # TODO: implement/check the logic on removing first corridor from list (.pop(0)) and 
             # shifting the corridors. First corridor should always be the one where the robot is.
-            # Maybe use check_inside_one_point() from motion_planner.py
+            if check_inside_one_point(corridor2, np.array([message.posx,message.posy])):
+                # corridor1, corridor2 = corridor2, None
+                list_of_corridors.pop(0) # Get rid of first corridor as soon as you are already in the second corridor
+                
 
-            # Compute the maneuvers within the corridors
-            computed_maneuver, computed_path = compute_trajectory(
+            # Compute the maneuvers within the corridors (by Sonia). Be aware that the tilt angle of the vehicle should be measured from the x-axis of the world frame
+            computed_maneuver, computed_path = planner(
                 corridor1 = corridor1, 
                 u_bounds = u_bounds, 
                 a = a, 
