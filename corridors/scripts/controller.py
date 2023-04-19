@@ -62,7 +62,7 @@ def main():
     vel_Pub = rospy.Publisher('/jackal_velocity_controller/cmd_vel', Twist,
                               queue_size=10)
 
-    rospy.init_node('navigator', anonymous=True)
+    rospy.init_node('controller', anonymous=True)
     rate = rospy.Rate(100)
 
     isDone = False
