@@ -55,6 +55,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    CorridorLocalMsg.msg
+   CorridorLocalListMsg.msg
    CorridorWorldListMsg.msg
    CorridorWorldMsg.msg
    AngleListMsg.msg

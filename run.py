@@ -138,7 +138,7 @@ if __name__ == "__main__":
         pos = gazebo_sim.get_model_state().pose.position
         curr_coor = (pos.x, pos.y)
         # print(gazebo_sim.get_laser_scan().ranges)
-        # print("Time: %.2f (s), x: %.2f (m), y: %.2f (m)" %(curr_time - start_time, *curr_coor))
+        print("Time: %.2f (s), x: %.2f (m), y: %.2f (m)" %(curr_time - start_time, *curr_coor))
         collided = gazebo_sim.get_hard_collision()
         while rospy.get_time() - curr_time < 0.1:
             time.sleep(0.01)

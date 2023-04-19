@@ -10,7 +10,7 @@ import rospy
 from nav_msgs.msg import Odometry
 import math as m
 import numpy as np
-from barn_challenge.msg import CorridorLocalMsg, CorridorWorldMsg, CorridorWorldListMsg
+from barn_challenge.msg import CorridorLocalMsg, CorridorLocalListMsg, CorridorWorldMsg, CorridorWorldListMsg
 from corridor_helpers import *
 from corridor_world import CorridorWorld
 
@@ -118,21 +118,22 @@ def select_child_corridor(current_corridor):
 
 def corridorCallback(data):
     print("[manager] Starting corridor callback")
-    new_message = CorridorLocalMsg()
-    new_message.height_local = data.height_local
-    new_message.width_local = data.width_local
-    new_message.quality_local = data.quality_local
-    new_message.center_local = data.center_local
-    new_message.growth_center_local = data.growth_center_local
-    new_message.tilt_local = data.tilt_local
-    new_message.corners_local = data.corners_local
-    new_message.init_pos_global = data.init_pos_global
-
     global new_corridor_present
     new_corridor_present = True
-
     global new_corridor_list
-    new_corridor_list.append(new_message)
+
+    for i in range(data.len):
+        new_message = CorridorLocalMsg()
+        new_message.height_local = data.corridors[i].height_local
+        new_message.width_local = data.corridors[i].width_local
+        new_message.quality_local = data.corridors[i].quality_local
+        new_message.center_local = data.corridors[i].center_local
+        new_message.growth_center_local = data.corridors[i].growth_center_local
+        new_message.tilt_local = data.corridors[i].tilt_local
+        new_message.corners_local = data.corridors[i].corners_local
+        new_message.init_pos_global = data.corridors[i].init_pos_global
+
+        new_corridor_list.append(new_message)
 
     # print("[manager] Corridor callback is executed!")
     # print("[manager] new_corridor_present = ", new_corridor_present)
@@ -257,7 +258,7 @@ def main():
     global new_corridor_present
     new_corridor_present = False
     
-    corridor_sub = rospy.Subscriber('/corridor', CorridorLocalMsg,
+    corridor_sub = rospy.Subscriber('/corridor', CorridorLocalListMsg,
                                     corridorCallback)
 
     # Subscribe to odometry
@@ -275,7 +276,11 @@ def main():
     root_corridor = None
     current_corridor = None
     backtrack_point = None
+    waiting_to_backtrack = False
     backtrack_mode_activated = False
+    backtrack_waiting_time = 5.0
+    backtrack_start_time = None
+    backtrack_curr_time = None
 
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
@@ -319,17 +324,27 @@ def main():
                 print("[manager] Child corridor selected! (", succes, ")")
                 if not succes:
                     print("[manager] Need to backtrack!")
-                    # pass the backtracking corridors to the motion planner
-                    backtrack_mode_activated = True
-                    (backtrack_point, current_corridor,
-                     backtracking_corridors) = get_back_track_point(
-                        current_corridor, explore_full_corridor)
-                    print("[manager] Current corridor = ", current_corridor)
-                    if backtrack_point is None:
-                        print("[manager] ERROR: I cannot backtrack")
-                        backtrack_mode_activated = False
+                    if not waiting_to_backtrack:
+                        print("[manager] Started waiting to backtrack")
+                        backtrack_start_time = rospy.Time.now().to_sec()
+                        waiting_to_backtrack = True
                     else:
-                        publish_corridors(backtracking_corridors, corridor_pub)
+                        backtrack_curr_time = rospy.Time.now().to_sec()
+                        print("[manager] Waiting to backtrack...")
+                        if backtrack_curr_time - backtrack_start_time > backtrack_waiting_time:
+                            print("[manager] Started to backtrack")
+                            waiting_to_backtrack = False
+                            # pass the backtracking corridors to the motion planner
+                            backtrack_mode_activated = True
+                            (backtrack_point, current_corridor,
+                            backtracking_corridors) = get_back_track_point(
+                                current_corridor, explore_full_corridor)
+                            print("[manager] Current corridor = ", current_corridor)
+                            if backtrack_point is None:
+                                print("[manager] ERROR: I cannot backtrack")
+                                backtrack_mode_activated = False
+                            else:
+                                publish_corridors(backtracking_corridors, corridor_pub)
                 else:
                     publish_corridors([current_corridor], corridor_pub)
 

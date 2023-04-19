@@ -55,7 +55,7 @@ def wrapToPi(angle):
     return angle
 
 def scanCallback(data):
-    lidar_data.lidar_data = np.asarray(data.ranges[(0+180):(719-180)]) #need to confirm if this syntax is correct
+    lidar_data.lidar_data = np.asarray(data.ranges[(0+180):(719-179)]) #need to confirm if this syntax is correct
     lidar_data.lidar_data[lidar_data.lidar_data == float('inf')] = 10.
     #print(lidar_data.lidar_data)
 
@@ -102,7 +102,7 @@ def main():
     odom_data = odomData()
     sensor_span = (3/2)*(np.pi)/2
     lidar_resolution = sensor_span/lidar_data.sensor_num  #angle resolution in radians
-    sector_num = 5 # number of sectors
+    sector_num = 6  # number of sectors
     sector_size = np.int(lidar_data.sensor_num/sector_num) # number of points per sector
     free_sectors = 0.0
     last_free_sectors = 0.0
