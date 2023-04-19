@@ -80,6 +80,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
     # added as a child to the parent of the current_corridor
     receiving_corridor = current_corridor
     if not explore_full_corridor and current_corridor is not None and \
+        current_corridor.parent is not None and \
         not current_corridor.check_inside(np.array(
             [[new_corridor_msg.init_pos_global[0]],
              [new_corridor_msg.init_pos_global[1]],
@@ -325,8 +326,7 @@ def main():
                         current_corridor, explore_full_corridor)
                     print("[manager] Current corridor = ", current_corridor)
                     if backtrack_point is None:
-                        print("[manager] ERROR: I cannot backtrack because \
-                              there are no other options")
+                        print("[manager] ERROR: I cannot backtrack")
                         backtrack_mode_activated = False
                     else:
                         publish_corridors(backtracking_corridors, corridor_pub)
