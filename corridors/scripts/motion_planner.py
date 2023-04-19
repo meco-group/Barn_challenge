@@ -3,9 +3,10 @@ from timeit import default_timer as timer
 
 import matplotlib.pyplot as plt
 from numpy import pi, cos, sin, tan, sqrt, linspace, arctan2, arcsin, linalg
+import numpy as np
 
-from corridor import *
-from corridor_world import *
+from corridor import Corridor
+from corridor_world import CorridorWorld
 from corridor_helpers import get_intersection
 from alignment_radius import get_max_alignment_radius
 
