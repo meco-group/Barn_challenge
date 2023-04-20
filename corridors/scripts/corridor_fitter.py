@@ -16,7 +16,8 @@ import math as m
 import numpy as np
 
 from corridor import Corridor
-from barn_challenge.msg import CorridorLocalMsg, CorridorLocalListMsg, AngleListMsg
+from barn_challenge.msg import \
+    CorridorLocalMsg, CorridorLocalListMsg, AngleListMsg
 from corridor_helpers import *
 
 
@@ -96,7 +97,8 @@ def main():
     scan_sub = rospy.Subscriber('/front/scan', LaserScan, scanCallback)
     point_sub = rospy.Subscriber("/front/scan", LaserScan, pointCallback,
                                  queue_size=1)
-    corridor_pub = rospy.Publisher("/corridor", CorridorLocalListMsg, queue_size=10)
+    corridor_pub = rospy.Publisher("/corridor", CorridorLocalListMsg,
+                                   queue_size=10)
 
     rospy.init_node('fitter', anonymous=True)
     rate = rospy.Rate(fitter_rate)
