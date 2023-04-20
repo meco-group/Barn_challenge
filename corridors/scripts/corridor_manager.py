@@ -60,7 +60,8 @@ def transform_corridor_to_world(new_corridor):
 
 
 def process_new_corridor(new_corridor_msg, root_corridor,
-                         current_corridor, explore_full_corridor, corridor_pub):
+                         current_corridor, orphanage, 
+                         explore_full_corridor, corridor_pub):
     '''
     This function takes a new corridor message (new_corridor) and decides
     wether or not to put it in the corridor tree.
@@ -101,8 +102,12 @@ def process_new_corridor(new_corridor_msg, root_corridor,
     else:
         # Check if this new corridor improves enough
         stuck = check_stuck(receiving_corridor, new_corridor, 0.25)
-        if not stuck or receiving_corridor.check_inside(np.array(
-            [[-2], [13], [1]])):
+
+        # Check if this new corridor is not too similar to a
+        # backtracked corridor
+        backtracked = orphanage.has_similar_child(new_corridor)
+
+        if not stuck and not backtracked:
             print("[manager] Child corridor is added to the tree")
             receiving_corridor.add_child_corridor(new_corridor)
             receiving_corridor.remove_similar_children()
@@ -146,9 +151,6 @@ def corridorCallback(data):
         new_message.init_pos_global = data.corridors[i].init_pos_global
 
         new_corridor_list.append(new_message)
-
-    # print("[manager] Corridor callback is executed!")
-    # print("[manager] new_corridor_present = ", new_corridor_present)
 
 
 def yaw_from_quaternion(orientation):
@@ -291,6 +293,8 @@ def main():
     # Define variables for the corridor tree
     root_corridor = None
     current_corridor = None
+    orphanage = CorridorWorld(center=[0.0,0.0], width=0.001, heigth=0.001, tilt=0.0)
+
     backtrack_point = None
     waiting_to_backtrack = False
     backtrack_mode_activated = False
@@ -323,7 +327,7 @@ def main():
 
             for corridor in new_corridor_list:
                 (root_corridor, current_corridor) = process_new_corridor(
-                    corridor, root_corridor, current_corridor,
+                    corridor, root_corridor, current_corridor, orphanage,
                     explore_full_corridor, corridor_pub)
             
             new_corridor_present = False
@@ -354,8 +358,8 @@ def main():
                             # pass the backtracking corridors to the motion planner
                             backtrack_mode_activated = True
                             (backtrack_point, current_corridor,
-                            backtracking_corridors) = get_back_track_point(
-                                current_corridor, explore_full_corridor)
+                            backtracking_corridors, orphanage) = get_back_track_point(
+                                current_corridor, orphanage,, explore_full_corridor)
                             # print("[manager] Current corridor = ", current_corridor)
                             if backtrack_point is None:
                                 print("[manager] ERROR: I cannot backtrack")

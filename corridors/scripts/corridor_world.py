@@ -136,6 +136,18 @@ class CorridorWorld:
                     self.remove_child_corridor(i)
                     break  # break from outer loop
 
+    def has_similar_child(self, potential_child):
+        '''Returns wether or not this corridor has a child that is
+        similar to the potential_child corridor that is given
+        '''
+        similar_found = False
+        for child in self.children:
+            if not check_significantly_different(child, potential_child):
+                similar_found = True
+                break
+
+        return similar_found
+
     def sort_children(self):
         self.children.sort(key=lambda x: max([x.corners[k][1]
                                               for k in range(len(x.corners))]),
