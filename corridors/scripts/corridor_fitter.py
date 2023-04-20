@@ -115,11 +115,6 @@ def main():
     print('Corridor node started')
     while not rospy.is_shutdown() and active:
         # Convert laser scan data to point cloud and homogenous coordinates.
-        for xy in last_best_corr.corners_world:
-            if xy.x > 8:
-                active = 0
-                print('Finishing and building last corridor')
-
         point_generator = pc2.read_points(message.pointcloud)
         xyh = []
         i = 0

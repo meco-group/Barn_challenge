@@ -18,7 +18,7 @@ from barn_challenge.msg import AngleListMsg
 
 class lidarData():
     def __init__(self):
-        self.sensor_num = np.int(360)
+        self.sensor_num = int(360)
         self.lidar_data = np.zeros(self.sensor_num)
 
 class odomData():
@@ -103,7 +103,7 @@ def main():
     sensor_span = (3/2)*(np.pi)/2
     lidar_resolution = sensor_span/lidar_data.sensor_num  #angle resolution in radians
     sector_num = 6  # number of sectors
-    sector_size = np.int(lidar_data.sensor_num/sector_num) # number of points per sector
+    sector_size = int(lidar_data.sensor_num/sector_num) # number of points per sector
     free_sectors = 0.0
     last_free_sectors = 0.0
     flag = 0.0

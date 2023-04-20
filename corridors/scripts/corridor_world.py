@@ -24,7 +24,7 @@ class CorridorWorld:
     BCK = 2
     LFT = 3
 
-    def __init__(self, width, height, center, tilt=0, parent=None, copy=False):
+    def __init__(self, width, height, center, tilt=0, parent=None, copy_in=False):
         '''Constructor.
 
         :param width: corridor width
@@ -42,8 +42,8 @@ class CorridorWorld:
         :param parent: parent corridor
         :type parent: Corridor
 
-        :param copy: True if you want to make a copy of the original Corridor
-        :type copy: bool
+        :param copy_in: True if you want to make a copy of the original Corridor
+        :type copy_in: bool
         '''
         # Parameters
         self.delta = self.DELTA
@@ -60,7 +60,7 @@ class CorridorWorld:
         self.W = self._init_W_from_width_height_tilt(
             width, height, *center, tilt)
         self.center = center
-        self.growth_center = center.copy()
+        self.growth_center = copy(center)
         self.tilt = tilt
         self.corners = get_corners(self.W)
 
@@ -72,7 +72,7 @@ class CorridorWorld:
         self.WL_ind = [-2, -1, 0]
 
         # Get hardcopy of original corridor
-        if copy:
+        if copy_in:
             self.original = self.corridor_copy()
 
     def corridor_copy(self):

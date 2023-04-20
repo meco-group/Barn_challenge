@@ -125,7 +125,7 @@ class Corridor:
         :type edge: int
         '''
         step = self.DELTA
-        # Do a first check to see if initial corridor contains datapoints.
+        # Do a first check to see if initial corridor contains datapoints.          
         if self.check_inside(datapoints):
             print('discard corridor')
         else:
@@ -182,6 +182,8 @@ class Corridor:
         :return: bool array with True if datapoint is inside the corridor
         :rtype: bool
         '''
+        if len(datapoints) == 0:
+            return True
         Wtransp = self.W.T
         t0 = time.time()
         # Check if datapoints are inside the corridor

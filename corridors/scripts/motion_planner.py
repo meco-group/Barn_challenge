@@ -223,7 +223,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
     R = v_max/omega_max
     ## Compute the trajetory in case you have only one corridor
     if corridor2 == None:
-        R = min(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1)[0], R)  
+        R = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1)[0]-(a/2)-m, 0), R)  
         #initialize the output with two maneuvers
         maneuver_sequence = np.empty((2,3))
         goal_pos = compute_goal_point(corridor1,m) #not best implemention, you compute goal_pos but you might not need it 
@@ -251,11 +251,16 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
             arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 - iota1, 100))
             arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 - iota1, 100))
+            v1 = R *abs(omega_min)
 
-            t1 = R * iota1/ v_max
+            if R > 0:
+                t1 = R * iota1/ v1
+            else: 
+                t1 = iota1 / abs(omega_min)
+
             t2 = c1 / v_max
 
-            maneuver_sequence[0,:] = np.array([v_max, omega_min, t1])
+            maneuver_sequence[0,:] = np.array([v1, omega_min, t1])
             maneuver_sequence[1,:] = np.array([v_max, 0, t2])
 
         else:
@@ -271,16 +276,23 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             x1 = xc1 + R*cos(delta1 - gamma1)
             y1 = yc1 + R*sin(delta1 - gamma1)
             chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
+            # if R > 0:
             iota1 = 2 * arcsin((chord1/2)/R)
+            # else:
+            #     iota1 = theta0 - corridor1.tilt
             epsilon1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive angle
 
             arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 + iota1, 100))
             arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 + iota1, 100))
+            v1 = R * omega_max
 
-            t1 = R * iota1/ v_max
+            if R > 0:
+                t1 = R * iota1/ v1
+            else: 
+                t1 = iota1 / omega_max
             t2 = c1 / v_max
 
-            maneuver_sequence[0,:] = np.array([v_max, omega_max, t1])
+            maneuver_sequence[0,:] = np.array([v1, omega_max, t1])
             maneuver_sequence[1,:] = np.array([v_max, 0, t2])
 
         computed_path = np.vstack((
@@ -297,7 +309,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else goal_pos[0]
         yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else goal_pos[1]
 
-        R1 = min(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1)[0], R)  
+        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1)[0]-(a/2)-m, 0), R)  
 
         tilt1 = corridor1.tilt
         tilt2 = corridor2.tilt
@@ -353,12 +365,18 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 zeta2 = arctan2((y3-yc2),(x3-xc2))
                 eta2 = zeta2 - epsilon2
 
-                t1 = R1 * eta1 /v_max
+                v1 = R1 * omega_max
+                
+                if R1 > 0:
+                    t1 = R1 * iota1/ v1
+                else: 
+                    t1 = iota1 / omega_max
+                
                 t2 = c1/v_max
                 t3 = R*eta2/v_max
                 t4 = c2/v_max
 
-                maneuver_sequence[0,:] = np.array([v_max, omega_max, t1])
+                maneuver_sequence[0,:] = np.array([v1, omega_max, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
                 maneuver_sequence[2,:] = np.array([v_max, omega_max, t3])
                 maneuver_sequence[3,:] = np.array([v_max, 0, t4])
@@ -392,13 +410,17 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 eta2 = arctan2((y2-yc2),(x2-xc2))+2*pi
                 chord2 = sqrt((y3-y2)**2 + (x3-x2)**2)
                 iota2 = 2 * arcsin((chord2/2)/R)
-
-                t1 = R1 * iota1 / v_max
+                
+                v1 = R1 * abs(omega_min)
+                if R1 > 0:
+                    t1 = R1 * iota1/ v1
+                else: 
+                    t1 = iota1 / abs(omega_min)
                 t2 = 2 * c1 / v_max
                 t3 = R * iota2 / v_max
                 t4 = c2 / v_max
 
-                maneuver_sequence[0,:] = np.array([v_max, omega_min, t1])
+                maneuver_sequence[0,:] = np.array([v1, omega_min, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
                 maneuver_sequence[2,:] = np.array([v_max, omega_max, t3])
                 maneuver_sequence[3,:] = np.array([v_max, 0, t4])
@@ -450,13 +472,17 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 iota1 = 2*arcsin((chord1/2)/R1)
                 chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
                 iota2 = 2*arcsin((chord2/2)/R)
+                v1 = R1 * omega_max
 
-                t1 = R1 * iota1 /v_max
+                if R1 > 0:
+                    t1 = R1 * iota1/ v1
+                else: 
+                    t1 = iota1 / omega_max
                 t2 = 2*c1/v_max
                 t3 = R*iota2/v_max
                 t4 = c2/v_max
 
-                maneuver_sequence[0,:] = np.array([v_max, omega_max, t1])
+                maneuver_sequence[0,:] = np.array([v1, omega_max, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
                 maneuver_sequence[2,:] = np.array([v_max, omega_min, t3])
                 maneuver_sequence[3,:] = np.array([v_max, 0, t4])
@@ -491,12 +517,17 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 iota1 = 2*arcsin((chord1/2)/R1)
                 chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
                 iota2 = 2*arcsin((chord2/2)/R)
-                t1 = R1 * iota1 /v_max
+                v1 = R1 * abs(omega_min)
+
+                if R1 > 0:
+                    t1 = R1 * iota1/ v1
+                else: 
+                    t1 = iota1 / abs(omega_min)
                 t2 = 2*c1/v_max
                 t3 = R*iota2/v_max
                 t4 = c2/v_max
 
-                maneuver_sequence[0,:] = np.array([v_max, omega_min, t1])
+                maneuver_sequence[0,:] = np.array([v1, omega_min, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
                 maneuver_sequence[2,:] = np.array([v_max, omega_min, t3])
                 maneuver_sequence[3,:] = np.array([v_max, 0, t4])

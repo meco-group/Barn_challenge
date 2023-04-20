@@ -13,6 +13,7 @@ from geometry_msgs.msg import Twist, PoseStamped
 import laser_geometry.laser_geometry as lg
 import math as m
 import numpy as np
+from barn_challenge.msg import ManeuverMsg
 
 from corridor import Corridor
 
@@ -28,6 +29,9 @@ class messageClass():
         self.posx = 0.0
         self.posy = 0.0
         self.theta = 0.0
+        self.man_vx = []
+        self.man_wz = []
+        self.man_t = []
 
 
 def distance(point1, point2):
@@ -50,20 +54,44 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
+def ManeuverCallback(data):
+    global v_full, w_full
+    
+    length = data.len
+    maneuver = data.maneuver
+    vx, wz, t, v_full, w_full = [], [], [], [], []
+    for i in range(length):
+        vx.append(maneuver[i].x)
+        wz.append(maneuver[i].y)
+        t.append(maneuver[i].z)
+
+    for time, v, w in zip(t, vx, wz):
+        repetitions = int(time*RATE)
+        v_full += [v]*repetitions
+        w_full += [w]*repetitions
+
+
 
 def main():
+
+    global RATE
+    RATE = 100
+
     global message
     message = messageClass()
 
+    global maneuver_mes
+
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    maneuver_sub = rospy.Subscriber('/maneuver', ManeuverMsg, ManeuverCallback)
 
     # Publishers
     vel_Pub = rospy.Publisher('/jackal_velocity_controller/cmd_vel', Twist,
                               queue_size=10)
 
     rospy.init_node('controller', anonymous=True)
-    rate = rospy.Rate(100)
+    rate = rospy.Rate(RATE)
 
     isDone = False
     twist = Twist()
@@ -72,21 +100,23 @@ def main():
     message.goalx = message.posx
     message.goaly = message.posy + 10
 
-    v_compact = [.5, .5, .5, .5]
-    w_compact = [1.57, 0., 1.57, 0.]
-    t_compact = [0.51383007, 8.24802881, 0.38729874, 10.19587506]
+    # v_compact = [.5, .5, .5, .5]
+    # w_compact = [1.57, 0., 1.57, 0.]
+    # t_compact = [0.51383007, 8.24802881, 0.38729874, 10.19587506]
 
+    global v_full, w_full
     v_full = []
     w_full = []
 
-    for time, v, w in zip(t_compact, v_compact, w_compact):
-        while time > 0:
-            time = time - .01
-            v_full.append(v)
-            w_full.append(w)
+    # for time, v, w in zip(t_compact, v_compact, w_compact):
+    #     while time > 0:
+    #         time = time - .01
+    #         v_full.append(v)
+    #         w_full.append(w)
 
     print('I started moving')
     while not rospy.is_shutdown():
+
         if len(v_full) > 0:
             twist.linear.x = v_full.pop(0)
             twist.angular.z = w_full.pop(0)
@@ -94,7 +124,7 @@ def main():
             twist.linear.x = 0.
             twist.angular.z = 0.
 
-        print('current_position', message.posx, message.posy, message.theta)
+        # print('current_position', message.posx, message.posy, message.theta)
         print('current_velocity', twist.linear.x, twist.angular.z)
 
         vel_Pub.publish(twist)  # This should go in a controller node (replace with maneuver publisher)
