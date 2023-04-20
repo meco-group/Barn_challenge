@@ -13,7 +13,7 @@ import numpy as np
 from barn_challenge.msg import CorridorLocalMsg, CorridorLocalListMsg, CorridorWorldMsg, CorridorWorldListMsg
 from corridor_helpers import *
 from corridor_world import CorridorWorld
-
+from motion_planner import check_inside_one_point
 
 class odomMsgClass():
     def __init__(self):
@@ -60,7 +60,7 @@ def transform_corridor_to_world(new_corridor):
 
 
 def process_new_corridor(new_corridor_msg, root_corridor,
-                         current_corridor, explore_full_corridor):
+                         current_corridor, explore_full_corridor, corridor_pub):
     '''
     This function takes a new corridor message (new_corridor) and decides
     wether or not to put it in the corridor tree.
@@ -73,6 +73,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         root_corridor = new_corridor
         current_corridor = root_corridor
         print("[manager] Root corridor is now created")
+        publish_corridors([root_corridor], corridor_pub)
         return (root_corridor, current_corridor)
     # Else, check if the new corridor should be added
 
@@ -87,16 +88,27 @@ def process_new_corridor(new_corridor_msg, root_corridor,
              [1]])):
         receiving_corridor = current_corridor.parent
 
-    # Check if this new corridor improves enough
-    stuck = check_stuck(receiving_corridor, new_corridor, 0.25)
-    if not stuck:
+    # Check if goal position is reachable
+    if check_inside_one_point(new_corridor, np.array([-2, 13])):
+    # if new_corridor.check_inside(np.array([[-2], [13], [1]])):
         print("[manager] Child corridor is added to the tree")
         receiving_corridor.add_child_corridor(new_corridor)
         receiving_corridor.remove_similar_children()
         receiving_corridor.sort_children()
+        # global GOAL_IN_SIGHT
+        GOAL_IN_SIGHT = True
+        print("[manager] Goal is in sight!")
     else:
-        print("[manager] Discarding a corridor because it does not improve \
-              enough")
+        # Check if this new corridor improves enough
+        stuck = check_stuck(receiving_corridor, new_corridor, 0.25)
+        if not stuck or receiving_corridor.check_inside(np.array(
+            [[-2], [13], [1]])):
+            print("[manager] Child corridor is added to the tree")
+            receiving_corridor.add_child_corridor(new_corridor)
+            receiving_corridor.remove_similar_children()
+            receiving_corridor.sort_children()
+        else:
+            print("[manager] Discarding a corridor")
 
     return (root_corridor, current_corridor)
 
@@ -174,8 +186,9 @@ def publish_corridors(corridors, publisher):
         to_send.tilt_global = corridor.tilt
         xy_corners = []
         for xy in corridor.corners:
-            xy_corners.append(xy)
-        to_send.corners_global = xy_corners.copy()
+            xy_corners.append(list(xy))
+        print(xy_corners)
+        to_send.corners_global = []
 
         to_send_list.len += 1
         to_send_list.corridors.append(to_send)
@@ -245,6 +258,9 @@ def main():
     global manager_rate
     manager_rate = 1
 
+    global GOAL_IN_SIGHT
+    GOAL_IN_SIGHT = False
+
     # If set to True, a child corridor will only be selected when the end of
     # the current corridor is reached.
     # If set to False, a child is selected as soon as its available, should
@@ -256,7 +272,7 @@ def main():
     new_corridor_list = []
 
     global new_corridor_present
-    new_corridor_present = False
+    new_corridor_present = True
     
     corridor_sub = rospy.Subscriber('/corridor', CorridorLocalListMsg,
                                     corridorCallback)
@@ -285,6 +301,7 @@ def main():
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
         print("[manager] Manager looping")
+        print(f"GOAL IN SIGHT: {GOAL_IN_SIGHT}")
 
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
@@ -300,14 +317,14 @@ def main():
                 continue
 
         # if a new corridor arrived, potentially add it to the tree
-        if new_corridor_present:
+        if new_corridor_present and not GOAL_IN_SIGHT:
             print("[manager] discovered ", len(new_corridor_list),
                   " new corridor(s)!")
 
             for corridor in new_corridor_list:
                 (root_corridor, current_corridor) = process_new_corridor(
                     corridor, root_corridor, current_corridor,
-                    explore_full_corridor)
+                    explore_full_corridor, corridor_pub)
             
             new_corridor_present = False
             new_corridor_list = []
@@ -321,11 +338,11 @@ def main():
                 print("[manager] Selecting child corridor")
                 (succes, current_corridor) = select_child_corridor(
                     current_corridor)
-                print("[manager] Child corridor selected! (", succes, ")")
+                # print("[manager] Child corridor selected! (", succes, ")")
                 if not succes:
                     print("[manager] Need to backtrack!")
                     if not waiting_to_backtrack:
-                        print("[manager] Started waiting to backtrack")
+                        print("[manager] Waiting to backtrack...")
                         backtrack_start_time = rospy.Time.now().to_sec()
                         waiting_to_backtrack = True
                     else:
@@ -339,7 +356,7 @@ def main():
                             (backtrack_point, current_corridor,
                             backtracking_corridors) = get_back_track_point(
                                 current_corridor, explore_full_corridor)
-                            print("[manager] Current corridor = ", current_corridor)
+                            # print("[manager] Current corridor = ", current_corridor)
                             if backtrack_point is None:
                                 print("[manager] ERROR: I cannot backtrack")
                                 backtrack_mode_activated = False

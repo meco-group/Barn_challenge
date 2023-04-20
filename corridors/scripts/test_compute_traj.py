@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 from numpy import pi, cos, sin, tan, sqrt, linspace, arctan, arctan2
-from motion_planner import compute_initial_point, compute_trajectory
-from corridor import *
-from corridor_world import *
+import numpy as np
+from motion_planner import compute_initial_point, compute_trajectory, planner
+from corridor import Corridor
+from corridor_world import CorridorWorld
 
 
 
@@ -10,12 +11,12 @@ USE_ROS = False
 
 
 if USE_ROS:
-    from barn_challenge.msg import corridor_msg
+    from barn_challenge.msg import CorridorLocalMsg
     from nav_msgs.msg import Odometry
-    from corridor_manager import transformCorridorToWorld, odomMsgClass
+    from corridor_manager import transform_corridor_to_world, odomMsgClass
 
     def convertCorridorToCorridorMsg(corr, posx, posy, theta):
-        new_message = corridor_msg()
+        new_message = CorridorLocalMsg()
         new_message.height_local = corr.height
         new_message.width_local = corr.width
         new_message.quality_local = corr.quality
@@ -26,12 +27,12 @@ if USE_ROS:
         new_message.init_pos_global = [posx, posy, theta]
         return new_message
 
-    def convertOdometryToOdometryMsg(posx, posy, theta):
-        curr_pose = odomMsgClass()
-        curr_pose.posx = posx
-        curr_pose.posy = posy
-        curr_pose.theta = theta
-        return curr_pose
+    # def convertOdometryToOdometryMsg(posx, posy, theta):
+    #     curr_pose = odomMsgClass()
+    #     curr_pose.posx = posx
+    #     curr_pose.posy = posy
+    #     curr_pose.theta = theta
+    #     return curr_pose
 
 
 #PARAMETERS
@@ -144,6 +145,40 @@ elif test == 5:
     # In local frame
     tilt1_local = -pi/8        # With respect to the vehicle
     tilt2_local = -pi/8 - pi/5 # With respect to the vehicle
+#####################################
+# Test 6: Turn right and then right
+#####################################
+elif test == 6:
+    print("Testing right-right")
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = -pi/4        # With respect to the vehicle
+    tilt2_local = -pi/4 - pi/5 # With respect to the vehicle
+#####################################
+# Test 7: Turn right and then right
+#####################################
+elif test == 7:
+    print("Testing right-right")
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = -pi/2 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = pi/2        # With respect to the vehicle
+    tilt2_local = pi/2 - pi/5 # With respect to the vehicle
 
 # Compute center of the corridors wrt body frame
 center1_local = np.array([-(height1/2)*sin(tilt1_local), (height1/2)*cos(tilt1_local)])
@@ -166,20 +201,23 @@ corridor2_world = CorridorWorld(width2, height2, center2_world, tilt2_world)
 initial_point = compute_initial_point(corridor1_world, m)
 x0 = initial_point[0]
 y0 = initial_point[1]
+# x0 = 1.43
+# y0 = 7.2
 
 if USE_ROS:
     # Check conversion from local to world frame (same as implemented in corridor_manager)
-    robot_odometry = convertOdometryToOdometryMsg(veh_posx, veh_posy, veh_tilt)
-    corridor1_converted = transformCorridorToWorld(convertCorridorToCorridorMsg(corridor1_local.corridor_copy(), veh_posx, veh_posy, veh_tilt))
-    corridor2_converted = transformCorridorToWorld(convertCorridorToCorridorMsg(corridor2_local.corridor_copy(), veh_posx, veh_posy, veh_tilt))
+    # robot_odometry = convertOdometryToOdometryMsg(veh_posx, veh_posy, veh_tilt)
+    corridor1_converted = transform_corridor_to_world(convertCorridorToCorridorMsg(corridor1_local.corridor_copy(), veh_posx, veh_posy, veh_tilt))
+    corridor2_converted = transform_corridor_to_world(convertCorridorToCorridorMsg(corridor2_local.corridor_copy(), veh_posx, veh_posy, veh_tilt))
 
     # corridor2_converted = None
     # Use compute_trajectory (by Sonia). Be aware that the tilt angle of the vehicle should be measured from the x-axis of the world frame
-    sequence_man, computed_path = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_converted)
-    # sequence_man = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
+    sequence_man, computed_path = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_converted)
+    # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 else:
-    sequence_man, computed_path = compute_trajectory(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_world)
-    # sequence_man = compute_trajectory(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
+    # corridor2_world = None
+    sequence_man, computed_path = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world)
+    # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 
 print(sequence_man)
 
@@ -204,20 +242,27 @@ def plot_corridors(path, *args):
 
 
 if not USE_ROS:
-    # plot_corridors(computed_path, corridor1_converted)
-    plot_corridors(computed_path, corridor1_world, corridor2_world)
+    if corridor2_world is None:
+        plot_corridors(computed_path, corridor1_world)
+    else:
+        plot_corridors(computed_path, corridor1_world, corridor2_world)
+    # plot_corridors(None, corridor1_world)
     # plot_corridors(None, corridor1_local, corridor2_local) 
     # plot_corridors(None, corridor1_world, corridor2_world)
     # plot_corridors(None, corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
+    pass
 
 else:
-    
-    # plot_corridors(computed_path, corridor1_converted)
-    plot_corridors(computed_path, corridor1_converted, corridor2_converted)
-    # plot_corridors(None, corridor1_local, corridor2_local) 
-    # plot_corridors(None, corridor1_world, corridor2_world)
-    # plot_corridors(None, corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
+    if corridor2_converted is None:
+        plot_corridors(computed_path, corridor1_converted)
+    else:
+        plot_corridors(computed_path, corridor1_converted, corridor2_converted)
+        # plot_corridors(None, corridor1_converted)
+        # plot_corridors(None, corridor1_local, corridor2_local) 
+        # plot_corridors(None, corridor1_world, corridor2_world)
+        # plot_corridors(None, corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
 
+    exit()
     ##########################################################
     # Test 
     ##########################################################
