@@ -109,7 +109,7 @@ def main():
     global GOAL_IN_SIGHT
     GOAL_IN_SIGHT = False
 
-    RATE = 50
+    RATE = 5
 
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
@@ -133,7 +133,7 @@ def main():
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
     a = 0.430
     b = 0.508
-    m = 0.5
+    m = 0.1
 
     print("Initializing Navigator")
 
@@ -177,7 +177,7 @@ def main():
                     m = m, 
                     x0 = message.posx, 
                     y0 = message.posy, 
-                    theta0 = message.theta, # + np.pi/2, # TODO: Check this
+                    theta0 = message.theta, 
                     plot = False, 
                     corridor2 = corridor2
                 )
@@ -192,16 +192,15 @@ def main():
                     m = m, 
                     x0 = message.posx, 
                     y0 = message.posy, 
-                    theta0 = message.theta, # + np.pi/2, # TODO: Check this
+                    theta0 = message.theta, 
                     plot = False, 
                     corridor2 = corridor2,
                     xf = message.goalx,
                     yf = message.goaly,
                 )
-                print("######### HEADING TO THE GOAL ############")
+                print("--- HEADING TO THE GOAL ---")
+                # isDone = True
 
-
-                
 
             print(computed_maneuver)
 
