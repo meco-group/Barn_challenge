@@ -199,7 +199,7 @@ def publish_corridors(corridors, publisher):
         xy_corners = []
         for xy in corridor.corners:
             xy_corners.append(list(xy))
-        print(xy_corners)
+        # print(xy_corners)
         to_send.corners_global = []
 
         to_send_list.len += 1
@@ -225,11 +225,12 @@ def visualize_corridor_tree(root_corridor, current_corridor, margin):
     current_corridor.rviz_visualization('rect', id, *current_color,
                                         1/manager_rate)
 
+    id += 1
     corridor_margin = CorridorWorld(center=current_corridor.center,
                                     tilt=current_corridor.tilt,
                                     height=current_corridor.height-2*margin,
                                     width=current_corridor.width-2*margin)
-    corridor_margin.rviz_visualization('rect', id+100, *margin_color,
+    corridor_margin.rviz_visualization('rect', id, *margin_color,
                                        1/manager_rate)
     id += 1
 
