@@ -93,13 +93,13 @@ def check_significantly_different(corridor1, corridor2, distance_threshold=0.2, 
     indx1 = 0
     indx2 = 3
 
-    distance_bool = np.sqrt(np.power(corners1[indx1][0]-corners2[indx1][0], 2) + np.power(corners1[indx1][1]-corners2[indx1][1], 2)) + \
-        np.sqrt(np.power(corners1[indx2][0]-corners2[indx2][0], 2) + np.power(corners1[indx2][1]-corners2[indx2][1], 2)) > distance_threshold
+    distance_bool = np.sqrt((corners1[indx1][0]-corners2[indx1][0])**2 + (corners1[indx1][1]-corners2[indx1][1])**2) + \
+        np.sqrt((corners1[indx2][0]-corners2[indx2][0])**2 + (corners1[indx2][1]-corners2[indx2][1])**2) > distance_threshold
     tilt_bool = np.abs(corridor1.tilt - corridor2.tilt) > tilt_threshold
 
     return distance_bool and tilt_bool
 
-def get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR):
+def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
     '''
         Given the corridor the robot is currently in, this function
         returns the point to backtrack to from which we can get to another
@@ -115,7 +115,7 @@ def get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR):
 
         while not corridor_to_explore is None and len(corridor_to_explore.children) <= 1:
             if corridor_to_explore is None:
-                return (None, current_corridor, [])
+                return (None, current_corridor, [], orphanage)
             
             previous_point = corridor_to_explore.growth_center
             corridor_to_explore = corridor_to_explore.parent
@@ -123,17 +123,22 @@ def get_back_track_point(current_corridor, EXPLORE_FULL_CORRIDOR):
             backtracking_corridors.append(corridor_to_explore)
 
         if corridor_to_explore is None:
-            return (None, current_corridor, [])
+            return (None, current_corridor, [], orphanage)
         corridor_to_explore.remove_child_corridor(0)
-        return (corridor_to_explore.children[0].growth_center, corridor_to_explore.children[0], backtracking_corridors)
+        
+        for trash_corridor in backtracking_corridors:
+            orphanage.add_child_corridor(trash_corridor)
+
+        return (corridor_to_explore.children[0].growth_center, corridor_to_explore.children[0], backtracking_corridors, orphanage)
     
     else:
         if current_corridor.parent is None:
-            return (None, current_corridor, [])
+            return (None, current_corridor, [], orphanage)
         else:
             parent = current_corridor.parent
             parent.remove_child_corridor(0)
-            return (current_corridor.growth_center, parent, [current_corridor, parent])
+            orphanage.add_child_corridor(current_corridor)
+            return (current_corridor.growth_center, parent, [current_corridor, parent], orphanage)
 
 def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
     '''

@@ -115,10 +115,13 @@ class CorridorWorld:
         '''Add child corridor to this corridor and add this
         corridor as parent to the child
         '''
+        self.children.append(child)
+        child.parent = self
         if (max([child.corners[k][1] for k in range(4)]) >
            max([self.corners[k][1] for k in range(4)])):
-            self.children.append(child)
-            child.parent = self
+            child.quality = 1.0
+        else:
+            child.quality = 0.1
 
     def remove_child_corridor(self, child_ind):
         '''Remove the child corridor with given index in the list
@@ -136,10 +139,29 @@ class CorridorWorld:
                     self.remove_child_corridor(i)
                     break  # break from outer loop
 
+    def has_similar_child(self, potential_child):
+        '''Returns wether or not this corridor has a child that is
+        similar to the potential_child corridor that is given
+        '''
+        similar_found = False
+        for child in self.children:
+            if not check_significantly_different(child, potential_child):
+                similar_found = True
+                break
+
+        return similar_found
+
     def sort_children(self):
         self.children.sort(key=lambda x: max([x.corners[k][1]
                                               for k in range(len(x.corners))]),
                            reverse=True)
+
+    def  has_quality_child(self):
+        for child in self.children:
+            if child.quality >= 0.5:
+                return True
+
+        return False
 
     def check_inside(self, datapoints):
         '''Check if datapoints are inside the corridor.
