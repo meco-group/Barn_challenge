@@ -59,27 +59,47 @@ def check_stuck(parent, child, threshold=0.3):
         Returning True means that the child corridor does not improve enough
     '''
     H1 = parent.height/2
+    tilt1 = parent.tilt
+    tilt2 = child.tilt
     if np.abs(child.growth_center[1] - child.center[1]) < 1.0e-8:
         alpha = 0
     else:
-        alpha = -np.arctan((child.growth_center[0]-child.center[0])/(child.growth_center[1]-child.center[1]))   # angle between centerline of the corridor and line between growth-center and center
-    centers_dist = np.sqrt(np.power(child.growth_center[0]-child.center[0],2) + np.power(child.growth_center[1]-child.center[1],2))
-    H2 = child.height/2 + centers_dist*np.cos(alpha-child.tilt)
+        # rotate the growth center as if the child would have no tilt
+        x_tilted = child.growth_center[0]*np.cos(tilt2)+child.growth_center[1]*np.sin(tilt2)
+        y_tilted = -child.growth_center[0]*np.sin(tilt2)+child.growth_center[1]*np.cos(tilt2)
+        
+        # compute angle between centerline of the corridor and line between growth-center and center
+        alpha = np.arctan((x_tilted-child.center[0])/(y_tilted-child.center[1]))
+    d_growth_to_child_center = np.sqrt(np.power(child.growth_center[0]-child.center[0],2) + np.power(child.growth_center[1]-child.center[1],2))
+    H2 = child.height/2 + d_growth_to_child_center*np.cos(alpha)
     W1 = parent.width/2
-    x1 = child.growth_center[0]-parent.center[0]
-    y1 = child.growth_center[1]-parent.center[1]
-    tilt1 = parent.tilt
-    tilt2 = child.tilt
 
-    tilt_critical = np.arctan((W1-x1)/(H1-y1))
-    if tilt2-tilt1 < -tilt_critical or tilt2-tilt1 > tilt_critical:
-        d_improvement = max(0,H2-(W1-x1)/np.cos(np.pi/2-np.abs(tilt2)+tilt1))
+    # rotate the growth center as if the parent would have no tilt
+    x_tilted = child.growth_center[0]*np.cos(tilt1)+child.growth_center[1]*np.sin(tilt1)
+    y_tilted = -child.growth_center[0]*np.sin(tilt1)+child.growth_center[1]*np.cos(tilt1)
+
+    # compute offset of growth_center wrt center of parent
+    x1 = parent.center[0]-x_tilted
+    y1 = parent.center[1]-y_tilted
+
+    gamma = tilt2-tilt1
+
+    if gamma >= 0:
+        tilt_critical = np.arctan((W1-x1)/(H1-y1))
+        if gamma >= tilt_critical:
+            d_improvement = max(0,H2-(W1-x1)/np.cos(gamma-tilt_critical))
+        else:
+            d_improvement = max(0,H2-(H1-y1)/np.cos(gamma))
     else:
-        d_improvement = max(0,H2-(H1-y1)/np.cos(tilt2-tilt1))
+        tilt_critical = np.arctan((W1+x1)/(H1-y1))
+        if gamma < tilt_critical:
+            d_improvement = max(0,H2-(W1+x1)/np.cos(tilt_critical-gamma))
+        else:
+            d_improvement = max(0,H2-(H1-y1)/np.cos(gamma))
 
     return d_improvement < threshold
 
-def check_significantly_different(corridor1, corridor2, distance_threshold=0.2, tilt_threshold=np.pi/6):
+def check_significantly_different(corridor1, corridor2, distance_threshold=0.4, tilt_threshold=np.pi/5):
     '''
         Compute the distance between the 'forward' corners of the
         corridors and compare it with the threshold.
