@@ -54,9 +54,13 @@ def transform_corridor_to_world(new_corridor):
     transformed_corridor = CorridorWorld(center=center, tilt=tilt,
                                          height=new_corridor.height_local,
                                          width=new_corridor.width_local)
+    corridor_margin = CorridorWorld(center=center, tilt=tilt,
+                                    height=new_corridor.height_local-2*.2,
+                                    width=new_corridor.width_local-2*.2)
+
     transformed_corridor.growth_center = growth_center
 
-    return transformed_corridor
+    return transformed_corridor, corridor_margin
 
 
 def process_new_corridor(new_corridor_msg, root_corridor,
@@ -65,7 +69,8 @@ def process_new_corridor(new_corridor_msg, root_corridor,
     This function takes a new corridor message (new_corridor) and decides
     wether or not to put it in the corridor tree.
     '''
-    new_corridor = transform_corridor_to_world(new_corridor_msg)
+    new_corridor, margin_corridor = transform_corridor_to_world(
+        new_corridor_msg)
 
     # If this is the first corridor ever, start the tree
     if root_corridor is None:
@@ -74,7 +79,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         current_corridor = root_corridor
         print("[manager] Root corridor is now created")
         publish_corridors([root_corridor], corridor_pub)
-        return (root_corridor, current_corridor)
+        return (root_corridor, current_corridor, margin_corridor)
     # Else, check if the new corridor should be added
 
     # If we are not yet in the current_corridor, this new corridor should be
@@ -110,7 +115,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         else:
             print("[manager] Discarding a corridor")
 
-    return (root_corridor, current_corridor)
+    return (root_corridor, current_corridor, margin_corridor)
 
 
 def select_child_corridor(current_corridor):
@@ -197,19 +202,22 @@ def publish_corridors(corridors, publisher):
     publisher.publish(to_send_list)
 
 
-def visualize_corridor_tree(root_corridor, current_corridor):
+def visualize_corridor_tree(root_corridor, current_corridor, margin_corridor):
     '''
     Visualization for debugging purposes. The current branch along with
     other options is shown in different colors
     '''
     global id
     current_color = [1, 0, 0]  # red
+    margin_color = [1, 0.6, 0.6]  # red
     branch_color = [0, 1, 0]  # green
     root_color = [0, 1, 0]   # green
     options_color = [1, 1, 0]
 
     # visualize current corridor
     current_corridor.rviz_visualization('rect', id, *current_color,
+                                        1/manager_rate)
+    margin_corridor.rviz_visualization('rect', id+100, *margin_color,
                                         1/manager_rate)
     id += 1
     
@@ -322,7 +330,7 @@ def main():
                   " new corridor(s)!")
 
             for corridor in new_corridor_list:
-                (root_corridor, current_corridor) = process_new_corridor(
+                (root_corridor, current_corridor, corridor_margin) = process_new_corridor(
                     corridor, root_corridor, current_corridor,
                     explore_full_corridor, corridor_pub)
             
@@ -366,7 +374,7 @@ def main():
                     publish_corridors([current_corridor], corridor_pub)
 
         if current_corridor is not None:
-            visualize_corridor_tree(root_corridor, current_corridor)
+            visualize_corridor_tree(root_corridor, current_corridor, corridor_margin)
 
         rate.sleep()
 

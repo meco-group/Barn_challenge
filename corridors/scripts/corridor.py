@@ -17,7 +17,7 @@ GOAL_2 = (-2, 11)
 class Corridor:
     '''Corridor object for representation of free space between obstacles.
     '''
-    DELTA = 1
+    DELTA = .5
     FWD = 0
     RGT = 1
     BCK = 2
@@ -125,7 +125,7 @@ class Corridor:
         :type edge: int
         '''
         step = self.DELTA
-        # Do a first check to see if initial corridor contains datapoints.          
+        # Do a first check to see if initial corridor contains datapoints.
         if self.check_inside(datapoints):
             print('discard corridor')
         else:
@@ -142,7 +142,7 @@ class Corridor:
                 # inside.
                 else:
                     while self.check_inside(datapoints):
-                        self.W[2, edge] += step/3
+                        self.W[2, edge] += step/5
                         self.corners = get_corners(self.W)
                     break
 

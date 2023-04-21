@@ -80,7 +80,7 @@ def visualizeArrows(angles):
         marker.color.r = 0.0
         marker.color.g = 1.0
         marker.color.b = 0.0
-        marker.scale.x = 0.1
+        marker.scale.x = 0.02
         marker.scale.y = 0.1
         marker.scale.z = 0.1
         marker.pose.orientation.y = 0.0
