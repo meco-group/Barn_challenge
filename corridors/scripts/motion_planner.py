@@ -223,7 +223,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
     R = v_max/omega_max
     ## Compute the trajetory in case you have only one corridor
     if corridor2 == None:
-        R = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2 )[0], 1e-3), R)
+        R = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, a/2+m )[0], 1e-3), R)
         print(f"R = {R} m")
         #initialize the output with two maneuvers
         maneuver_sequence = np.empty((2,3))
@@ -351,33 +351,34 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 c1 = sqrt((yc2 - yc1)**2 + (xc2 - xc1)**2)
                 delta1 = arctan2((yc2 - yc1), (xc2-xc1))
                 epsilon1 = delta1 - pi/2
-                zeta1 = arctan2((y0 - yc1),(x0 - xc1))
-                eta1 = abs(epsilon1) + abs(zeta1)
+                zeta1 = arctan2((y0 - yc1),(x0 - xc1)) + 2 * pi
                 x1 = xc1 + R1* cos(epsilon1)
                 y1 = yc1 + R1 * sin(epsilon1)
+                chord1 = sqrt((x1 - x0)**2 + (y1-y0)**2)
+                iota1 = 2 * arcsin((chord1/2)/R1)
                 x2 = x1 + c1 * cos(epsilon1 + pi/2)
                 y2 = y1 + c1 * sin(epsilon1 + pi/2)
 
-                epsilon2 = arctan2((y2 - yc2), (x2 - xc2))
+                epsilon2 = arctan2((y2 - yc2), (x2 - xc2)) + 2 * pi
                 delta2 = arctan2((yc2-yf),(xc2-xf))
                 a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
                 c2 = sqrt(a2**2 - R**2)
                 beta2 = arcsin(R/a2)
-                iota2 = delta2 + beta2
-                x3 = xf + c2 * cos(iota2)
-                y3 = yf + c2 * sin(iota2)
-                zeta2 = arctan2((y3-yc2),(x3-xc2))
-                eta2 = zeta2 - epsilon2
+                eta2 = delta2 + beta2
+                x3 = xf + c2 * cos(eta2)
+                y3 = yf + c2 * sin(eta2)
+                chord2 = sqrt((x3-x2)**2 + (y3-y2)**2)
+                iota2 = 2*arcsin((chord2/2)/R)
 
                 v1 = R1 * omega_max
                 
                 if R1 > 1e-3:
-                    t1 = R1 * iota1/ v1
+                    t1 = R1 * iota1 /v1
                 else: 
                     t1 = iota1 / omega_max
                 
                 t2 = c1/v_max
-                t3 = R*eta2/v_max
+                t3 = R*iota2/v_max
                 t4 = c2/v_max
 
                 maneuver_sequence[0,:] = np.array([v1, omega_max, t1])
@@ -385,10 +386,10 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 maneuver_sequence[2,:] = np.array([v_max, omega_max, t3])
                 maneuver_sequence[3,:] = np.array([v_max, 0, t4])
 
-                arc_x1 = xc1 + R1 * cos(linspace(zeta1, epsilon1, 100))
-                arc_y1 = yc1 + R1 * sin(linspace(zeta1, epsilon1, 100))
-                arc_x2 = xc2 + R * cos(linspace(epsilon2, zeta2, 100))
-                arc_y2 = yc2 + R * sin(linspace(epsilon2, zeta2, 100))
+                arc_x1 = xc1 + R1 * cos(linspace(zeta1, zeta1 + iota1, 100))
+                arc_y1 = yc1 + R1 * sin(linspace(zeta1, zeta1 + iota1, 100))
+                arc_x2 = xc2 + R * cos(linspace(epsilon2, epsilon2 + iota2, 100))
+                arc_y2 = yc2 + R * sin(linspace(epsilon2, epsilon2 + iota2, 100))
             
             else:
                 xc1 = x0 + R1 * cos(theta0 - pi/2)
@@ -420,7 +421,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 
                 v1 = R1 * abs(omega_min)
                 if R1 > 1e-3:
-                    t1 = R1 * iota1/ v1
+                    t1 = R1 * iota1 / v1
                 else: 
                     t1 = iota1 / abs(omega_min)
                 t2 = 2 * c1 / v_max
@@ -477,7 +478,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 
                 chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
                 if R1 > 1e-3:
-                    iota1 = 2 * arcsin((chord1/2)/R1)
+                    iota1 = 2*arcsin((chord1/2)/R1)
                 else:
                     iota1 = abs(theta0 - corridor1.tilt)
                 chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
@@ -485,7 +486,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 v1 = R1 * omega_max
 
                 if R1 > 1e-3:
-                    t1 = R1 * iota1/ v1
+                    t1 = R1 * iota1 /v1
                 else: 
                     t1 = iota1 / omega_max
                 t2 = 2*c1/v_max
@@ -525,7 +526,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
                 if R1 > 1e-3:
-                    iota1 = 2 * arcsin((chord1/2)/R1)
+                    iota1 = 2*arcsin((chord1/2)/R1)
                 else:
                     iota1 = abs(theta0 - corridor1.tilt)
                 chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
@@ -533,7 +534,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 v1 = R1 * abs(omega_min)
 
                 if R1 > 1e-3:
-                    t1 = R1 * iota1/ v1
+                    t1 = R1 * iota1 /v1
                 else: 
                     t1 = iota1 / abs(omega_min)
                 t2 = 2*c1/v_max
