@@ -105,7 +105,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         print("[manager] Goal is in sight!")
     else:
         # Check if this new corridor improves enough
-        stuck = check_stuck(receiving_corridor, new_corridor, 0.25)
+        stuck = check_stuck(receiving_corridor, new_corridor)
 
         # Check if this new corridor is not too similar to a
         # backtracked corridor

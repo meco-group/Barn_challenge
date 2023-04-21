@@ -2,7 +2,7 @@ from corridor_world import CorridorWorld
 import numpy as np
 import matplotlib.pyplot as plt
 
-def get_max_radius(posx, posy, theta, corridor):
+def get_max_radius(posx, posy, theta, corridor, margin):
     '''
         This helper function returns the maximal allowed turning radius for the
         alignment arc such taht the robot does not crash into the wall of the 
@@ -14,11 +14,11 @@ def get_max_radius(posx, posy, theta, corridor):
     if np.cos(theta) ==1:
         return 100000
     elif theta  > 0:
-        return (corridor.width/2+(posx-corridor.center[0]))/(1-np.cos(theta))
+        return ((corridor.width-2*margin)/2+(posx-corridor.center[0]))/(1-np.cos(theta))
     elif theta < 0:
-        return (corridor.width/2-(posx-corridor.center[0]))/(1-np.cos(theta))
+        return ((corridor.width-2*margin)/2-(posx-corridor.center[0]))/(1-np.cos(theta))
     
-def get_max_alignment_radius(posx, posy, theta, corridor):
+def get_max_alignment_radius(posx, posy, theta, corridor, margin = 0):
     '''
         This function returns the maximum allowed turning radius for the 
         alignment arc such that the robot does not crash into the wall of the
@@ -29,6 +29,7 @@ def get_max_alignment_radius(posx, posy, theta, corridor):
         theta:    heading angle of the robot w.r.t the y-axis!
         corridor: corridor defined in the world with a tilt relative to the 
                   y-axis!
+        margin:   safety margin for corridor width
     '''
     # First, transform the robot position to pretend that the corridor has no
     # tilt
@@ -36,7 +37,7 @@ def get_max_alignment_radius(posx, posy, theta, corridor):
     posy_tilted = corridor.center[1] - (posx-corridor.center[0])*np.sin(corridor.tilt) + (posy-corridor.center[1])*np.cos(corridor.tilt)
 
     # Call the helper to get the maximum radius
-    return (get_max_radius(posx_tilted, posy_tilted, theta-corridor.tilt, corridor), posx_tilted, posy_tilted)
+    return (get_max_radius(posx_tilted, posy_tilted, theta-corridor.tilt, corridor, margin), posx_tilted, posy_tilted)
 
 # # make a corridor
 # c = CorridorWorld(width=0.5, height=1.0, tilt=0.2, center=[0.0,0.0])
