@@ -98,6 +98,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         receiving_corridor.sort_children()
         # global GOAL_IN_SIGHT
         GOAL_IN_SIGHT = True
+        print("*************************************")
         print("[manager] Goal is in sight!")
     else:
         # Check if this new corridor improves enough
@@ -108,10 +109,10 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         backtracked = orphanage.has_similar_child(new_corridor)
 
         if not stuck and not backtracked:
-            print("[manager] Child corridor is added to the tree")
+            print("[manager] Child corridor added")
             receiving_corridor.add_child_corridor(new_corridor)
-            receiving_corridor.remove_similar_children()
             receiving_corridor.sort_children()
+            receiving_corridor.remove_similar_children()
         else:
             print("[manager] Discarding a corridor")
 
@@ -129,12 +130,20 @@ def select_child_corridor(current_corridor):
         # backtrack
         return (False, current_corridor)
     else:
-        current_corridor = current_corridor.children[0]
-        return (True, current_corridor)
+        if not current_corridor.has_quality_child():
+            return (True, current_corridor.children[0])
+
+        else:
+            for child in current_corridor.children:
+                if child.quality >= 0.5:
+                    return (True, child)
+
+            print("[manager] ERROR: select_child_corridor")
+            return (False, current_corridor)
 
 
 def corridorCallback(data):
-    print("[manager] Starting corridor callback")
+    # print("[manager] Starting corridor callback")
     global new_corridor_present
     new_corridor_present = True
     global new_corridor_list
@@ -206,14 +215,19 @@ def visualize_corridor_tree(root_corridor, current_corridor):
     '''
     global id
     current_color = [1, 0, 0]  # red
-    branch_color = [0, 1, 0]  # green
-    root_color = [0, 1, 0]   # green
-    options_color = [1, 1, 0]
+    branch_color = [0, 1, 0]   # green
+    options_color = [1, 1, 0]  # yellow
+    current_children_color = [1, 0.5, 0] # orange
 
     # visualize current corridor
     current_corridor.rviz_visualization('rect', id, *current_color,
                                         1/manager_rate)
     id += 1
+
+    for child in current_corridor.children:
+        child.rviz_visualization('rect', id, *current_children_color,
+        1/manager_rate)
+        id += 1
     
     # visualize current branch and all other children
     to_visualize = current_corridor
@@ -228,10 +242,6 @@ def visualize_corridor_tree(root_corridor, current_corridor):
                                                         *options_color,
                                                         1/manager_rate)
             id += 1
-
-    # visualize root corridor
-    root_corridor.rviz_visualization('rect', id, *root_color, 1/manager_rate)
-    id += 1
 
 
 def visualize_backtracking_corridors(backtracking_corridors, current_corridor):
@@ -293,7 +303,7 @@ def main():
     # Define variables for the corridor tree
     root_corridor = None
     current_corridor = None
-    orphanage = CorridorWorld(center=[0.0,0.0], width=0.001, heigth=0.001, tilt=0.0)
+    orphanage = CorridorWorld(center=[0.0,0.0], width=0.001, height=0.001, tilt=0.0)
 
     backtrack_point = None
     waiting_to_backtrack = False
@@ -304,8 +314,8 @@ def main():
 
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
-        print("[manager] Manager looping")
-        print(f"GOAL IN SIGHT: {GOAL_IN_SIGHT}")
+        # print("[manager] Manager looping")
+        # print(f"GOAL IN SIGHT: {GOAL_IN_SIGHT}")
 
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
@@ -337,8 +347,13 @@ def main():
         if current_corridor is not None:
             end_reached = check_end_of_corridor_reached(
                 current_corridor, curr_pose, 1.0)
+            
+            # select a child corridor if
+            #   - you have reached the end of the current corridor
+            #   - you don't want to explore the full corridor and you
+            #       know you already have a child with a satisfactory quality
             if end_reached or (not explore_full_corridor and
-                               len(current_corridor.children) > 0):
+                               current_corridor.has_quality_child()):
                 print("[manager] Selecting child corridor")
                 (succes, current_corridor) = select_child_corridor(
                     current_corridor)
@@ -359,7 +374,7 @@ def main():
                             backtrack_mode_activated = True
                             (backtrack_point, current_corridor,
                             backtracking_corridors, orphanage) = get_back_track_point(
-                                current_corridor, orphanage,, explore_full_corridor)
+                                current_corridor, orphanage, explore_full_corridor)
                             # print("[manager] Current corridor = ", current_corridor)
                             if backtrack_point is None:
                                 print("[manager] ERROR: I cannot backtrack")

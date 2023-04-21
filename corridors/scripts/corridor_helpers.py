@@ -79,7 +79,7 @@ def check_stuck(parent, child, threshold=0.3):
 
     return d_improvement < threshold
 
-def check_significantly_different(corridor1, corridor2, distance_threshold=0.6, tilt_threshold=np.pi/6):
+def check_significantly_different(corridor1, corridor2, distance_threshold=0.2, tilt_threshold=np.pi/6):
     '''
         Compute the distance between the 'forward' corners of the
         corridors and compare it with the threshold.
@@ -93,8 +93,8 @@ def check_significantly_different(corridor1, corridor2, distance_threshold=0.6, 
     indx1 = 0
     indx2 = 3
 
-    distance_bool = np.sqrt(np.power(corners1[indx1][0]-corners2[indx1][0], 2) + np.power(corners1[indx1][1]-corners2[indx1][1], 2)) + \
-        np.sqrt(np.power(corners1[indx2][0]-corners2[indx2][0], 2) + np.power(corners1[indx2][1]-corners2[indx2][1], 2)) > distance_threshold
+    distance_bool = np.sqrt((corners1[indx1][0]-corners2[indx1][0])**2 + (corners1[indx1][1]-corners2[indx1][1])**2) + \
+        np.sqrt((corners1[indx2][0]-corners2[indx2][0])**2 + (corners1[indx2][1]-corners2[indx2][1])**2) > distance_threshold
     tilt_bool = np.abs(corridor1.tilt - corridor2.tilt) > tilt_threshold
 
     return distance_bool and tilt_bool

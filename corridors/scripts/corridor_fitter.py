@@ -148,8 +148,8 @@ def main():
             corridor.grow_all_edges(xy)
             message.corridors.append(corridor)  # TODO do dit weg
             corridor.get_vertices_for_visualization(x, y, theta)
-            corridor.rviz_visualization('rect_fitter', i, 0., 0., 0.7,
-                                        1/fitter_rate)
+            # corridor.rviz_visualization('rect_fitter', i, 0., 0., 0.7,
+                                        # 1/fitter_rate)
 
         next_best_corrs = sorted(last_best_corr.children, key=lambda corridor:
                                  max([xs.y for xs in corridor.corners_world]),
