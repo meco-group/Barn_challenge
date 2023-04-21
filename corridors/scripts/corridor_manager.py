@@ -54,6 +54,7 @@ def transform_corridor_to_world(new_corridor):
     transformed_corridor = CorridorWorld(center=center, tilt=tilt,
                                          height=new_corridor.height_local,
                                          width=new_corridor.width_local)
+
     transformed_corridor.growth_center = growth_center
 
     return transformed_corridor
@@ -208,12 +209,13 @@ def publish_corridors(corridors, publisher):
     publisher.publish(to_send_list)
 
 
-def visualize_corridor_tree(root_corridor, current_corridor):
+def visualize_corridor_tree(root_corridor, current_corridor, margin):
     '''
     Visualization for debugging purposes. The current branch along with
     other options is shown in different colors
     '''
     global id
+    margin_color = [1, 0.6, 0.6]  # light red
     current_color = [1, 0, 0]  # red
     branch_color = [0, 1, 0]   # green
     options_color = [1, 1, 0]  # yellow
@@ -222,13 +224,20 @@ def visualize_corridor_tree(root_corridor, current_corridor):
     # visualize current corridor
     current_corridor.rviz_visualization('rect', id, *current_color,
                                         1/manager_rate)
+
+    corridor_margin = CorridorWorld(center=current_corridor.center,
+                                    tilt=current_corridor.tilt,
+                                    height=current_corridor.height-2*margin,
+                                    width=current_corridor.width-2*margin)
+    corridor_margin.rviz_visualization('rect', id+100, *margin_color,
+                                       1/manager_rate)
     id += 1
 
     for child in current_corridor.children:
         child.rviz_visualization('rect', id, *current_children_color,
         1/manager_rate)
         id += 1
-    
+
     # visualize current branch and all other children
     to_visualize = current_corridor
     while to_visualize.parent is not None:
@@ -303,7 +312,8 @@ def main():
     # Define variables for the corridor tree
     root_corridor = None
     current_corridor = None
-    orphanage = CorridorWorld(center=[0.0,0.0], width=0.001, height=0.001, tilt=0.0)
+    orphanage = CorridorWorld(center=[0.0, 0.0], width=0.001,
+                              height=0.001, tilt=0.0)
 
     backtrack_point = None
     waiting_to_backtrack = False
@@ -385,7 +395,7 @@ def main():
                     publish_corridors([current_corridor], corridor_pub)
 
         if current_corridor is not None:
-            visualize_corridor_tree(root_corridor, current_corridor)
+            visualize_corridor_tree(root_corridor, current_corridor, margin=.1)
 
         rate.sleep()
 

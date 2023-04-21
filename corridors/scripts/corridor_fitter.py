@@ -132,7 +132,6 @@ def main():
         sweep_size = len(message.free_angles)
         centers = sweep_size*[[0, 0]]
         tilts = list(message.free_angles)
-        print(tilts)
         if sweep_size == 1:
             centers = 2*[[0, 0]]
             tilts.append(0.0)

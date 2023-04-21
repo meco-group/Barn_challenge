@@ -223,7 +223,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
     R = v_max/omega_max
     ## Compute the trajetory in case you have only one corridor
     if corridor2 == None:
-        R = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1)[0]-(a/2)-m, 1e-3), R)
+        R = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2 )[0], 1e-3), R)
         print(f"R = {R} m")
         #initialize the output with two maneuvers
         maneuver_sequence = np.empty((2,3))
@@ -313,7 +313,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else goal_pos[0]
         yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else goal_pos[1]
 
-        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1)[0]-(a/2)-m, 1e-3), R)  
+        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2)[0], 1e-3), R)  
 
         tilt1 = corridor1.tilt
         tilt2 = corridor2.tilt
