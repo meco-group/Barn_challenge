@@ -8,17 +8,16 @@ Created on Tue Mar 28 15:38:15 2023
 
 import rospy
 from nav_msgs.msg import Odometry, Path
-import sensor_msgs.point_cloud2 as pc2
-from geometry_msgs.msg import Twist, PoseStamped, Vector3
-import laser_geometry.laser_geometry as lg
+from geometry_msgs.msg import PoseStamped, Vector3
 import math
 import numpy as np
 
-from corridor import Corridor
 from corridor_world import CorridorWorld
-from barn_challenge.msg import CorridorWorldMsg, CorridorWorldListMsg, ManeuverMsg
+from barn_challenge.msg import CorridorWorldMsg, CorridorWorldListMsg,\
+    ManeuverMsg
 
 from motion_planner import planner, check_inside_one_point
+
 
 class messageClass():
     def __init__(self):
@@ -31,17 +30,12 @@ class messageClass():
         self.theta = 0.0
 
 
-def distance(point1, point2):
-    point1 = np.array(point1)
-    point2 = np.array(point2)
-    return np.linalg.norm(point1 - point2)
-
-
 def yawFromQuaternion(orientation):
     return math.atan2((2.0*(orientation.w * orientation.z +
-                         orientation.x * orientation.y)),
-                   (1.0 - 2.0*(orientation.y * orientation.y +
-                               orientation.z * orientation.z)))
+                            orientation.x * orientation.y)),
+                      (1.0 - 2.0*(orientation.y * orientation.y +
+                                  orientation.z * orientation.z)))
+
 
 def odomCallback(data):
     message.velx = data.twist.twist.linear.x
@@ -50,52 +44,53 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
-# def corridorCallback(data):
-#     b_corridor.height = data.height
-#     b_corridor.width = data.width
-#     b_corridor.quality = data.quality
-#     b_corridor.center = data.center
-#     b_corridor.tilt = data.tilt
-#     b_corridor.corners = data.corners
 
 def corridorListCallback(data):
     if not GOAL_IN_SIGHT:
         print(".... got new corridor(s)")
         if data.len == 1:
             for corridor_message in data.corridors:
-                corridor_instance = CorridorWorld(corridor_message.width_global, corridor_message.height_global, corridor_message.center_global, corridor_message.tilt_global) 
+                corridor_instance = CorridorWorld(
+                    corridor_message.width_global,
+                    corridor_message.height_global,
+                    corridor_message.center_global,
+                    corridor_message.tilt_global)
                 list_of_corridors.append(corridor_instance)
         elif data.len > 1:
             # TODO: If more than one corridor is sent, backtrack
             pass
 
-def generate_path_message(input_path): # TODO: check that it works correctly with the world frame
-    path = Path() 
+
+def generate_path_message(input_path):
+    # TODO: check that it works correctly with the world frame
+    path = Path()
     if input_path.shape[0] == 0:
         return path
     for i in range(input_path.shape[0]):
         pose = PoseStamped()
         pose.header.frame_id = "odom"
-        pose.pose.position.x = input_path[i,0]
-        pose.pose.position.y = input_path[i,1] 
+        pose.pose.position.x = input_path[i, 0]
+        pose.pose.position.y = input_path[i, 1]
         pose.pose.position.z = 0
         pose.header.seq = path.header.seq + 1
         path.header.frame_id = "odom"
         path.header.stamp = rospy.Time.now()
         pose.header.stamp = path.header.stamp
         path.poses.append(pose)
-    return path      
+    return path
+
 
 def generate_maneuver_message(maneuver_array):
     maneuver_msg = ManeuverMsg()
     maneuver_msg.len = maneuver_array.shape[0]
     for i in range(maneuver_array.shape[0]):
         part_maneuver = Vector3()
-        part_maneuver.x = maneuver_array[i,0]
-        part_maneuver.y = maneuver_array[i,1]
-        part_maneuver.z = maneuver_array[i,2]
+        part_maneuver.x = maneuver_array[i, 0]
+        part_maneuver.y = maneuver_array[i, 1]
+        part_maneuver.z = maneuver_array[i, 2]
         maneuver_msg.maneuver.append(part_maneuver)
     return maneuver_msg
+
 
 def main():
     global message
@@ -109,18 +104,19 @@ def main():
     global GOAL_IN_SIGHT
     GOAL_IN_SIGHT = False
 
-    RATE = 5
-
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
-    corridor_list_sub = rospy.Subscriber('/chosen_corridor', CorridorWorldListMsg, corridorListCallback)
+    corridor_list_sub = rospy.Subscriber('/chosen_corridor',
+                                         CorridorWorldListMsg,
+                                         corridorListCallback)
 
     # Publishers
     path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
     maneuver_Pub = rospy.Publisher('/maneuver', ManeuverMsg, queue_size=1)
 
     rospy.init_node('navigator', anonymous=True)
-    rate = rospy.Rate(RATE)
+    navigator_rate = 5
+    rate = rospy.Rate(navigator_rate)
 
     # v_max = 0.5
     # v_min = -0.5
@@ -137,9 +133,6 @@ def main():
 
     print("Initializing Navigator")
 
-    # maxSpeed = 1
-    # minSpeed = 0.1
-    # maxTurn = math.pi/2
     isDone = False
     message.goalx = message.posx
     message.goaly = message.posy + 10
@@ -150,62 +143,55 @@ def main():
         # Compute path and maneuver within corridors
         #####################################################
 
-        # Generate corridor instances from corridor messages
-        # corridor1 = Corridor(width1, height1, center1_world, tilt1_world + pi/2) # The variables defining the corridors are just placeholders
-        # corridor2 = Corridor(width2, height2, center2_world, tilt2_world + pi/2) # Notice the addition of pi/2
-        
         if len(list_of_corridors) > 0:
-
             corridor1 = list_of_corridors[0]
-            corridor2 = list_of_corridors[1] if len(list_of_corridors) > 1 else None
+            corridor2 = (list_of_corridors[1]
+                         if len(list_of_corridors) > 1
+                         else None)
 
-            # TODO: implement/check the logic on removing first corridor from list (.pop(0)) and 
-            # shifting the corridors. First corridor should always be the one where the robot is.
-            
-            if corridor2 is not None and check_inside_one_point(corridor2, np.array([message.posx,message.posy])):
+            # TODO: implement/check the logic on removing first corridor from
+            # list (.pop(0)) and shifting the corridors. First corridor should
+            # always be the one where the robot is.
+
+            if corridor2 is not None and check_inside_one_point(
+               corridor2, np.array([message.posx, message.posy])):
                 # corridor1, corridor2 = corridor2, None
-                list_of_corridors.pop(0) # Get rid of first corridor as soon as you are already in the second corridor
-                
-                
-            if not check_inside_one_point(corridor1, np.array([message.goalx,message.goaly])):
-                # Compute the maneuvers within the corridors (by Sonia). Be aware that the tilt angle of the vehicle should be measured from the x-axis of the world frame
+                list_of_corridors.pop(0)
+                # Get rid of first corridor as soon as you are already in the
+                # second corridor
+
+            if not check_inside_one_point(
+               corridor1, np.array([message.goalx, message.goaly])):
+                # Compute the maneuvers within the corridors (by Sonia).
+                # Be aware that the tilt angle of the vehicle should be
+                # measured from the x-axis of the world frame
                 computed_maneuver, computed_path = planner(
-                    corridor1 = corridor1, 
-                    u_bounds = u_bounds, 
-                    a = a, 
-                    b = b, 
-                    m = m, 
-                    x0 = message.posx, 
-                    y0 = message.posy, 
-                    theta0 = message.theta, 
-                    plot = False, 
-                    corridor2 = corridor2
-                )
+                    corridor1=corridor1,
+                    u_bounds=u_bounds,
+                    a=a, b=b, m=m,
+                    x0=message.posx, y0=message.posy, theta0=message.theta,
+                    plot=False,
+                    corridor2=corridor2)
             else:
                 GOAL_IN_SIGHT = True
-                   # Compute the maneuvers within the corridors (by Sonia). Be aware that the tilt angle of the vehicle should be measured from the x-axis of the world frame
+                # Compute the maneuvers within the corridors (by Sonia).
+                # Be aware that the tilt angle of the vehicle should be
+                # measured from the x-axis of the world frame
                 computed_maneuver, computed_path = planner(
-                    corridor1 = corridor1, 
-                    u_bounds = u_bounds, 
-                    a = a, 
-                    b = b, 
-                    m = m, 
-                    x0 = message.posx, 
-                    y0 = message.posy, 
-                    theta0 = message.theta, 
-                    plot = False, 
-                    corridor2 = corridor2,
-                    xf = message.goalx,
-                    yf = message.goaly,
-                )
+                    corridor1=corridor1,
+                    u_bounds=u_bounds,
+                    a=a, b=b, m=m,
+                    x0=message.posx, y0=message.posy, theta0=message.theta,
+                    plot=False,
+                    corridor2=corridor2,
+                    xf=message.goalx, yf=message.goaly)
                 print("--- HEADING TO THE GOAL ---")
                 # isDone = True
 
-
             print(computed_maneuver)
 
-            # The computed maneuver should be sent to the controller, which will 
-            # define the instantaneous twist to be sent to the robot
+            # The computed maneuver should be sent to the controller, which
+            # will define the instantaneous twist to be sent to the robot
             maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
             # Publish computed path for visualization on RViz
             path_Pub.publish(generate_path_message(computed_path))

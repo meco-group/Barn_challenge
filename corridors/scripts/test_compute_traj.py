@@ -47,7 +47,7 @@ omega_min = -1.57
 u_bounds = np.array([v_min, v_max, omega_min, omega_max])
 a = 0.430
 b = 0.508
-m = 0.3
+m = 0.1
 
 #######################################################################
 # Run this test by using `python3 test_compute_traj.py {test_number}` 
@@ -160,8 +160,8 @@ elif test == 6:
     width2 = 1
     height2 = 5.5
     # In local frame
-    tilt1_local = -pi/4        # With respect to the vehicle
-    tilt2_local = -pi/4 - pi/5 # With respect to the vehicle
+    tilt1_local = -(pi/4)        # With respect to the vehicle
+    tilt2_local = -(pi/4) - pi/5 # With respect to the vehicle
 #####################################
 # Test 7: Turn right and then right
 #####################################
@@ -201,8 +201,11 @@ corridor2_world = CorridorWorld(width2, height2, center2_world, tilt2_world)
 initial_point = compute_initial_point(corridor1_world, m)
 x0 = initial_point[0]
 y0 = initial_point[1]
-# x0 = 1.43
-# y0 = 7.2
+# x0 = 1.5 - a/2
+# x0 = 0.5 + a/2 + m
+# y0 += a/2 + m
+x0 = 1
+y0 = 6.57
 
 if USE_ROS:
     # Check conversion from local to world frame (same as implemented in corridor_manager)
@@ -212,11 +215,11 @@ if USE_ROS:
 
     # corridor2_converted = None
     # Use compute_trajectory (by Sonia). Be aware that the tilt angle of the vehicle should be measured from the x-axis of the world frame
-    sequence_man, computed_path = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_converted)
+    sequence_man, computed_path = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_converted)
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 else:
     # corridor2_world = None
-    sequence_man, computed_path = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world)
+    sequence_man, computed_path = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_world)
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 
 print(sequence_man)
@@ -243,9 +246,12 @@ def plot_corridors(path, *args):
 
 if not USE_ROS:
     if corridor2_world is None:
-        plot_corridors(computed_path, corridor1_world)
+        corridor_margin = CorridorWorld(corridor1_world.width-(a+2*m), corridor1_world.height-2*m, corridor1_world.center, corridor1_world.tilt)
+        plot_corridors(computed_path, corridor1_world,corridor_margin)
     else:
-        plot_corridors(computed_path, corridor1_world, corridor2_world)
+        corridor_margin1 = CorridorWorld(corridor1_world.width-(a+2*m), corridor1_world.height-2*m, corridor1_world.center, corridor1_world.tilt)
+        corridor_margin2 = CorridorWorld(corridor2_world.width-(a+2*m), corridor2_world.height-2*m, corridor2_world.center, corridor2_world.tilt)
+        plot_corridors(computed_path, corridor1_world, corridor2_world, corridor_margin1, corridor_margin2)
     # plot_corridors(None, corridor1_world)
     # plot_corridors(None, corridor1_local, corridor2_local) 
     # plot_corridors(None, corridor1_world, corridor2_world)
@@ -262,7 +268,7 @@ else:
         # plot_corridors(None, corridor1_world, corridor2_world)
         # plot_corridors(None, corridor1_converted, corridor2_converted, corridor1_world, corridor2_world)
 
-    exit()
+    # exit()
     ##########################################################
     # Test 
     ##########################################################

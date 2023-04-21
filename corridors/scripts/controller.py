@@ -7,17 +7,11 @@ Created on Tue Mar 28 15:38:15 2023
 """
 
 import rospy
-from nav_msgs.msg import Odometry, Path
-import sensor_msgs.point_cloud2 as pc2
-from geometry_msgs.msg import Twist, PoseStamped
-import laser_geometry.laser_geometry as lg
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Twist
 import math as m
 import numpy as np
 from barn_challenge.msg import ManeuverMsg
-
-from corridor import Corridor
-
-from motion_planner import compute_trajectory
 
 
 class messageClass():
@@ -54,9 +48,10 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
+
 def ManeuverCallback(data):
     global v_full, w_full
-    
+
     length = data.len
     maneuver = data.maneuver
     vx, wz, t, v_full, w_full = [], [], [], [], []
@@ -66,16 +61,15 @@ def ManeuverCallback(data):
         t.append(maneuver[i].z)
 
     for time, v, w in zip(t, vx, wz):
-        repetitions = int(time*RATE)
+        repetitions = int(time*controller_rate)
         v_full += [v]*repetitions
         w_full += [w]*repetitions
 
 
-
 def main():
 
-    global RATE
-    RATE = 100
+    global controller_rate
+    controller_rate = 100
 
     global message
     message = messageClass()
@@ -91,7 +85,7 @@ def main():
                               queue_size=10)
 
     rospy.init_node('controller', anonymous=True)
-    rate = rospy.Rate(RATE)
+    rate = rospy.Rate(controller_rate)
 
     isDone = False
     twist = Twist()
@@ -100,19 +94,9 @@ def main():
     message.goalx = message.posx
     message.goaly = message.posy + 10
 
-    # v_compact = [.5, .5, .5, .5]
-    # w_compact = [1.57, 0., 1.57, 0.]
-    # t_compact = [0.51383007, 8.24802881, 0.38729874, 10.19587506]
-
     global v_full, w_full
     v_full = []
     w_full = []
-
-    # for time, v, w in zip(t_compact, v_compact, w_compact):
-    #     while time > 0:
-    #         time = time - .01
-    #         v_full.append(v)
-    #         w_full.append(w)
 
     print('I started moving')
     while not rospy.is_shutdown():
@@ -127,7 +111,8 @@ def main():
         # print('current_position', message.posx, message.posy, message.theta)
         print('current_velocity', twist.linear.x, twist.angular.z)
 
-        vel_Pub.publish(twist)  # This should go in a controller node (replace with maneuver publisher)
+        vel_Pub.publish(twist)
+        # This should go in a controller node (replace with maneuver publisher)
 
         distToGoal = distance((message.goalx, message.goaly),
                               (message.posx, message.posy))

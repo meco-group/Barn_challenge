@@ -2,8 +2,6 @@
 
 import numpy as np
 import rospy
-import time
-import matplotlib.pyplot as plt
 from copy import copy
 from geometry_msgs.msg import Point
 from visualization_msgs.msg import Marker, MarkerArray
@@ -24,7 +22,8 @@ class CorridorWorld:
     BCK = 2
     LFT = 3
 
-    def __init__(self, width, height, center, tilt=0, parent=None, copy_in=False):
+    def __init__(self, width, height, center, tilt=0,
+                 parent=None, copy_in=False):
         '''Constructor.
 
         :param width: corridor width
@@ -42,7 +41,8 @@ class CorridorWorld:
         :param parent: parent corridor
         :type parent: Corridor
 
-        :param copy_in: True if you want to make a copy of the original Corridor
+        :param copy_in: True if you want to make a copy of the original
+        Corridor
         :type copy_in: bool
         '''
         # Parameters
@@ -156,7 +156,7 @@ class CorridorWorld:
                                               for k in range(len(x.corners))]),
                            reverse=True)
 
-    def  has_quality_child(self):
+    def has_quality_child(self):
         for child in self.children:
             if child.quality >= 0.5:
                 return True

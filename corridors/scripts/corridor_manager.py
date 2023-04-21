@@ -10,10 +10,13 @@ import rospy
 from nav_msgs.msg import Odometry
 import math as m
 import numpy as np
-from barn_challenge.msg import CorridorLocalMsg, CorridorLocalListMsg, CorridorWorldMsg, CorridorWorldListMsg
+from barn_challenge.msg import \
+    CorridorLocalMsg, CorridorLocalListMsg, \
+    CorridorWorldMsg, CorridorWorldListMsg
 from corridor_helpers import *
 from corridor_world import CorridorWorld
 from motion_planner import check_inside_one_point
+
 
 class odomMsgClass():
     def __init__(self):
@@ -61,7 +64,7 @@ def transform_corridor_to_world(new_corridor):
 
 
 def process_new_corridor(new_corridor_msg, root_corridor,
-                         current_corridor, orphanage, 
+                         current_corridor, orphanage,
                          explore_full_corridor, corridor_pub):
     '''
     This function takes a new corridor message (new_corridor) and decides
@@ -92,7 +95,6 @@ def process_new_corridor(new_corridor_msg, root_corridor,
 
     # Check if goal position is reachable
     if check_inside_one_point(new_corridor, np.array([-2, 13])):
-    # if new_corridor.check_inside(np.array([[-2], [13], [1]])):
         print("[manager] Child corridor is added to the tree")
         receiving_corridor.add_child_corridor(new_corridor)
         receiving_corridor.remove_similar_children()
@@ -219,7 +221,7 @@ def visualize_corridor_tree(root_corridor, current_corridor, margin):
     current_color = [1, 0, 0]  # red
     branch_color = [0, 1, 0]   # green
     options_color = [1, 1, 0]  # yellow
-    current_children_color = [1, 0.5, 0] # orange
+    current_children_color = [1, 0.5, 0]  # orange
 
     # visualize current corridor
     current_corridor.rviz_visualization('rect', id, *current_color,
@@ -236,7 +238,7 @@ def visualize_corridor_tree(root_corridor, current_corridor, margin):
 
     for child in current_corridor.children:
         child.rviz_visualization('rect', id, *current_children_color,
-        1/manager_rate)
+                                 1/manager_rate)
         id += 1
 
     # visualize current branch and all other children
@@ -288,14 +290,14 @@ def main():
     # If set to False, a child is selected as soon as its available, should
     # only be used for debugging.
     explore_full_corridor = False
-    
+
     # Subscribe to incoming new corridors
     global new_corridor_list
     new_corridor_list = []
 
     global new_corridor_present
     new_corridor_present = True
-    
+
     corridor_sub = rospy.Subscriber('/corridor', CorridorLocalListMsg,
                                     corridorCallback)
 
@@ -350,7 +352,7 @@ def main():
                 (root_corridor, current_corridor) = process_new_corridor(
                     corridor, root_corridor, current_corridor, orphanage,
                     explore_full_corridor, corridor_pub)
-            
+
             new_corridor_present = False
             new_corridor_list = []
 
@@ -358,7 +360,7 @@ def main():
         if current_corridor is not None:
             end_reached = check_end_of_corridor_reached(
                 current_corridor, curr_pose, 1.0)
-            
+
             # select a child corridor if
             #   - you have reached the end of the current corridor
             #   - you don't want to explore the full corridor and you
@@ -378,20 +380,24 @@ def main():
                     else:
                         backtrack_curr_time = rospy.Time.now().to_sec()
                         print("[manager] Waiting to backtrack...")
-                        if backtrack_curr_time - backtrack_start_time > backtrack_waiting_time:
+                        if (backtrack_curr_time - backtrack_start_time >
+                           backtrack_waiting_time):
                             print("[manager] Started to backtrack")
                             waiting_to_backtrack = False
-                            # pass the backtracking corridors to the motion planner
+                            # pass the backtracking corridors to the motion
+                            # planner
                             backtrack_mode_activated = True
                             (backtrack_point, current_corridor,
-                            backtracking_corridors, orphanage) = get_back_track_point(
-                                current_corridor, orphanage, explore_full_corridor)
-                            # print("[manager] Current corridor = ", current_corridor)
+                             backtracking_corridors, orphanage) = \
+                                get_back_track_point(current_corridor,
+                                                     orphanage,
+                                                     explore_full_corridor)
                             if backtrack_point is None:
                                 print("[manager] ERROR: I cannot backtrack")
                                 backtrack_mode_activated = False
                             else:
-                                publish_corridors(backtracking_corridors, corridor_pub)
+                                publish_corridors(backtracking_corridors,
+                                                  corridor_pub)
                 else:
                     publish_corridors([current_corridor], corridor_pub)
 
