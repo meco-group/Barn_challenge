@@ -71,6 +71,10 @@ def check_stuck(parent, child, threshold=0.4):
         
         # compute angle between centerline of the corridor and line between growth-center and center
         alpha = np.arctan((x_tilted-child.center[0])/(y_tilted-child.center[1]))
+
+        # if the growth_center is above the center, alpha is altered
+        if y_tilted > child.center[1]:
+            alpha = np.pi - alpha
     
     d_growth_to_child_center = np.sqrt(np.power(child.growth_center[0]-child.center[0],2) + np.power(child.growth_center[1]-child.center[1],2))
     H2 = child.height/2 + d_growth_to_child_center*np.cos(alpha)
@@ -94,9 +98,9 @@ def check_stuck(parent, child, threshold=0.4):
     else:
         tilt_critical = np.arctan((W1+x1)/(H1-y1))
         if gamma < tilt_critical:
-            d_improvement = max(0,H2-(W1+x1)/np.cos(np.pi/2-gamma))
-        else:
             d_improvement = max(0,H2-(H1-y1)/np.cos(gamma))
+        else:
+            d_improvement = max(0,H2-(W1+x1)/np.cos(np.pi/2-gamma))
 
     return d_improvement < threshold
 
