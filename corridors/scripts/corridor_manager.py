@@ -94,7 +94,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         receiving_corridor = current_corridor.parent
 
     # Check if goal position is reachable
-    if check_inside_one_point(new_corridor, np.array([-2, 13])):
+    if check_inside_one_point(new_corridor, np.array([0, 10])):
         print("[manager] Child corridor is added to the tree")
         receiving_corridor.add_child_corridor(new_corridor)
         receiving_corridor.remove_similar_children()
@@ -359,7 +359,7 @@ def main():
         # if we are manouvring in a tree, check if we can still proceed
         if current_corridor is not None:
             end_reached = check_end_of_corridor_reached(
-                current_corridor, curr_pose, 1.0)
+                current_corridor, curr_pose, 0.5)
 
             # select a child corridor if
             #   - you have reached the end of the current corridor
