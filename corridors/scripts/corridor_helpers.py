@@ -51,12 +51,13 @@ def get_center(corners):
 
     return center
 
+
 def check_stuck(parent, child, threshold=0.4):
     '''
-        returns a boolean indicating whether the child corridor
-        improves enough on the parent corridor
+    returns a boolean indicating whether the child corridor
+    improves enough on the parent corridor
 
-        Returning True means that the child corridor does not improve enough
+    Returning True means that the child corridor does not improve enough
     '''
     H1 = parent.height/2
     W1 = parent.width/2
@@ -66,51 +67,66 @@ def check_stuck(parent, child, threshold=0.4):
         alpha = 0
     else:
         # rotate the growth center as if the child would have no tilt
-        x_tilted = child.center[0] + (child.growth_center[0]-child.center[0])*np.cos(tilt2) + (child.growth_center[1]-child.center[1])*np.sin(tilt2)
-        y_tilted = child.center[1] - (child.growth_center[0]-child.center[0])*np.sin(tilt2) + (child.growth_center[1]-child.center[1])*np.cos(tilt2)
-        
-        # compute angle between centerline of the corridor and line between growth-center and center
-        alpha = np.arctan((x_tilted-child.center[0])/(y_tilted-child.center[1]))
+        x_tilted = child.center[0] + \
+            (child.growth_center[0] - child.center[0])*np.cos(tilt2) + \
+            (child.growth_center[1] - child.center[1])*np.sin(tilt2)
+        y_tilted = child.center[1] - \
+            (child.growth_center[0] - child.center[0])*np.sin(tilt2) + \
+            (child.growth_center[1] - child.center[1])*np.cos(tilt2)
+
+        # compute angle between centerline of the corridor and line between
+        # growth-center and center
+        alpha = np.arctan2(x_tilted - child.center[0],
+                           y_tilted - child.center[1])
 
         # if the growth_center is above the center, alpha is altered
         if y_tilted > child.center[1]:
             alpha = np.pi - alpha
-    
-    d_growth_to_child_center = np.sqrt(np.power(child.growth_center[0]-child.center[0],2) + np.power(child.growth_center[1]-child.center[1],2))
+
+    d_growth_to_child_center = np.sqrt(
+        (child.growth_center[0] - child.center[0])**2 +
+        (child.growth_center[1] - child.center[1])**2)
     H2 = child.height/2 + d_growth_to_child_center*np.cos(alpha)
 
     # rotate the growth center as if the parent would have no tilt
-    x_tilted = parent.center[0] + (child.growth_center[0]-parent.center[0])*np.cos(tilt1) + (child.growth_center[1]-parent.center[1])*np.sin(tilt1)
-    y_tilted = parent.center[1] - (child.growth_center[0]-parent.center[0])*np.sin(tilt1) + (child.growth_center[1]-parent.center[1])*np.cos(tilt1)
+    x_tilted = parent.center[0] + \
+        (child.growth_center[0] - parent.center[0])*np.cos(tilt1) + \
+        (child.growth_center[1] - parent.center[1])*np.sin(tilt1)
+    y_tilted = parent.center[1] - \
+        (child.growth_center[0] - parent.center[0])*np.sin(tilt1) + \
+        (child.growth_center[1] - parent.center[1])*np.cos(tilt1)
 
     # compute offset of growth_center wrt center of parent
-    x1 = parent.center[0]-x_tilted
-    y1 = y_tilted-parent.center[1]
+    x1 = parent.center[0] - x_tilted
+    y1 = y_tilted - parent.center[1]
 
-    gamma = tilt2-tilt1
+    gamma = tilt2 - tilt1
 
     if gamma >= 0:
-        tilt_critical = np.arctan((W1-x1)/(H1-y1))
+        tilt_critical = np.arctan2(W1 - x1, H1 - y1)
         if gamma >= tilt_critical:
-            d_improvement = max(0,H2-(W1-x1)/np.cos(np.pi/2-gamma))
+            d_improvement = max(0, H2 - (W1 - x1)/np.cos(np.pi/2 - gamma))
         else:
-            d_improvement = max(0,H2-(H1-y1)/np.cos(gamma))
+            d_improvement = max(0, H2 - (H1 - y1)/np.cos(gamma))
     else:
-        tilt_critical = np.arctan((W1+x1)/(H1-y1))
+        tilt_critical = np.arctan2(W1 + x1, H1 - y1)
         if gamma < tilt_critical:
-            d_improvement = max(0,H2-(H1-y1)/np.cos(gamma))
+            d_improvement = max(0, H2 - (H1 - y1)/np.cos(gamma))
         else:
-            d_improvement = max(0,H2-(W1+x1)/np.cos(np.pi/2-gamma))
+            d_improvement = max(0, H2 - (W1 + x1)/np.cos(np.pi/2 - gamma))
 
     return d_improvement < threshold
 
-def check_significantly_different(corridor1, corridor2, distance_threshold=0.4, tilt_threshold=np.pi/5):
-    '''
-        Compute the distance between the 'forward' corners of the
-        corridors and compare it with the threshold.
 
-        Returning True means that the corridors are considered to be
-        different enough to keep them both
+def check_significantly_different(corridor1, corridor2,
+                                  distance_threshold=0.4,
+                                  tilt_threshold=np.pi/5):
+    '''
+    Compute the distance between the 'forward' corners of the
+    corridors and compare it with the threshold.
+
+    Returning True means that the corridors are considered to be
+    different enough to keep them both
     '''
     corners1 = get_corners(corridor1.W)
     corners2 = get_corners(corridor2.W)
@@ -118,30 +134,35 @@ def check_significantly_different(corridor1, corridor2, distance_threshold=0.4, 
     indx1 = 0
     indx2 = 3
 
-    distance_bool = np.sqrt((corners1[indx1][0]-corners2[indx1][0])**2 + (corners1[indx1][1]-corners2[indx1][1])**2) + \
-        np.sqrt((corners1[indx2][0]-corners2[indx2][0])**2 + (corners1[indx2][1]-corners2[indx2][1])**2) > distance_threshold
+    distance_bool = np.sqrt((corners1[indx1][0] - corners2[indx1][0])**2 +
+                            (corners1[indx1][1] - corners2[indx1][1])**2) + \
+        np.sqrt((corners1[indx2][0] - corners2[indx2][0])**2 +
+                (corners1[indx2][1] - corners2[indx2][1])**2) > \
+        distance_threshold
     tilt_bool = np.abs(corridor1.tilt - corridor2.tilt) > tilt_threshold
 
-    return distance_bool and tilt_bool
+    return (distance_bool and tilt_bool)
+
 
 def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
     '''
-        Given the corridor the robot is currently in, this function
-        returns the point to backtrack to from which we can get to another
-        branch
+    Given the corridor the robot is currently in, this function
+    returns the point to backtrack to from which we can get to another
+    branch
     '''
     if EXPLORE_FULL_CORRIDOR:
-        # we know this current corridor is a dead end, so we have to start 
+        # we know this current corridor is a dead end, so we have to start
         # checking for other options at the parent level
         corridor_to_explore = current_corridor.parent
         previous_point = current_corridor.growth_center
 
         backtracking_corridors = [current_corridor, corridor_to_explore]
 
-        while not corridor_to_explore is None and len(corridor_to_explore.children) <= 1:
+        while (corridor_to_explore is not None and
+               len(corridor_to_explore.children) <= 1):
             if corridor_to_explore is None:
                 return (None, current_corridor, [], orphanage)
-            
+
             previous_point = corridor_to_explore.growth_center
             corridor_to_explore = corridor_to_explore.parent
 
@@ -150,12 +171,14 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
         if corridor_to_explore is None:
             return (None, current_corridor, [], orphanage)
         corridor_to_explore.remove_child_corridor(0)
-        
+
         for trash_corridor in backtracking_corridors:
             orphanage.add_child_corridor(trash_corridor)
 
-        return (corridor_to_explore.children[0].growth_center, corridor_to_explore.children[0], backtracking_corridors, orphanage)
-    
+        return (corridor_to_explore.children[0].growth_center,
+                corridor_to_explore.children[0],
+                backtracking_corridors, orphanage)
+
     else:
         if current_corridor.parent is None:
             return (None, current_corridor, [], orphanage)
@@ -163,29 +186,26 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
             parent = current_corridor.parent
             parent.remove_child_corridor(0)
             orphanage.add_child_corridor(current_corridor)
-            return (current_corridor.growth_center, parent, [current_corridor, parent], orphanage)
+            return (current_corridor.growth_center, parent,
+                    [current_corridor, parent], orphanage)
 
-def check_end_of_corridor_reached(current_corridor, current_pos, threshold=0.3):
+
+def check_end_of_corridor_reached(current_corridor, current_pos,
+                                  threshold=0.3):
     '''
-        Compute the distance from the current position to the edge of the corridor
-        It is assumed that the current position is inside the current corridor
+    Compute the distance from the current position to the edge of the corridor
+    It is assumed that the current position is inside the current corridor
     '''
     top_left = current_corridor.corners[0]
     top_right = current_corridor.corners[3]
-    top_center = [(top_left[0]+top_right[0])/2, (top_left[1]+top_right[1])/2]
+    top_center = [(top_left[0] + top_right[0])/2,
+                  (top_left[1] + top_right[1])/2]
 
-    # if np.abs(top_right[0] - top_left[0]) < 1.0e-8:
-    #     distance_to_end = np.abs(current_pos.posx - top_right[0])
-    # else:
-    #     a = (top_right[1]-top_left[1])/(top_right[0]-top_left[0])
-    #     b = -1.
-    #     c = top_left[1] - a
-    #     distance_to_end = np.abs(a*current_pos.posx+b*current_pos.posy+c)/np.sqrt(a*a + b*b)
+    distance_to_end = np.sqrt((top_center[0]-current_pos.posx)**2 +
+                              (top_center[1]-current_pos.posy)**2)
 
-    distance_to_end = np.sqrt((top_center[0]-current_pos.posx)**2 + (top_center[1]-current_pos.posy)**2)
-
-    # print("[manager] distance to end of corridor: ", round(distance_to_end, 3))
-
-    # print("[manager] distance to top right: ", np.sqrt((top_right[0]-current_pos.posx)**2 + (top_right[1]-current_pos.posy)**2))
+    # print("[manager] distance to top right: ", \
+    # np.sqrt((top_right[0]-current_pos.posx)**2 +
+    # (top_right[1]-current_pos.posy)**2))
 
     return distance_to_end < threshold
