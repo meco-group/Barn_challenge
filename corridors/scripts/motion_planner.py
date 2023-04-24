@@ -1,19 +1,17 @@
-import time
-from timeit import default_timer as timer
-
 import matplotlib.pyplot as plt
 from numpy import pi, cos, sin, tan, sqrt, linspace, arctan2, arcsin, linalg
 import numpy as np
 
-from corridor import Corridor
 from corridor_world import CorridorWorld
 from corridor_helpers import get_intersection
 from alignment_radius import get_max_alignment_radius
 
+
 def compute_goal_point(corridor, m):
     '''
-    Compute the goal position given a corridor and a margin m (float). 
-    The goal position is computed as the middle point along the forward face of the given corridor, shifted of a quantity equal to m along the 
+    Compute the goal position given a corridor and a margin m (float).
+    The goal position is computed as the middle point along the forward face
+    of the given corridor, shifted of a quantity equal to m along the
     line connecting the center and the middle point.
 
     :param corridor: corridor containing goal position
@@ -25,14 +23,17 @@ def compute_goal_point(corridor, m):
     :rtype: numpy.ndarray
     '''
     height = corridor.height
-    tilt = corridor.tilt 
-    goal_pos = corridor.center + np.array([-(height/2-m)*sin(tilt), (height/2-m)*cos(tilt)])
+    tilt = corridor.tilt
+    goal_pos = corridor.center + np.array([-(height/2 - m)*sin(tilt),
+                                           (height/2 - m)*cos(tilt)])
     return goal_pos
 
-def compute_initial_point(corridor,m):
+
+def compute_initial_point(corridor, m):
     '''
-    Compute the initial position given a corridor and a margin m (float). 
-    The initial position is computed as the middle point along the backward face of the given corridor, shifted of a quantity equal to m along the 
+    Compute the initial position given a corridor and a margin m (float).
+    The initial position is computed as the middle point along the backward
+    face of the given corridor, shifted of a quantity equal to m along the
     line connecting the center and the middle point.
 
     :param corridor: corridor containing initial position
@@ -45,31 +46,36 @@ def compute_initial_point(corridor,m):
     '''
     height = corridor.height
     tilt = corridor.tilt
-    initial_pos = corridor.center + np.array([(height/2-m)*sin(tilt), -(height/2-m)*cos(tilt)])
+    initial_pos = corridor.center + np.array([(height/2 - m)*sin(tilt),
+                                              -(height/2 - m)*cos(tilt)])
     return initial_pos
 
+
 def check_inside_one_point(corridor, point):
-        '''Check if one point is inside the corridor. This function is based on check_inside
+    '''Check if one point is inside the corridor. This function is based
+    on check_inside
 
-        :param point: array with x and y coordinates of the point to be checked
-            whether it is inside the corridor
-        :type point: numpy.ndarray
-        :param corridor: corridor to be checked whether it contains the point
-        :type corridor: corridor
+    :param point: array with x and y coordinates of the point to be checked
+        whether it is inside the corridor
+    :type point: numpy.ndarray
+    :param corridor: corridor to be checked whether it contains the point
+    :type corridor: corridor
 
-        :return: bool with True if point is inside the corridor
-        :rtype: bool
-        '''
-        Wtransp = corridor.W.T
-        hompoint = np.append(point,1)
-        # Check if point is inside the corridor
-        if np.all(Wtransp @ hompoint <= 1e-3):
-            return True
-        return False
+    :return: bool with True if point is inside the corridor
+    :rtype: bool
+    '''
+    Wtransp = corridor.W.T
+    hompoint = np.append(point, 1)
+    # Check if point is inside the corridor
+    if np.all(Wtransp @ hompoint <= 1e-3):
+        return True
+    return False
+
 
 def get_corner_point(parent, child):
     '''
-    Given a parent and a child corridor, compute the corner point which corresponds to the intersection of their edges.
+    Given a parent and a child corridor, compute the corner point which
+    corresponds to the intersection of their edges.
 
     :param parent: starting corridor
     :type parent: corridor
@@ -83,44 +89,57 @@ def get_corner_point(parent, child):
     W_parent = parent.W
     tilt1 = parent.tilt
     tilt2 = child.tilt
-    corner_point =np.empty([0,2]) #initialize a np.array containing the corner points candidates
+    # initialize a np.array containing the corner points candidates
+    corner_point = np.empty([0, 2])
     turn_left = False
 
-    #select the correct faces to check for the corner point, depending whether the maneuver is turning right or left
-    if tilt2 >= tilt1: #turn left
+    # select the correct faces to check for the corner point, depending
+    # whether the maneuver is turning right or left
+    if tilt2 >= tilt1:  # turn left
         turn_left = True
-        select_edges1 = np.array([0,2,3]) #check forward, backward and left face of child 
-        select_edges2 = np.array([0,3]) #check forward and left faces of parent
-    else: #turn right
-        select_edges1 = np.array([0,2,1]) #check forward, right and backward face of child
-        select_edges2 = np.array([0,1]) #check forward and right faces of parent
+        select_edges1 = np.array([0, 2, 3])  # check F, B and L faces of child
+        select_edges2 = np.array([0, 3])  # check F and L faces of parent
+    else:  # turn right
+        select_edges1 = np.array([0, 2, 1])  # check F, B and R faces of child
+        select_edges2 = np.array([0, 1])  # check F and R faces of parent
 
     for i in select_edges1:
         for k in select_edges2:
             w1 = W_child[:, i]
             w2 = W_parent[:, k]
             intersection_point = get_intersection(w1, w2)
-            if check_inside_one_point(parent, intersection_point) and check_inside_one_point(child, intersection_point):
-                #if turn left and there are more than one candidate points, take the one with lower x coordinate (more on the left)
-                if turn_left and np.all(intersection_point[0]< corner_point[:,0]):
-                    corner_point = np.vstack((intersection_point,corner_point))
-                #if turn right and there are more than one candidate points, take the one with larger x coordinate (more on the right)
-                elif not(turn_left) and np.all(intersection_point[0]> corner_point[:,0]):
-                    corner_point = np.vstack((intersection_point, corner_point))
+            if (check_inside_one_point(parent, intersection_point) and
+               check_inside_one_point(child, intersection_point)):
+                # if turn left and there are more than one candidate points,
+                # take the one with lower x coordinate (more on the left)
+                if (turn_left and
+                   np.all(intersection_point[0] < corner_point[:, 0])):
+                    corner_point = np.vstack((intersection_point,
+                                              corner_point))
+                # if turn right and there are more than one candidate points,
+                # take the one with larger x coordinate (more on the right)
+                elif (not turn_left and
+                      np.all(intersection_point[0] > corner_point[:, 0])):
+                    corner_point = np.vstack((intersection_point,
+                                              corner_point))
                 else:
-                    corner_point = np.vstack((corner_point,intersection_point))
+                    corner_point = np.vstack((corner_point,
+                                              intersection_point))
 
-    #you could also just store all the points in corner_point and at the end get the one with minimum/maximum x coordinate whether you are turning left or right
-    x_corner = corner_point[0,0]
-    y_corner = corner_point[0,1]
+    # you could also just store all the points in corner_point and at the end
+    # get the one with minimum/maximum x coordinate whether you are turning
+    # left or right
+    x_corner = corner_point[0, 0]
+    y_corner = corner_point[0, 1]
     return x_corner, y_corner
 
 
-def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1, arc_x1, arc_y1, **kwargs):
+def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1,
+                    arc_x1, arc_y1, **kwargs):
     corridor2 = kwargs['corridor2'] if 'corridor2' in kwargs else None
 
-    if corridor2 == None:
-        #Plot solution
+    if corridor2 is None:
+        # Plot solution
         figure_solution = plt.figure()
         ax = figure_solution.add_subplot(111)
         plt.title('x and y position')
@@ -129,21 +148,23 @@ def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1, 
 
         corners = corridor1.corners
         corners.append(corners[0])
-        plt.plot([corner[0] for corner in corners], 
-                [corner[1] for corner in corners],
-                'k--', linewidth=1)
-        #Plot triangle rectangle, just to be sure
-        plt.plot([x1,xf],[y1,yf],'b-', linewidth=0.8)
-        plt.plot(x0,y0, 'ro')
-        plt.plot(x1,y1, 'ro')
+        plt.plot([corner[0] for corner in corners],
+                 [corner[1] for corner in corners],
+                 'k--', linewidth=1)
+        # Plot triangle rectangle, just to be sure
+        plt.plot([x1, xf], [y1, yf], 'b-', linewidth=0.8)
+        plt.plot(x0, y0, 'ro')
+        plt.plot(x1, y1, 'ro')
         plt.plot(xf, yf, 'ro')
         plt.plot(arc_x1, arc_y1, 'k')
-        #plt.plot([x_center1 + R * cos(angle1)], [y_center1+R*sin(angle1)], 'r')
+        # plt.plot([x_center1 + R * cos(angle1)],
+        #          [y_center1+R*sin(angle1)], 'r')
 
         # plt.axis('square')
         ax.set_aspect('equal')
         # plt.legend()
         plt.show(block=True)
+
 
 def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
     corridor2 = kwargs['corridor2'] if 'corridor2' in kwargs else None
@@ -178,6 +199,7 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
                 path = np.vstack((path1,path2))
                 man_seq = np.vstack((man_seq1,man_seq2))
     return man_seq, path
+
 
 def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
     '''
