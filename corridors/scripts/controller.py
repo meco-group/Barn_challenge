@@ -54,16 +54,58 @@ def ManeuverCallback(data):
 
     length = data.len
     maneuver = data.maneuver
-    vx, wz, t, v_full, w_full = [], [], [], [], []
-    for i in range(length):
-        vx.append(maneuver[i].x)
-        wz.append(maneuver[i].y)
-        t.append(maneuver[i].z)
+    # vx, wz, t, v_full, w_full = [], [], [], [], []
+    # for i in range(length):
+    #     vx.append(maneuver[i].x)
+    #     wz.append(maneuver[i].y)
+    #     t.append(maneuver[i].z)
 
-    for time, v, w in zip(t, vx, wz):
-        repetitions = int(time*controller_rate)
-        v_full += [v]*repetitions
-        w_full += [w]*repetitions
+    # for time, v, w in zip(t, vx, wz):
+    #     repetitions = int(time*controller_rate)
+    #     v_full += [v]*repetitions
+    #     w_full += [w]*repetitions
+
+    # print(data.x0)
+    x0, y0, theta0 = data.x0[0].x, data.x0[0].y, data.x0[0].z
+    xf, yf, thetaf = data.xf[0].x, data.xf[0].y, data.xf[0].z
+
+    dist = distance((x0, y0), (xf, yf))
+    # print('theta0', theta0)
+    # print('thetaf', thetaf)
+    # print('dist', dist)
+    # print('arctan', np.arctan2(yf - y0, xf - x0) - theta0)
+    # print(dist, np.arctan2(yf - y0, xf - x0) - thetaf)
+    # print(dist, np.arctan2(yf - y0, xf - x0) - thetaf)
+
+    repetitions = 15
+    vmax = .3
+    wmax = .5
+    # first minimize heading error
+    if thetaf - theta0 + np.pi/2 > np.pi/8:
+        w_full = [vmax]*repetitions
+        v_full = [0.]*repetitions
+        print('pure rotation CC')
+    elif thetaf - theta0 + np.pi/2 < -np.pi/8:
+        w_full = [-vmax]*repetitions
+        v_full = [0.]*repetitions
+        print('pure rotation C')
+    else:
+        v_full = [vmax]*repetitions
+        print(np.arctan2(yf - y0, xf - x0) - theta0)
+        if np.arctan2(yf - y0, xf - x0) - theta0 > 0.05:
+            w_full = [wmax]*repetitions
+            print('translation + rotation CC')
+        elif np.arctan2(yf - y0, xf - x0) - theta0 < -0.05:
+            w_full = [-wmax]*repetitions
+            print('translation + rotation C')
+        else:
+            w_full = [0.]*repetitions
+            print('pure translation')
+    print('dist', dist)
+    if dist < 1.:
+        print(dist*vmax)
+        v_full = [dist*vmax]*repetitions
+        w_full = [0.]*repetitions
 
 
 def main():
@@ -82,7 +124,7 @@ def main():
 
     # Publishers
     vel_Pub = rospy.Publisher('/jackal_velocity_controller/cmd_vel', Twist,
-                              queue_size=10)
+                              queue_size=100)
 
     rospy.init_node('controller', anonymous=True)
     rate = rospy.Rate(controller_rate)
@@ -109,7 +151,7 @@ def main():
             twist.angular.z = 0.
 
         # print('current_position', message.posx, message.posy, message.theta)
-        print('current_velocity', twist.linear.x, twist.angular.z)
+        # print('current_velocity', twist.linear.x, twist.angular.z)
 
         vel_Pub.publish(twist)
         # This should go in a controller node (replace with maneuver publisher)

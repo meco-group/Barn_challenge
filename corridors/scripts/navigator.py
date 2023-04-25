@@ -16,7 +16,7 @@ from corridor_world import CorridorWorld
 from barn_challenge.msg import CorridorWorldMsg, CorridorWorldListMsg,\
     ManeuverMsg
 
-from motion_planner import planner, check_inside_one_point
+from motion_planner import planner, check_inside_one_point, compute_goal_point
 
 
 class messageClass():
@@ -83,6 +83,16 @@ def generate_path_message(input_path):
 def generate_maneuver_message(maneuver_array):
     maneuver_msg = ManeuverMsg()
     maneuver_msg.len = maneuver_array.shape[0]
+    x0_msg = Vector3()
+    xf_msg = Vector3()
+    x0_msg.x, x0_msg.y, x0_msg.z = message.posx, message.posy, message.theta
+    if GOAL_IN_SIGHT:
+        xf_msg.x, xf_msg.y, xf_msg.z = message.goalx, message.goaly, 0.
+    else:
+        xf_msg.x, xf_msg.y = compute_goal_point(list_of_corridors[0], 0)
+        xf_msg.z = list_of_corridors[0].tilt
+    maneuver_msg.x0.append(x0_msg)
+    maneuver_msg.xf.append(xf_msg)
     for i in range(maneuver_array.shape[0]):
         part_maneuver = Vector3()
         part_maneuver.x = maneuver_array[i, 0]
@@ -115,7 +125,7 @@ def main():
     maneuver_Pub = rospy.Publisher('/maneuver', ManeuverMsg, queue_size=1)
 
     rospy.init_node('navigator', anonymous=True)
-    navigator_rate = 5
+    navigator_rate = 10
     rate = rospy.Rate(navigator_rate)
 
     # v_max = 0.5
@@ -188,7 +198,7 @@ def main():
                 print("--- HEADING TO THE GOAL ---")
                 # isDone = True
 
-            print(computed_maneuver)
+            # print(computed_maneuver)
 
             # The computed maneuver should be sent to the controller, which
             # will define the instantaneous twist to be sent to the robot

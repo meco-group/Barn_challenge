@@ -228,32 +228,32 @@ def visualize_corridor_tree(root_corridor, current_corridor, margin):
                                         1/manager_rate)
 
     id += 1
-    corridor_margin = CorridorWorld(center=current_corridor.center,
-                                    tilt=current_corridor.tilt,
-                                    height=current_corridor.height-2*margin,
-                                    width=current_corridor.width-2*margin)
-    corridor_margin.rviz_visualization('rect', id, *margin_color,
-                                       1/manager_rate)
-    id += 1
+    # corridor_margin = CorridorWorld(center=current_corridor.center,
+    #                                 tilt=current_corridor.tilt,
+    #                                 height=current_corridor.height-2*margin,
+    #                                 width=current_corridor.width-2*margin)
+    # corridor_margin.rviz_visualization('rect', id, *margin_color,
+    #                                    1/manager_rate)
+    # id += 1
 
-    for child in current_corridor.children:
-        child.rviz_visualization('rect', id, *current_children_color,
-                                 1/manager_rate)
-        id += 1
+    # for child in current_corridor.children:
+    #     child.rviz_visualization('rect', id, *current_children_color,
+    #                              1/manager_rate)
+    #     id += 1
 
-    # visualize current branch and all other children
-    to_visualize = current_corridor
-    while to_visualize.parent is not None:
-        to_visualize = to_visualize.parent
-        to_visualize.rviz_visualization('rect', id, *branch_color,
-                                        1/manager_rate)
-        id += 1
+    # # visualize current branch and all other children
+    # to_visualize = current_corridor
+    # while to_visualize.parent is not None:
+    #     to_visualize = to_visualize.parent
+    #     to_visualize.rviz_visualization('rect', id, *branch_color,
+    #                                     1/manager_rate)
+    #     id += 1
 
-        for k in range(1, len(to_visualize.children)):
-            to_visualize.children[k].rviz_visualization('rect', id,
-                                                        *options_color,
-                                                        1/manager_rate)
-            id += 1
+    #     for k in range(1, len(to_visualize.children)):
+    #         to_visualize.children[k].rviz_visualization('rect', id,
+    #                                                     *options_color,
+    #                                                     1/manager_rate)
+    #         id += 1
 
 
 def visualize_backtracking_corridors(backtracking_corridors, current_corridor):
@@ -280,7 +280,7 @@ def main():
     id = 0
 
     global manager_rate
-    manager_rate = 1
+    manager_rate = 4
 
     global GOAL_IN_SIGHT
     GOAL_IN_SIGHT = False

@@ -126,7 +126,7 @@ def main():
     angle_pub = rospy.Publisher('/angle_list', AngleListMsg, queue_size=10)
 
     rospy.init_node('sweeper', anonymous=True)
-    sweeper_rate = 10
+    sweeper_rate = 5
     rate = rospy.Rate(sweeper_rate)
 
     print('sweeper ready')
@@ -219,10 +219,10 @@ def main():
 
         last_free_sectors = free_sectors
 
-        print('sectors', sectors)
-        print('angles', free_angles_all)
-        print('min distance', minimum_distance_array)
-        print('flag', flag)
+        # print('sectors', sectors)
+        # print('angles', free_angles_all)
+        # print('min distance', minimum_distance_array)
+        # print('flag', flag)
 
         angle_list_msg = AngleListMsg()
         angle_list_msg.angles = free_angles_all

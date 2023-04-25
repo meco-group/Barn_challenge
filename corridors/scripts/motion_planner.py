@@ -246,7 +246,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
     ## Compute the trajetory in case you have only one corridor
     if corridor2 == None:
         R = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, a/2+m )[0], 1e-3), R)
-        print(f"R = {R} m")
+        # print(f"R = {R} m")
         #initialize the output with two maneuvers
         maneuver_sequence = np.empty((2,3))
         goal_pos = compute_goal_point(corridor1,m) #not best implemention, you compute goal_pos but you might not need it 

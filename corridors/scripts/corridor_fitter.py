@@ -91,7 +91,7 @@ def main():
     message = messageClass()
 
     global fitter_rate
-    fitter_rate = 1
+    fitter_rate = 2
     angle_sub = rospy.Subscriber('/angle_list', AngleListMsg, angleCallback)
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
     scan_sub = rospy.Subscriber('/front/scan', LaserScan, scanCallback)

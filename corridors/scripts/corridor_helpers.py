@@ -77,8 +77,8 @@ def check_stuck(parent, child, threshold=0.4):
         # compute angle between centerline of the corridor and line between
         # growth-center and center
         alpha = - np.arctan2(x_tilted - child.center[0],
-                           child.center[1] - y_tilted)
-        
+                             child.center[1] - y_tilted)
+
     d_growth_to_child_center = np.sqrt(
         (child.growth_center[0] - child.center[0])**2 +
         (child.growth_center[1] - child.center[1])**2)

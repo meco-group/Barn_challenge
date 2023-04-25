@@ -4,4 +4,6 @@
   
   <node pkg="barn_challenge" type="corridor_sweeper.py" name="sweeper" output="screen" />
   <node pkg="barn_challenge" type="corridor_fitter.py" name="fitter" output="screen" />
+  <node pkg="barn_challenge" type="navigator.py" name="navigator" output="screen" />
+  <node pkg="barn_challenge" type="corridor_manager.py" name="manager" output="screen" />
 </launch>
