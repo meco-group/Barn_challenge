@@ -99,7 +99,8 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         receiving_corridor.add_child_corridor(new_corridor)
         receiving_corridor.remove_similar_children()
         receiving_corridor.sort_children()
-        # global GOAL_IN_SIGHT
+        # Don't know why, but this line must be here
+        global GOAL_IN_SIGHT
         GOAL_IN_SIGHT = True
         print("*************************************")
         print("[manager] Goal is in sight!")
@@ -327,8 +328,11 @@ def main():
 
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
+        print(f"[manager] goal in sight: {GOAL_IN_SIGHT}")
         # If goal in sight, there is no more work to do
         if GOAL_IN_SIGHT:
+            print("[manager] Goal in sight -- stopping")
+            visualize_corridor_tree(root_corridor, current_corridor, margin=0.1)
             rate.sleep()
             continue
 
