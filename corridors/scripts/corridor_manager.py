@@ -99,7 +99,8 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         receiving_corridor.add_child_corridor(new_corridor)
         receiving_corridor.remove_similar_children()
         receiving_corridor.sort_children()
-        # global GOAL_IN_SIGHT
+        # Don't know why, but this line must be here
+        global GOAL_IN_SIGHT
         GOAL_IN_SIGHT = True
         print("*************************************")
         print("[manager] Goal is in sight!")
@@ -327,8 +328,13 @@ def main():
 
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
-        # print("[manager] Manager looping")
-        # print(f"GOAL IN SIGHT: {GOAL_IN_SIGHT}")
+        # print(f"[manager] goal in sight: {GOAL_IN_SIGHT}")
+        # If goal in sight, there is no more work to do
+        if GOAL_IN_SIGHT:
+            print("[manager] Goal in sight -- stopping")
+            visualize_corridor_tree(root_corridor, current_corridor, margin=0.1)
+            rate.sleep()
+            continue
 
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
@@ -344,9 +350,9 @@ def main():
                 continue
 
         # if a new corridor arrived, potentially add it to the tree
-        if new_corridor_present and not GOAL_IN_SIGHT:
-            print("[manager] discovered ", len(new_corridor_list),
-                  " new corridor(s)!")
+        if new_corridor_present:
+            # print("[manager] discovered ", len(new_corridor_list),
+                #   " new corridor(s)!")
 
             for corridor in new_corridor_list:
                 (root_corridor, current_corridor) = process_new_corridor(

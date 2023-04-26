@@ -105,11 +105,11 @@ def check_stuck(parent, child, threshold=0.4):
         else:
             d_improvement = max(0, H2 - (H1 - y1)/np.cos(gamma))
     else:
-        tilt_critical = np.arctan2(W1 + x1, H1 - y1)
-        if gamma < tilt_critical:
+        tilt_critical = np.arctan2(-(W1 + x1), H1 - y1)
+        if gamma >= tilt_critical:
             d_improvement = max(0, H2 - (H1 - y1)/np.cos(gamma))
         else:
-            d_improvement = max(0, H2 - (W1 + x1)/np.cos(np.pi/2 - gamma))
+            d_improvement = max(0, H2 - (W1 + x1)/np.cos(gamma + np.pi/2))
 
     print(f"[manager] Corridor improvement: {round(d_improvement,2)}")
     return d_improvement < threshold
@@ -117,7 +117,7 @@ def check_stuck(parent, child, threshold=0.4):
 
 def check_significantly_different(corridor1, corridor2,
                                   distance_threshold=0.4,
-                                  tilt_threshold=np.pi/5):
+                                  tilt_threshold=np.pi/8):
     '''
     Compute the distance between the 'forward' corners of the
     corridors and compare it with the threshold.
@@ -137,6 +137,9 @@ def check_significantly_different(corridor1, corridor2,
                 (corners1[indx2][1] - corners2[indx2][1])**2) > \
         distance_threshold
     tilt_bool = np.abs(corridor1.tilt - corridor2.tilt) > tilt_threshold
+
+    print(f"[manager] Similar distance: {round(np.sqrt((corners1[indx1][0] - corners2[indx1][0])**2 + (corners1[indx1][1] - corners2[indx1][1])**2) + np.sqrt((corners1[indx2][0] - corners2[indx2][0])**2 + (corners1[indx2][1] - corners2[indx2][1])**2), 3)} > {0.4}")
+    print(f"[manager] Similar angle: {round(np.abs(corridor1.tilt - corridor2.tilt))} > {round(np.pi/5, 3)}")
 
     return (distance_bool and tilt_bool)
 
