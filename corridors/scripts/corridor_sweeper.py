@@ -81,7 +81,7 @@ def visualizeArrows(angles):
         marker.action = marker.ADD
         marker.header.stamp = rospy.Time.now()
         marker.ns = 'points_arrows'
-        marker.lifetime = rospy.Time(.1)
+        marker.lifetime = rospy.Time(.2)
         marker.id = i
         marker.color.a = 1.0
         marker.color.r = 0.0

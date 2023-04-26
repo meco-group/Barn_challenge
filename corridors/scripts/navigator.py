@@ -89,7 +89,7 @@ def generate_maneuver_message(maneuver_array):
     if GOAL_IN_SIGHT:
         xf_msg.x, xf_msg.y, xf_msg.z = message.goalx, message.goaly, 0.
     else:
-        xf_msg.x, xf_msg.y = compute_goal_point(list_of_corridors[0], 0)
+        xf_msg.x, xf_msg.y = compute_goal_point(list_of_corridors[0], 0.3)
         xf_msg.z = list_of_corridors[0].tilt
     maneuver_msg.x0.append(x0_msg)
     maneuver_msg.xf.append(xf_msg)
