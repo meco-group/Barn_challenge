@@ -91,7 +91,8 @@ def process_new_corridor(new_corridor_msg, root_corridor,
             [[new_corridor_msg.init_pos_global[0]],
              [new_corridor_msg.init_pos_global[1]],
              [1]])):
-        receiving_corridor = current_corridor.parent
+        return (root_corridor, current_corridor)
+        # receiving_corridor = current_corridor.parent
 
     # Check if goal position is reachable
     if check_inside_one_point(new_corridor, np.array([0, 10])):
@@ -106,19 +107,21 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         print("[manager] Goal is in sight!")
     else:
         # Check if this new corridor improves enough
-        stuck = check_stuck(receiving_corridor, new_corridor)
+        (stuck, d) = check_stuck(receiving_corridor, new_corridor)
 
         # Check if this new corridor is not too similar to a
         # backtracked corridor
-        backtracked = orphanage.has_similar_child(new_corridor)
+        backtracked = orphanage.has_similar_child(new_corridor, distance_threshold=2.0, tilt_threshold=0)
 
         if not stuck and not backtracked:
             print("[manager] Child corridor added")
             receiving_corridor.add_child_corridor(new_corridor)
             receiving_corridor.sort_children()
             receiving_corridor.remove_similar_children()
+        elif stuck:
+            print(f"[manager] Discarding a corridor (stuck: {round(d,3)})")
         else:
-            print("[manager] Discarding a corridor")
+            print("[manager] Discarding a corridor (backtrack similarity)")
 
     return (root_corridor, current_corridor)
 
@@ -237,10 +240,10 @@ def visualize_corridor_tree(root_corridor, current_corridor, margin):
     #                                    1/manager_rate)
     # id += 1
 
-    # for child in current_corridor.children:
-    #     child.rviz_visualization('rect', id, *current_children_color,
-    #                              1/manager_rate)
-    #     id += 1
+    for child in current_corridor.children:
+        child.rviz_visualization('rect', id, *current_children_color,
+                                 1/manager_rate)
+        id += 1
 
     # # visualize current branch and all other children
     # to_visualize = current_corridor
@@ -322,13 +325,17 @@ def main():
     backtrack_point = None
     waiting_to_backtrack = False
     backtrack_mode_activated = False
-    backtrack_waiting_time = 5.0
+    backtrack_waiting_time = 3.0
     backtrack_start_time = None
     backtrack_curr_time = None
 
+    waiting_at_end_reached = False
+    end_reached_waiting_time = 1.2
+    end_reached_start_time = None
+    end_reached_curr_time = None
+
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
-        # print(f"[manager] goal in sight: {GOAL_IN_SIGHT}")
         # If goal in sight, there is no more work to do
         if GOAL_IN_SIGHT:
             print("[manager] Goal in sight -- stopping")
@@ -349,10 +356,11 @@ def main():
                 rate.sleep()
                 continue
 
-        # if a new corridor arrived, potentially add it to the tree
-        if new_corridor_present:
-            # print("[manager] discovered ", len(new_corridor_list),
-                #   " new corridor(s)!")
+        # if a new corridor arrived while we are not backtracking,
+        # check to add it to the tree
+        if not backtrack_mode_activated and new_corridor_present:
+            print("[manager] discovered ", len(new_corridor_list),
+                  " new corridor(s)!")
 
             for corridor in new_corridor_list:
                 (root_corridor, current_corridor) = process_new_corridor(
@@ -362,8 +370,9 @@ def main():
             new_corridor_present = False
             new_corridor_list = []
 
-        # if we are manouvring in a tree, check if we can still proceed
-        if current_corridor is not None:
+        # if we are manouvring forward in a tree, check if we can still proceed
+        if not backtrack_mode_activated and current_corridor is not None:
+            
             end_reached = check_end_of_corridor_reached(
                 current_corridor, curr_pose, 0.5)
 
@@ -373,16 +382,39 @@ def main():
             #       know you already have a child with a satisfactory quality
             if end_reached or (not explore_full_corridor and
                                current_corridor.has_quality_child()):
-                print("[manager] Selecting child corridor")
-                (succes, current_corridor) = select_child_corridor(
-                    current_corridor)
-                # print("[manager] Child corridor selected! (", succes, ")")
+                
+                # if you arrive at the end, wait a bit, otherwise go for the
+                # high quality child
+                succes = False
+                if end_reached and not waiting_at_end_reached: # you were not waiting yet
+                    waiting_at_end_reached = True
+                    end_reached_start_time = rospy.Time.now().to_sec()
+                elif end_reached and waiting_at_end_reached:   # you were already waiting
+                    end_reached_curr_time = rospy.Time.now().to_sec()
+                    if (end_reached_curr_time-end_reached_start_time > 
+                        end_reached_waiting_time):
+                        waiting_at_end_reached = False
+                        (succes, current_corridor) = select_child_corridor(
+                        current_corridor)
+
+                # if you have found a high quality child, go for it
+                else:
+                    waiting_at_end_reached = False
+                    (succes, current_corridor) = select_child_corridor(
+                        current_corridor)
+
+                # if we were planning on selecting a child but were unsuccesful,
+                # wait a bit before backtracking
                 if not succes:
                     print("[manager] Need to backtrack!")
+                    # if you are not waiting yet, start a timer
                     if not waiting_to_backtrack:
                         print("[manager] Waiting to backtrack...")
                         backtrack_start_time = rospy.Time.now().to_sec()
                         waiting_to_backtrack = True
+
+                    # if you are waiting to backtrack already, check if you can
+                    # start backtracking
                     else:
                         backtrack_curr_time = rospy.Time.now().to_sec()
                         print("[manager] Waiting to backtrack...")
@@ -404,7 +436,11 @@ def main():
                             else:
                                 publish_corridors(backtracking_corridors,
                                                   corridor_pub)
+                
+                # If we succesfully selected a child, publish it and proceed
                 else:
+                    print("[manager] Selected child corridor")
+                    waiting_to_backtrack = False
                     publish_corridors([current_corridor], corridor_pub)
 
         if current_corridor is not None:

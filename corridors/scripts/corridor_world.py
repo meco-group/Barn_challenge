@@ -115,13 +115,15 @@ class CorridorWorld:
         '''Add child corridor to this corridor and add this
         corridor as parent to the child
         '''
-        self.children.append(child)
-        child.parent = self
-        if (max([child.corners[k][1] for k in range(4)]) >
-           max([self.corners[k][1] for k in range(4)])):
-            child.quality = 1.0
-        else:
-            child.quality = 0.1
+        if self.parent is None or \
+            check_significantly_different(self.parent, child, 1.8, 0.0):
+            self.children.append(child)
+            child.parent = self
+            if (max([child.corners[k][1] for k in range(4)]) >
+            max([self.corners[k][1] for k in range(4)])):
+                child.quality = 1.0
+            else:
+                child.quality = 0.1
 
     def remove_child_corridor(self, child_ind):
         '''Remove the child corridor with given index in the list
@@ -139,13 +141,13 @@ class CorridorWorld:
                     self.remove_child_corridor(i)
                     break  # break from outer loop
 
-    def has_similar_child(self, potential_child):
+    def has_similar_child(self, potential_child, distance_threshold=None, tilt_threshold=None):
         '''Returns wether or not this corridor has a child that is
         similar to the potential_child corridor that is given
         '''
         similar_found = False
         for child in self.children:
-            if not check_significantly_different(child, potential_child):
+            if not check_significantly_different(child, potential_child, distance_threshold=distance_threshold, tilt_threshold=tilt_threshold):
                 similar_found = True
                 break
 

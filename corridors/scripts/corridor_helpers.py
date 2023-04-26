@@ -111,8 +111,8 @@ def check_stuck(parent, child, threshold=0.4):
         else:
             d_improvement = max(0, H2 - (W1 + x1)/np.cos(gamma + np.pi/2))
 
-    print(f"[manager] Corridor improvement: {round(d_improvement,2)}")
-    return d_improvement < threshold
+    # print(f"[manager] Corridor improvement: {round(d_improvement,2)}")
+    return (d_improvement < threshold, d_improvement)
 
 
 def check_significantly_different(corridor1, corridor2,
@@ -125,6 +125,10 @@ def check_significantly_different(corridor1, corridor2,
     Returning True means that the corridors are considered to be
     different enough to keep them both
     '''
+    if distance_threshold is None:
+        distance_threshold = 0.4
+    if tilt_threshold is None:
+        tilt_threshold = np.pi/8
     corners1 = get_corners(corridor1.W)
     corners2 = get_corners(corridor2.W)
 
@@ -138,11 +142,13 @@ def check_significantly_different(corridor1, corridor2,
         distance_threshold
     tilt_bool = np.abs(corridor1.tilt - corridor2.tilt) > tilt_threshold
 
-    print(f"[manager] Similar distance: {round(np.sqrt((corners1[indx1][0] - corners2[indx1][0])**2 + (corners1[indx1][1] - corners2[indx1][1])**2) + np.sqrt((corners1[indx2][0] - corners2[indx2][0])**2 + (corners1[indx2][1] - corners2[indx2][1])**2), 3)} > {0.4}")
-    print(f"[manager] Similar angle: {round(np.abs(corridor1.tilt - corridor2.tilt))} > {round(np.pi/5, 3)}")
+    # print(f"[manager] Similar distance: {round(np.sqrt((corners1[indx1][0] - corners2[indx1][0])**2 + (corners1[indx1][1] - corners2[indx1][1])**2) + np.sqrt((corners1[indx2][0] - corners2[indx2][0])**2 + (corners1[indx2][1] - corners2[indx2][1])**2), 3)} > {0.4}")
+    # print(f"[manager] Similar angle: {round(np.abs(corridor1.tilt - corridor2.tilt))} > {round(np.pi/5, 3)}")
 
     return (distance_bool and tilt_bool)
 
+def dist(p1, p2):
+    return np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2)
 
 def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
     '''
@@ -159,7 +165,8 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
         backtracking_corridors = [current_corridor, corridor_to_explore]
 
         while (corridor_to_explore is not None and
-               len(corridor_to_explore.children) <= 1):
+                dist(corridor_to_explore.center, current_corridor.center) > 1.7 and
+                len(corridor_to_explore.children) <= 1):
             if corridor_to_explore is None:
                 return (None, current_corridor, [], orphanage)
 
