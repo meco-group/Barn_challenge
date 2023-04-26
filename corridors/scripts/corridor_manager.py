@@ -328,7 +328,7 @@ def main():
 
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
-        print(f"[manager] goal in sight: {GOAL_IN_SIGHT}")
+        # print(f"[manager] goal in sight: {GOAL_IN_SIGHT}")
         # If goal in sight, there is no more work to do
         if GOAL_IN_SIGHT:
             print("[manager] Goal in sight -- stopping")
@@ -351,8 +351,8 @@ def main():
 
         # if a new corridor arrived, potentially add it to the tree
         if new_corridor_present:
-            print("[manager] discovered ", len(new_corridor_list),
-                  " new corridor(s)!")
+            # print("[manager] discovered ", len(new_corridor_list),
+                #   " new corridor(s)!")
 
             for corridor in new_corridor_list:
                 (root_corridor, current_corridor) = process_new_corridor(
