@@ -50,6 +50,7 @@ class CorridorWorld:
         self.height = height
         self.width = width
         self.quality = 0.
+        self.fully_explored = False
 
         # Family tree
         self.children = []

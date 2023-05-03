@@ -284,7 +284,7 @@ def main():
     id = 0
 
     global manager_rate
-    manager_rate = 4
+    manager_rate = 10
 
     global GOAL_IN_SIGHT
     GOAL_IN_SIGHT = False
@@ -325,12 +325,12 @@ def main():
     backtrack_point = None
     waiting_to_backtrack = False
     backtrack_mode_activated = False
-    backtrack_waiting_time = 3.0
+    backtrack_waiting_time = 1.5
     backtrack_start_time = None
     backtrack_curr_time = None
 
     waiting_at_end_reached = False
-    end_reached_waiting_time = 1.2
+    end_reached_waiting_time = 0.5
     end_reached_start_time = None
     end_reached_curr_time = None
 
@@ -375,6 +375,7 @@ def main():
             
             end_reached = check_end_of_corridor_reached(
                 current_corridor, curr_pose, 0.5)
+            current_corridor.fully_explored = end_reached
 
             # select a child corridor if
             #   - you have reached the end of the current corridor
