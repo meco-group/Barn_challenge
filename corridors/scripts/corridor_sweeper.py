@@ -18,7 +18,8 @@ from barn_challenge.msg import AngleListMsg
 
 class lidarData():
     def __init__(self):
-        self.sensor_num = int(720/2)  # Consider only half of the lidar range.
+        #self.sensor_num = int(720/2)  # Consider only half of the lidar range.
+        self.sensor_num = int(600)  # Consider only 225 degrees
         self.lidar_data = np.zeros(self.sensor_num)
 
 
@@ -61,7 +62,8 @@ def wrapToPi(angle):
 
 
 def scanCallback(data):
-    lidar_data.lidar_data = np.asarray(data.ranges[(0+180):(719-179)])
+    #lidar_data.lidar_data = np.asarray(data.ranges[(0+179):(719-180)])
+    lidar_data.lidar_data = np.asarray(data.ranges[(0+59):(719-60)])
     lidar_data.lidar_data[lidar_data.lidar_data == float('inf')] = 10.
 
 
@@ -108,11 +110,13 @@ def main():
     global odom_data
     lidar_data = lidarData()
     odom_data = odomData()
-    sensor_range_used = 1/2
+    #sensor_range_used = 1/2
+    sensor_range_used = 1/1.2
     sensor_span = (3/2)*(np.pi)*sensor_range_used
     sensor_num = lidar_data.sensor_num
     lidar_resolution = sensor_span/sensor_num  # angle resolution
-    sector_num = 6  # number of sectors
+    #sector_num = 6  # number of sectors
+    sector_num = 10  # number of sectors
     sector_size = int(sensor_num/sector_num)  # number of points per sector
     free_sectors = 0.0
     last_free_sectors = 0.0
