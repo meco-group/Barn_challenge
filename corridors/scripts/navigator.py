@@ -14,7 +14,7 @@ import numpy as np
 
 from corridor_world import CorridorWorld
 from barn_challenge.msg import CorridorWorldMsg, CorridorWorldListMsg,\
-    ManeuverMsg
+    ManeuverMsg, AngleListMsg
 
 from motion_planner import planner, check_inside_one_point, compute_goal_point
 
@@ -44,6 +44,10 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
+def goalPositionCallback(data):
+    global goal
+    goal = data.angles.copy()
+    print("Goal position callback executed!")
 
 def corridorListCallback(data):
     if not GOAL_IN_SIGHT:
@@ -119,6 +123,10 @@ def main():
     corridor_list_sub = rospy.Subscriber('/chosen_corridor',
                                          CorridorWorldListMsg,
                                          corridorListCallback)
+
+    global goal
+    goal = np.array([0, 10])
+    goal_sub = rospy.Subscriber('/goal_position', AngleListMsg, goalPositionCallback)
 
     # Publishers
     path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)

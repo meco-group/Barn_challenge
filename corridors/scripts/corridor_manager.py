@@ -12,7 +12,8 @@ import math as m
 import numpy as np
 from barn_challenge.msg import \
     CorridorLocalMsg, CorridorLocalListMsg, \
-    CorridorWorldMsg, CorridorWorldListMsg
+    CorridorWorldMsg, CorridorWorldListMsg, \
+    AngleListMsg
 from corridor_helpers import *
 from corridor_world import CorridorWorld
 from motion_planner import check_inside_one_point
@@ -95,7 +96,8 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         # receiving_corridor = current_corridor.parent
 
     # Check if goal position is reachable
-    if check_inside_one_point(new_corridor, np.array([0, 10])):
+    global rotated_goal
+    if check_inside_one_point(new_corridor, rotated_goal):
         print("[manager] Child corridor is added to the tree")
         receiving_corridor.add_child_corridor(new_corridor)
         receiving_corridor.remove_similar_children()
@@ -311,7 +313,7 @@ def main():
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
 
     # Prepare to publish corridors
-    corridor_pub = rospy.Publisher("/chosen_corridor", CorridorWorldListMsg)
+    corridor_pub = rospy.Publisher("/chosen_corridor", CorridorWorldListMsg, queue_size=10)
 
     rospy.init_node('manager', anonymous=True)
     rate = rospy.Rate(manager_rate)
@@ -333,6 +335,22 @@ def main():
     end_reached_waiting_time = 0.5
     end_reached_start_time = None
     end_reached_curr_time = None
+
+    # almost ready to go, but first publish the GOAL POSITION
+    # considering the initial tilt of the robot
+    global rotated_goal
+    goal = np.array([0.0, 10.0])
+    rotation_angle = curr_pose.theta - np.pi/2
+    rotated_goal = np.array([np.cos(rotation_angle)*goal[0] - 
+                             np.sin(rotation_angle)*goal[1],
+                             np.sin(rotation_angle)*goal[0] +
+                             np.cos(rotation_angle)*goal[1],])
+    goal_pub = rospy.Publisher("/goal_position", AngleListMsg, queue_size=1)
+    
+    rotated_goal_msg = AngleListMsg()
+    rotated_goal_msg.angles = rotated_goal.copy()
+    print(rotated_goal_msg.angles)
+    goal_pub.publish(rotated_goal_msg)
 
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
