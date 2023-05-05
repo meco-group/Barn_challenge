@@ -82,6 +82,25 @@ if test == 1:
     tilt2_local = pi/10 + pi/5 # With respect to the vehicle
     tilt3_local = pi/10 + pi/5 - pi/5 # With respect to the vehicle
 
+if test == 2:
+    print("Testing Arena case (Backtracking 3 corridors)")
+    # vehicle pose
+    veh_posx = -4.30230223
+    veh_posy = 13.13694094 
+    veh_tilt = 1.9991864 - pi # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    width3 = 1
+    height3 = 5.5
+
+    # In local frame
+    tilt1_local = pi/10        # With respect to the vehicle
+    tilt2_local = pi/10 + pi/5 # With respect to the vehicle
+    tilt3_local = pi/10  # With respect to the vehicle
+
 # Compute center of the corridors wrt body frame
 center1_local = np.array([-(height1/2)*sin(tilt1_local), (height1/2)*cos(tilt1_local)])
 center2_local = center1_local + np.array([-0.5*sin(tilt1_local)-(height2/2)*sin(tilt2_local), 0.5*cos(tilt1_local)+(height2/2)*cos(tilt2_local)])
