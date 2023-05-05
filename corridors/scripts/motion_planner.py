@@ -192,12 +192,13 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
                 distance0 = linalg.norm(goal_pos1-[x_corner, y_corner])
                 goal_pos2 = compute_goal_point(corridor1_back, 0.8*distance0)
 
-                man_seq1, path1 = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 - pi , False, xf = goal_pos2[0], yf = goal_pos2[1])
+                man_seq1, path1, poses1 = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 - pi , False, xf = goal_pos2[0], yf = goal_pos2[1])
                 man_seq1[:,0:1] = -man_seq1[:,0:1]
                 orientation = arctan2((path1[-2,1] - path1[-1,1]), path1[-2,0] - path1[-1,0])
-                man_seq2, path2, poses = compute_trajectory(corridor1, u_bounds, a, b, m, path1[-1,0], path1[-1,1], orientation, plot, corridor2 = corridor2)
+                man_seq2, path2, poses2 = compute_trajectory(corridor1, u_bounds, a, b, m, path1[-1,0], path1[-1,1], orientation, plot, corridor2 = corridor2)
                 path = np.vstack((path1,path2))
                 man_seq = np.vstack((man_seq1,man_seq2))
+                poses = np.vstack((poses1,poses2))
     return man_seq, path, poses
 
 
@@ -671,6 +672,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             plt.show(block=True)
 
     return maneuver_sequence, computed_path, poses_sequence
+
 
 def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, theta0):
     maneuver_list = np.empty((0,3))
