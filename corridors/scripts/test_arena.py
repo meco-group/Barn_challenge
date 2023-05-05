@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from numpy import pi, cos, sin, tan, sqrt, linspace, arctan, arctan2
 import numpy as np
-from motion_planner import compute_initial_point, compute_trajectory, planner
+from motion_planner import compute_initial_point, compute_trajectory, planner, planner_corridor_sequence
 from corridor import Corridor
 from corridor_world import CorridorWorld
 
@@ -108,6 +108,7 @@ corridor3_world = CorridorWorld(width3, height3, center3_world, tilt3_world)
 initial_point = compute_initial_point(corridor1_world, m)
 x0 = initial_point[0]
 y0 = initial_point[1]
+print(initial_point)
 # x0 = 1.5 - a/2
 # x0 = 0.5 + a/2 + m
 # y0 += a/2 + m
@@ -126,10 +127,13 @@ if USE_ROS:
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 else:
     # corridor2_world = None
-    sequence_man, computed_path = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_world)
+    #sequence_man, computed_path = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_world)
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
-
-print(sequence_man)
+    corridor_list = [corridor1_world, corridor2_world, corridor3_world]
+    maneuver_list, computed_path_list, poses_sequence_list= planner_corridor_sequence(corridor_list, u_bounds, a, b, m, False, x0, y0, veh_tilt+pi/2)
+    print(maneuver_list)
+    print(poses_sequence_list)
+#print(sequence_man)
 
 def plot_corridors(path, *args):
     '''This function will plot any corridors provided as arguments'''
@@ -159,7 +163,7 @@ if not USE_ROS:
         corridor_margin1 = CorridorWorld(corridor1_world.width-(a+2*m), corridor1_world.height-2*m, corridor1_world.center, corridor1_world.tilt)
         corridor_margin2 = CorridorWorld(corridor2_world.width-(a+2*m), corridor2_world.height-2*m, corridor2_world.center, corridor2_world.tilt)
         # plot_corridors(computed_path, corridor1_world, corridor2_world, corridor_margin1, corridor_margin2)
-        plot_corridors(computed_path, corridor1_world, corridor2_world, corridor3_world)
+        plot_corridors(computed_path_list, corridor1_world, corridor2_world, corridor3_world)
     # plot_corridors(None, corridor1_world)
     # plot_corridors(None, corridor1_local, corridor2_local) 
     # plot_corridors(None, corridor1_world, corridor2_world)

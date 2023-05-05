@@ -172,11 +172,11 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
     yf = kwargs['yf'] if 'yf' in kwargs else None
 
     if corridor2 is None:
-        man_seq, path = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
+        man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
     else:
         #Check whether initial point (x0,y0) is inside corridor2
         if check_inside_one_point(corridor2, np.array([x0,y0])):
-            man_seq, path = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
+            man_seq, path, poses = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
         else:
             x_corner, y_corner = get_corner_point(corridor1, corridor2)
             # test_point = compute_initial_point(corridor2, 0)
@@ -184,7 +184,7 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
             psi = arctan2((y_corner - y0),(x_corner - x0)) - pi/2
             UpFRONT = sin(theta0 - psi) >= 0 # TODO: FIX THIS
             if UpFRONT:
-                man_seq, path = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, False, xf = xf, yf = yf, corridor2 = corridor2)
+                man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, False, xf = xf, yf = yf, corridor2 = corridor2)
             else:
                 corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt - pi)
 
@@ -195,10 +195,10 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
                 man_seq1, path1 = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 - pi , False, xf = goal_pos2[0], yf = goal_pos2[1])
                 man_seq1[:,0:1] = -man_seq1[:,0:1]
                 orientation = arctan2((path1[-2,1] - path1[-1,1]), path1[-2,0] - path1[-1,0])
-                man_seq2, path2 = compute_trajectory(corridor1, u_bounds, a, b, m, path1[-1,0], path1[-1,1], orientation, plot, corridor2 = corridor2)
+                man_seq2, path2, poses = compute_trajectory(corridor1, u_bounds, a, b, m, path1[-1,0], path1[-1,1], orientation, plot, corridor2 = corridor2)
                 path = np.vstack((path1,path2))
                 man_seq = np.vstack((man_seq1,man_seq2))
-    return man_seq, path
+    return man_seq, path, poses
 
 
 def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
@@ -320,6 +320,10 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
             maneuver_sequence[0,:] = np.array([v1, omega_max, t1])
             maneuver_sequence[1,:] = np.array([v_max, 0, t2])
+
+        theta1 = arctan2((yf-y1),(xf-x1))
+        thetaf = theta1
+        poses_sequence = np.vstack((np.array(([x0,y0, theta0], [x1, y1, theta1], [xf,yf,thetaf]))))
 
         computed_path = np.vstack((
             np.array([arc_x1,arc_y1]).T, 
@@ -573,6 +577,12 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 arc_x2 = xc2 + R * cos(linspace(epsilon2 + 2*pi, epsilon2 + 2*pi - iota2,100))
                 arc_y2 = yc2 + R * sin(linspace(epsilon2 + 2*pi, epsilon2 + 2*pi - iota2 ,100))
 
+        theta1 = arctan2((y2-y1),(x2-x1))
+        theta2 = theta1
+        theta3 = arctan2((yf-y2),(x2-x1))
+        thetaf = theta3
+        poses_sequence = np.vstack((np.array(([x0,y0, theta0], [x1, y1, theta1],[x2,y2,theta2], [x3,y3,theta3], [xf,yf,thetaf]))))
+
         computed_path = np.vstack((
             np.array([arc_x1,arc_y1]).T, 
             [x1,y1], 
@@ -581,7 +591,6 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             [x3,y3],
             [xf,yf]
         ))
-
 
         if plot:
             #Plot solution
@@ -645,4 +654,31 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
             plt.show(block=True)
 
-    return maneuver_sequence, computed_path
+    return maneuver_sequence, computed_path, poses_sequence
+
+def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, theta0):
+    maneuver_list = np.empty((0,3))
+    computed_path_list = np.empty((0,2))
+    poses_sequence_list = np.empty((0,3))
+
+    for i in range(len(corridor_list)-1):
+        maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = True, corridor2 = corridor_list[i+1])
+        if i == len(corridor_list)-2:
+            maneuver_list = np.vstack((maneuver_list, maneuver))
+            computed_path_list = np.vstack((computed_path_list, computed_path))
+            poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence))
+            b = 1
+
+        else:
+            maneuver_list = np.vstack((maneuver_list, maneuver[0:2,:]))
+            computed_path_list = np.vstack((computed_path_list, computed_path[0:-101]))
+            poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence[0:2,:]))
+            x0 = poses_sequence[2,0]
+            y0 = poses_sequence[2,1]
+            theta0 = poses_sequence[2,2] 
+            a = 1
+    # maneuver, computed_path, poses_sequence = planner(corridor_list[-1], u_bounds, a, b, m, x0, y0, theta0, plot = True)
+    # maneuver_list = np.vstack((maneuver_list, maneuver))
+    # computed_path_list = np.vstack((computed_path_list, computed_path))
+
+    return maneuver_list, computed_path_list, poses_sequence_list
