@@ -66,7 +66,6 @@ def corridorListCallback(data):
             BACKTRACKING = False
         elif data.len > 1:
             # TODO: If more than one corridor is sent, backtrack
-            print("[navigator] Backtracking...")
             list_of_corridors = []
             for corridor_message in data.corridors:
                 corridor_instance = CorridorWorld(
@@ -75,6 +74,7 @@ def corridorListCallback(data):
                     corridor_message.center_global,
                     corridor_message.tilt_global)
                 list_of_corridors.append(corridor_instance)
+            print(f"[navigator] Backtracking... got {len(list_of_corridors)} == {data.len} corridors")
             BACKTRACKING = True
 
 
@@ -164,7 +164,7 @@ def main():
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
     a = 0.430
     b = 0.508
-    m = 0.07
+    m = 0.10
 
     print("Initializing Navigator")
 
@@ -243,6 +243,7 @@ def main():
 
             else: # Backtracking:
                 backtracking_list = list_of_corridors.reverse()
+                print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
                 goal_point_last_corridor = compute_initial_point(backtracking_list[0], m)
                 fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
                     backtracking_list, 
@@ -253,7 +254,7 @@ def main():
                     False, 
                     goal_point_last_corridor[0], 
                     goal_point_last_corridor[1], 
-                    backtracking_list[0].tilt
+                    backtracking_list[0].tilt+pi/2
                 )
                 computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
                 for maneuver_segment in fwd_computed_maneuver:
