@@ -277,14 +277,17 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             #if sqrt((yf-y0)**2 + (xf-x0)**2) >= R:
             if cos(theta0 - corridor1.tilt) < 0:
                 #Compute center point of osculating circle
-                xc1 = x0 + R * cos(theta0 - pi/2)
-                yc1 = y0 + R * sin(theta0 - pi/2)
+                xc1 = x0 + R * cos(theta0 + pi/2)
+                yc1 = y0 + R * sin(theta0 + pi/2)
                 #Compute the radius of the second circle
                 R_max = sqrt((yf-yc1)**2+(xf-xc1)**2)
                 v1= v_max
                 if R_max <= R:
-                    R = R_max
-                    v1 = R * omega_max
+                    R = 0
+                    #v1 = R * omega_max
+                #Compute center point of osculating circle
+                xc1 = x0 + R * cos(theta0 - pi/2)
+                yc1 = y0 + R * sin(theta0 - pi/2)
 
                 #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
                 a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
@@ -308,6 +311,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     t1 = R * iota1/ v1
                 else: 
                     t1 = iota1 / abs(omega_min)
+                    v1 = 0
 
                 t2 = c1 / v_max
 
@@ -322,8 +326,11 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 R_max = sqrt((yf-yc1)**2+(xf-xc1)**2)
                 v1= v_max
                 if R_max <= R:
-                    R = R_max
-                    v1 = R * omega_max
+                    R = 0
+                    #v1 = R * omega_max
+                #Compute center point of osculating circle
+                xc1 = x0 + R * cos(theta0 + pi/2)
+                yc1 = y0 + R * sin(theta0 + pi/2)
 
                 #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
                 a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
@@ -347,6 +354,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     t1 = R * iota1/ v1
                 else: 
                     t1 = iota1 / omega_max
+                    v1 = 0
                 t2 = c1 / v_max
 
                 maneuver_sequence = np.vstack((maneuver_sequence,np.array([v1, omega_max, t1])))
