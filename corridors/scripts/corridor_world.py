@@ -10,7 +10,6 @@ from corridor_helpers import *
 
 
 GOAL = (-2, 13)
-GOAL_2 = (-2, 11)
 
 
 class CorridorWorld:
@@ -117,7 +116,7 @@ class CorridorWorld:
         corridor as parent to the child
         '''
         if self.parent is None or \
-            check_significantly_different(self.parent, child, 1.8, 0.0):
+            check_significantly_different(self.parent, child, 1.0, 0.0):
             self.children.append(child)
             child.parent = self
             if (max([child.corners[k][1] for k in range(4)]) >

@@ -14,7 +14,7 @@ import numpy as np
 
 from corridor_world import CorridorWorld
 from barn_challenge.msg import CorridorWorldMsg, CorridorWorldListMsg,\
-    ManeuverMsg, AngleListMsg
+    ManeuverMsg, GoalMsg
 
 from motion_planner import planner, check_inside_one_point, compute_goal_point, planner_corridor_sequence, compute_initial_point
 
@@ -44,19 +44,21 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
+
 def goalPositionCallback(data):
     global goal
-    goal = data.angles.copy()
+    goal = data.goal
     print("Goal position callback executed!")
+
 
 def corridorListCallback(data):
     global list_of_corridors
     global BACKTRACKING
     global GOAL_IN_SIGHT
-    if not GOAL_IN_SIGHT:
-        print(".... got new corridor(s)")
+
+    if not GOAL_IN_SIGHT: # Avoid reading new corridors once the goal is in sight
         if data.len == 1:
-            BACKTRACKING = False
+            print("[navigator] .... got new corridor")
             for corridor_message in data.corridors:
                 corridor_instance = CorridorWorld(
                     corridor_message.width_global,
@@ -64,10 +66,10 @@ def corridorListCallback(data):
                     corridor_message.center_global,
                     corridor_message.tilt_global)
                 list_of_corridors.append(corridor_instance)
+            BACKTRACKING = False
         elif data.len > 1:
+            print("[navigator] .... got new corridors for backtracking")
             # TODO: If more than one corridor is sent, backtrack
-            BACKTRACKING = True
-            print("[navigator] Backtracking...")
             list_of_corridors = []
             for corridor_message in data.corridors:
                 corridor_instance = CorridorWorld(
@@ -76,6 +78,8 @@ def corridorListCallback(data):
                     corridor_message.center_global,
                     corridor_message.tilt_global)
                 list_of_corridors.append(corridor_instance)
+            print(f"[navigator] Backtracking... got {len(list_of_corridors)} == {data.len} corridors")
+            BACKTRACKING = True
 
 
 
@@ -105,7 +109,7 @@ def generate_maneuver_message(maneuver_array):
     xf_msg = Vector3()
     x0_msg.x, x0_msg.y, x0_msg.z = message.posx, message.posy, message.theta
     if GOAL_IN_SIGHT:
-        xf_msg.x, xf_msg.y, xf_msg.z = message.goalx, message.goaly, 0.
+        xf_msg.x, xf_msg.y, xf_msg.z = goal[0], goal[1], 0.
     else:
         xf_msg.x, xf_msg.y = compute_goal_point(list_of_corridors[0], 0.3)
         xf_msg.z = list_of_corridors[0].tilt
@@ -143,7 +147,7 @@ def main():
 
     global goal
     goal = np.array([0, 10])
-    goal_sub = rospy.Subscriber('/goal_position', AngleListMsg, goalPositionCallback)
+    goal_sub = rospy.Subscriber('/goal_position', GoalMsg, goalPositionCallback)
 
     # Publishers
     path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
@@ -164,9 +168,9 @@ def main():
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
     a = 0.430
     b = 0.508
-    m = 0.05
+    m = 0.10
 
-    print("Initializing Navigator")
+    print("[navigator] Initializing Navigator")
 
     isDone = False
     message.goalx = message.posx
@@ -216,7 +220,7 @@ def main():
                     path_Pub.publish(generate_path_message(computed_path))
 
                 else:
-                    GOAL_IN_SIGHT = True
+                    
                     # Compute the maneuvers within the corridors (by Sonia).
                     # Be aware that the tilt angle of the vehicle should be
                     # measured from the x-axis of the world frame
@@ -227,21 +231,25 @@ def main():
                         x0=message.posx, y0=message.posy, theta0=message.theta,
                         plot=False,
                         corridor2=corridor2,
-                        xf=0, yf=10)
-                    print("--- HEADING TO THE GOAL ---")
+                        xf=message.goalx, yf=message.goaly)
+                    print("[navigator] Heading to the goal")
                     
-
-                    # print(computed_maneuver)
-                    # if not isDone:
-                    # The computed maneuver should be sent to the controller, which
-                    # will define the instantaneous twist to be sent to the robot
-                    maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
-                    # Publish computed path for visualization on RViz
-                    path_Pub.publish(generate_path_message(computed_path))
+                    if not GOAL_IN_SIGHT:
+                        # print(computed_maneuver)
+                        # if not isDone:
+                        # The computed maneuver should be sent to the controller, which
+                        # will define the instantaneous twist to be sent to the robot
+                        maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
+                        # Publish computed path for visualization on RViz
+                        path_Pub.publish(generate_path_message(computed_path))
                         # isDone = True
+                    GOAL_IN_SIGHT = True
 
             else: # Backtracking:
-                backtracking_list = list_of_corridors.reverse()
+                # backtracking_list = list_of_corridors.reverse() # .reverse() does not return anything, it modifies the list
+                backtracking_list = list_of_corridors.copy()
+                backtracking_list.reverse()
+                print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
                 goal_point_last_corridor = compute_initial_point(backtracking_list[0], m)
                 fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
                     backtracking_list, 
@@ -252,16 +260,17 @@ def main():
                     False, 
                     goal_point_last_corridor[0], 
                     goal_point_last_corridor[1], 
-                    backtracking_list[0].tilt
+                    backtracking_list[0].tilt+np.pi/2
                 )
                 computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
                 for maneuver_segment in fwd_computed_maneuver:
                     computed_maneuver = np.vstack((np.array([-maneuver_segment[0], -maneuver_segment[1], maneuver_segment[2]]), computed_maneuver))
 
-                print("######### BACKTRACKING ##########")
+                print("[navigator] Backtracking maneuver computed")
                 print(computed_maneuver)
-                # The computed maneuver should be sent to the controller, which
-                # will define the instantaneous twist to be sent to the robot
+                # computed_maneuver = np.array([0,0,0]).reshape(1,3)
+                # # The computed maneuver should be sent to the controller, which
+                # # will define the instantaneous twist to be sent to the robot
                 maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
                 # Publish computed path for visualization on RViz
                 path_Pub.publish(generate_path_message(computed_path))

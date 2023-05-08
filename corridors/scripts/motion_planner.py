@@ -163,7 +163,7 @@ def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1,
         # plt.axis('square')
         ax.set_aspect('equal')
         # plt.legend()
-        plt.show(block=True)
+        # plt.show(block=True)
 
 
 def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
@@ -251,7 +251,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         R = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, a/2+m )[0], 1e-3), R)
         # print(f"R = {R} m")
         #initialize the output with two maneuvers
-        maneuver_sequence = np.empty((1,3))
+        maneuver_sequence = np.empty((0,3))
         goal_pos = compute_goal_point(corridor1,m) #not best implemention, you compute goal_pos but you might not need it 
         xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else goal_pos[0]
         yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else goal_pos[1]
@@ -259,6 +259,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         #Compute the angle with respect to the horizontal of line connecting initial and goal pos
         ref_orientation = arctan2(yf-y0,xf-x0)
         if abs(theta0 - ref_orientation) <= treshold:
+            print("[motion_planner] going fwd")
             c = sqrt((yf-y0)**2 + (xf-x0)**2)
             beta = abs(theta0-ref_orientation)
             hyp = c/cos(beta)
@@ -268,88 +269,93 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
             v1 = v_max
             t1 = hyp/v1
-            maneuver_sequence[0,:] = np.array([v1, 0, t1])
+            maneuver_sequence = np.vstack((maneuver_sequence,np.array([v1, 0, t1])))
             poses_sequence = np.vstack((np.array(([x0,y0, theta0], [xf,yf,theta0]))))
             computed_path = np.vstack((np.array(([x0,y0], [xf,yf]))))
 
         else:
-            if cos(theta0 - corridor1.tilt) < 0:
-                #Compute center point of osculating circle
-                xc1 = x0 + R * cos(theta0 - pi/2)
-                yc1 = y0 + R * sin(theta0 - pi/2)
+            if sqrt((yf-y0)**2 + (xf-x0)**2) >= R:
+                if cos(theta0 - corridor1.tilt) < 0:
+                    #Compute center point of osculating circle
+                    xc1 = x0 + R * cos(theta0 - pi/2)
+                    yc1 = y0 + R * sin(theta0 - pi/2)
 
-                #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
-                a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
-                c1 = sqrt(a1**2 - R**2) #lenght line segment
-                delta1 = arctan2((yf-yc1),(xf-xc1)) + 2*pi #always positive angle
-                gamma1 = arcsin(c1/a1)
-                x1 = xc1 + R*cos(delta1 + gamma1)
-                y1 = yc1 + R*sin(delta1 + gamma1)
-                chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
-                if R > 1e-3:
-                    iota1 = 2 * arcsin((chord1/2)/R)
+                    #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
+                    a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
+                    c1 = sqrt(a1**2 - R**2) #lenght line segment
+                    delta1 = arctan2((yf-yc1),(xf-xc1)) + 2*pi #always positive angle
+                    gamma1 = arcsin(c1/a1)
+                    x1 = xc1 + R*cos(delta1 + gamma1)
+                    y1 = yc1 + R*sin(delta1 + gamma1)
+                    chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
+                    if R > 1e-3:
+                        iota1 = 2 * arcsin((chord1/2)/R)
+                    else:
+                        iota1 = abs(theta0 - corridor1.tilt)
+                    epsilon1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive angle
+
+                    arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 - iota1, 100))
+                    arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 - iota1, 100))
+                    v1 = R *abs(omega_min)
+
+                    if R > 1e-3:
+                        t1 = R * iota1/ v1
+                    else: 
+                        t1 = iota1 / abs(omega_min)
+
+                    t2 = c1 / v_max
+
+                    maneuver_sequence = np.vstack((maneuver_sequence,np.array([v1, omega_min, t1])))
+                    maneuver_sequence = np.vstack((maneuver_sequence,np.array([v_max, 0, t2])))
+
                 else:
-                    iota1 = abs(theta0 - corridor1.tilt)
-                epsilon1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive angle
+                    #Compute center point of osculating circle
+                    xc1 = x0 + R * cos(theta0 + pi/2)
+                    yc1 = y0 + R * sin(theta0 + pi/2)
 
-                arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 - iota1, 100))
-                arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 - iota1, 100))
-                v1 = R *abs(omega_min)
+                    #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
+                    a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
+                    c1 = sqrt(a1**2 - R**2) #lenght line segment
+                    delta1 = arctan2((yf-yc1),(xf-xc1)) + 2*pi #always positive angle
+                    gamma1 = arcsin(c1/a1)
+                    x1 = xc1 + R*cos(delta1 - gamma1)                
+                    y1 = yc1 + R*sin(delta1 - gamma1)
+                    chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
+                    if R > 1e-3:
+                        iota1 = 2 * arcsin((chord1/2)/R)
+                    else:
+                        iota1 = abs(theta0 - corridor1.tilt)
+                    epsilon1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive angle
 
-                if R > 1e-3:
-                    t1 = R * iota1/ v1
-                else: 
-                    t1 = iota1 / abs(omega_min)
+                    arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 + iota1, 100))
+                    arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 + iota1, 100))
+                    v1 = R * omega_max
 
-                t2 = c1 / v_max
+                    if R > 1e-3:
+                        t1 = R * iota1/ v1
+                    else: 
+                        t1 = iota1 / omega_max
+                    t2 = c1 / v_max
 
-                maneuver_sequence[0,:] = np.array([v1, omega_min, t1])
-                maneuver_sequence[1,:] = np.array([v_max, 0, t2])
+                    maneuver_sequence = np.vstack((maneuver_sequence,np.array([v1, omega_max, t1])))
+                    maneuver_sequence = np.vstack((maneuver_sequence,np.array([v_max, 0, t2])))
 
+                theta1 = arctan2((yf-y1),(xf-x1))
+                thetaf = theta1
+                poses_sequence = np.vstack((np.array(([x0,y0, theta0], [x1, y1, theta1], [xf,yf,thetaf]))))
+
+                computed_path = np.vstack((
+                    np.array([arc_x1,arc_y1]).T, 
+                    [x1,y1], 
+                    [xf,yf],
+                ))
+
+                if plot:
+                    plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, xc1, yc1, arc_x1, arc_y1)
             else:
-                #Compute center point of osculating circle
-                xc1 = x0 + R * cos(theta0 + pi/2)
-                yc1 = y0 + R * sin(theta0 + pi/2)
-
-                #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
-                a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
-                c1 = sqrt(a1**2 - R**2) #lenght line segment
-                delta1 = arctan2((yf-yc1),(xf-xc1)) + 2*pi #always positive angle
-                gamma1 = arcsin(c1/a1)
-                x1 = xc1 + R*cos(delta1 - gamma1)                
-                y1 = yc1 + R*sin(delta1 - gamma1)
-                chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
-                if R > 1e-3:
-                    iota1 = 2 * arcsin((chord1/2)/R)
-                else:
-                    iota1 = abs(theta0 - corridor1.tilt)
-                epsilon1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive angle
-
-                arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 + iota1, 100))
-                arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 + iota1, 100))
-                v1 = R * omega_max
-
-                if R > 1e-3:
-                    t1 = R * iota1/ v1
-                else: 
-                    t1 = iota1 / omega_max
-                t2 = c1 / v_max
-
-                maneuver_sequence[0,:] = np.array([v1, omega_max, t1])
-                maneuver_sequence[1,:] = np.array([v_max, 0, t2])
-
-            theta1 = arctan2((yf-y1),(xf-x1))
-            thetaf = theta1
-            poses_sequence = np.vstack((np.array(([x0,y0, theta0], [x1, y1, theta1], [xf,yf,thetaf]))))
-
-            computed_path = np.vstack((
-                np.array([arc_x1,arc_y1]).T, 
-                [x1,y1], 
-                [xf,yf],
-            ))
-
-            if plot:
-                plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, xc1, yc1, arc_x1, arc_y1)
+                maneuver_sequence = np.empty((0,3))
+                computed_path = np.empty((0,2))
+                poses_sequence = np.array(([x0,y0, theta0]))
 
     ### Two corridors
     else:
@@ -683,7 +689,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             # plt.plot(delta_t3, [maneuver_sequence[2,1], maneuver_sequence[2,1]])
             # plt.plot(delta_t4, [maneuver_sequence[3,1], maneuver_sequence[3,1]])
 
-            plt.show(block=True)
+            # plt.show(block=True)
 
     return maneuver_sequence, computed_path, poses_sequence
 

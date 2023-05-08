@@ -17,7 +17,7 @@ import math as m
 import numpy as np
 
 from barn_challenge.msg import \
-    AngleListMsg, CorridorLocalMsg, CorridorLocalListMsg
+    GoalMsg, CorridorLocalMsg, CorridorLocalListMsg
 from corridor import Corridor
 from corridor_helpers import *
 
@@ -54,6 +54,7 @@ class odomData():
         self.velx = 0.0
         self.rotz = 0.0
         self.theta = 0.0
+
 
 def yawFromQuaternion(orientation):
     return m.atan2((2.0*(orientation.w * orientation.z +
@@ -178,7 +179,6 @@ def main():
     point_sub = rospy.Subscriber("/front/scan", LaserScan, pointCallback,
                                  queue_size=1)
     marker_pub = rospy.Publisher('/angles_marker', MarkerArray, queue_size=10)
-    # angle_pub = rospy.Publisher('/angle_list', AngleListMsg, queue_size=10)
     corridor_pub = rospy.Publisher("/corridor", CorridorLocalListMsg,
                                    queue_size=10)
 
@@ -192,6 +192,9 @@ def main():
     message.corridors.append(corridor_0)
     corridor_0.get_vertices_for_visualization(
         odom_data.posx, odom_data.posy, odom_data.yaw)
+
+    orig_heading = odom_data.yaw
+    stop_fitting = False
 
     best_corridors = [corridor_0]
     last_best_corr = best_corridors[-1]
@@ -222,7 +225,9 @@ def main():
                     if i == 0:
                         starting_sector_angle = 0
                     else:
-                        starting_sector_angle = i*lidar_resolution*sector_size - lidar_resolution*sector_size/2
+                        starting_sector_angle = \
+                            (i*lidar_resolution*sector_size -
+                             lidar_resolution*sector_size/2)
                     for k in range(sector_size):
                         if x[k] >= x[x_index]:
                             opening_width = opening_width + arc_length
@@ -291,10 +296,12 @@ def main():
                 x = lidar_data.lidar_data[0:half_sector]
                 this_sector_size = half_sector
             elif i == sector_num:
-                x = lidar_data.lidar_data[(i*sector_size)-half_sector:((i+1)*sector_size)-sector_size]
+                x = lidar_data.lidar_data[(i*sector_size) - half_sector:
+                                          ((i+1)*sector_size) - sector_size]
                 this_sector_size = half_sector
             else:
-                x = lidar_data.lidar_data[(i*sector_size)-half_sector:((i+1)*sector_size)-half_sector]
+                x = lidar_data.lidar_data[(i*sector_size) - half_sector:
+                                          ((i+1)*sector_size)-half_sector]
                 this_sector_size = sector_size
             x_ordered = np.argsort(x)
             for j in range(this_sector_size):  # loop through data on a sector
