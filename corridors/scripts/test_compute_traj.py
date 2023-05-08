@@ -55,7 +55,7 @@ m = 0.1
 #######################################################################
 
 import sys
-test = int(sys.argv[1]) if len(sys.argv) > 1 else 8
+test = int(sys.argv[1]) if len(sys.argv) > 1 else 9
 
 # The local tilt angle (wrt the body frame) is measured wrt the forward direction (x-axis in the body frame)
 # To use the compute_trajectory function (by Sonia) the tilt angle must, however, be measured from the right direction (x-axis in the world frame)
@@ -196,7 +196,44 @@ elif test == 8:
     # In local frame
     tilt1_local = 0.05       # With respect to the vehicle
     tilt2_local = pi/2 - pi/5 # With respect to the vehicle
-
+#####################################
+# Test 9: Turn left and then left with final position whithin second circle
+#####################################
+if test == 9:
+    print("Testing left-left")
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = -pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = pi/4         # With respect to the vehicle
+    tilt2_local = pi/4 + pi/5 # With respect to the vehicle
+    xf = 0.75
+    yf = 6.23
+#####################################
+# Test 10: Turn right and then left with final position whithin second circle
+#####################################
+elif test == 10: 
+    print("Testing right-left")
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = -pi/4         # With respect to the vehicle
+    tilt2_local = -pi/4 + pi/5 # With respect to the vehicle
+    xf = 0.75
+    yf = 6.23
 # Compute center of the corridors wrt body frame
 center1_local = np.array([-(height1/2)*sin(tilt1_local), (height1/2)*cos(tilt1_local)])
 center2_local = center1_local + np.array([-0.5*sin(tilt1_local)-(height2/2)*sin(tilt2_local), 0.5*cos(tilt1_local)+(height2/2)*cos(tilt2_local)])
@@ -235,8 +272,13 @@ if USE_ROS:
     sequence_man, computed_path = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_converted)
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 else:
-    corridor2_world = None
-    sequence_man, computed_path, pose_sequence = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world)
+    #corridor2_world = None
+    if test == 9 or test == 10 or test ==11 or test == 12:
+        sequence_man, computed_path, pose_sequence = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world, xf = xf, yf = yf)
+    else: 
+        sequence_man, computed_path, pose_sequence = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world)
+
+
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 
 print(sequence_man)
