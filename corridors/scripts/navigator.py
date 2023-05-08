@@ -247,8 +247,8 @@ def main():
                     else:
                         # TODO: Check if theta of vehicle is in the direction of the goal....if not, recompute
                         goal_heading = np.arctan2(message.posx - goal[0], goal[1] - message.posy)
-                        print(f"[navigator] Difference in heading is {round(np.abs(message.theta - goal_heading), 3)}")
-                        if np.abs(message.theta - goal_heading) >= 0.4:
+                        print(f"[navigator] Difference in heading is {round(np.abs(message.theta - np.pi/2 - goal_heading)/2/np.pi*360, 3)}")
+                        if np.abs(message.theta - np.pi/2 - goal_heading) >= 0.06:
                             computed_maneuver, computed_path, poses = planner(
                                 corridor1=corridor1,
                                 u_bounds=u_bounds,
