@@ -129,11 +129,11 @@ def plot_result_in_world(path, *args):
     
 # plot_result_in_world(computed_path_list, corridor1_world)
 # plot_result_in_world(computed_path_list, corridor1_world, corridor2_world)
-plot_result_in_world(computed_path_list, corridor1_world, corridor2_world, corridor3_world)
+# plot_result_in_world(computed_path_list, corridor1_world, corridor2_world, corridor3_world)
 
 
 # import imageio
-# gif_name = 'arena_ugm.gif'
+# gif_name = 'arena_ugm2.gif'
 # filenames = [
 #     'Figure_1.png',
 #     'Figure_2.png',
@@ -151,6 +151,6 @@ plot_result_in_world(computed_path_list, corridor1_world, corridor2_world, corri
 # # imageio.mimsave(gif_name, images)
 
 # # Save them as frames into a gif 
-# kargs = { 'duration': 1000, 'loop': 0 }
+# kargs = { 'duration': 2000, 'loop': 0 }
 # imageio.mimsave(gif_name, images, 'GIF', **kargs)
 

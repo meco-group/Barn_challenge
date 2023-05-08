@@ -453,6 +453,7 @@ def main():
                                 print("[manager] ERROR: I cannot backtrack")
                                 backtrack_mode_activated = False
                             else:
+                                print(f"[manager] Publishing {len(backtracking_corridors)} backtracking corridors")
                                 publish_corridors(backtracking_corridors,
                                                   corridor_pub)
                 

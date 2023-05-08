@@ -53,9 +53,10 @@ def corridorListCallback(data):
     global list_of_corridors
     global BACKTRACKING
     global GOAL_IN_SIGHT
-    if not GOAL_IN_SIGHT:
-        print(".... got new corridor(s)")
+
+    if not GOAL_IN_SIGHT: # Avoid reading new corridors once the goal is in sight
         if data.len == 1:
+            print("[navigator] .... got new corridor")
             for corridor_message in data.corridors:
                 corridor_instance = CorridorWorld(
                     corridor_message.width_global,
@@ -65,6 +66,7 @@ def corridorListCallback(data):
                 list_of_corridors.append(corridor_instance)
             BACKTRACKING = False
         elif data.len > 1:
+            print("[navigator] .... got new corridors for backtracking")
             # TODO: If more than one corridor is sent, backtrack
             list_of_corridors = []
             for corridor_message in data.corridors:
@@ -166,7 +168,7 @@ def main():
     b = 0.508
     m = 0.10
 
-    print("Initializing Navigator")
+    print("[navigator] Initializing Navigator")
 
     isDone = False
     message.goalx = message.posx
@@ -262,11 +264,12 @@ def main():
 
                 print("[navigator] Backtracking maneuver computed")
                 print(computed_maneuver)
-                # The computed maneuver should be sent to the controller, which
-                # will define the instantaneous twist to be sent to the robot
+                computed_maneuver = np.array([0,0,0]).reshape(1,3)
+                # # The computed maneuver should be sent to the controller, which
+                # # will define the instantaneous twist to be sent to the robot
                 maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
-                # Publish computed path for visualization on RViz
-                path_Pub.publish(generate_path_message(computed_path))
+                # # Publish computed path for visualization on RViz
+                # path_Pub.publish(generate_path_message(computed_path))
 
         # Finish execution if goal has been reached
         if isDone:
