@@ -163,7 +163,7 @@ def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1,
         # plt.axis('square')
         ax.set_aspect('equal')
         # plt.legend()
-        plt.show(block=True)
+        # plt.show(block=True)
 
 
 def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
@@ -675,7 +675,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             # plt.plot(delta_t3, [maneuver_sequence[2,1], maneuver_sequence[2,1]])
             # plt.plot(delta_t4, [maneuver_sequence[3,1], maneuver_sequence[3,1]])
 
-            plt.show(block=True)
+            # plt.show(block=True)
 
     return maneuver_sequence, computed_path, poses_sequence
 

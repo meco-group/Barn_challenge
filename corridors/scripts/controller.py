@@ -103,10 +103,12 @@ def ManeuverCallback(data):
     #         w_full = [0.]*repetitions
     #         print('pure translation')
     # print('dist', dist)
-    if dist < 1.:
-        print(dist*vmax)
-        v_full = [dist*vmax]*repetitions
-        w_full = [0.]*repetitions
+    
+    
+    # if dist < 1.:
+    #     print(dist*vmax)
+    #     v_full = [dist*vmax]*repetitions
+    #     w_full = [0.]*repetitions
 
 
 def main():
