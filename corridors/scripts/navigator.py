@@ -246,7 +246,25 @@ def main():
                         GOAL_IN_SIGHT = True
                     else:
                         # TODO: Check if theta of vehicle is in the direction of the goal....if not, recompute
-                        print(f"[navigator] Skipping computing maneuver...already heading to goal {goal[0]},{goal[1]}")
+                        goal_heading = np.arctan2(message.posx - goal[0], goal[1] - message.posy)
+                        print(f"[navigator] Difference in heading is {round(np.abs(message.theta - np.pi/2 - goal_heading)/2/np.pi*360, 3)}")
+                        if np.abs(message.theta - np.pi/2 - goal_heading) >= 0.06:
+                            computed_maneuver, computed_path, poses = planner(
+                                corridor1=corridor1,
+                                u_bounds=u_bounds,
+                                a=a, b=b, m=m,
+                                x0=message.posx, y0=message.posy, theta0=message.theta,
+                                plot=False,
+                                corridor2=corridor2,
+                                xf=goal[0], yf=goal[1])
+                            print("[navigator] Heading to the goal", goal[0], goal[1])
+
+                            print(computed_maneuver, "case 3")
+                            maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
+                            path_Pub.publish(generate_path_message(computed_path))
+
+                        else:
+                            print(f"[navigator] Skipping computing maneuver...already heading to goal {goal[0]},{goal[1]}")
 
             else: # Backtracking:
                 # backtracking_list = list_of_corridors.reverse() # .reverse() does not return anything, it modifies the list

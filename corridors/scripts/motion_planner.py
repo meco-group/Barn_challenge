@@ -305,7 +305,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 - iota1, 100))
                 arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 - iota1, 100))
-                #v1 = R *abs(omega_min)
+                v1 = R *abs(omega_min)
 
                 if R > 1e-3:
                     t1 = R * iota1/ v1
@@ -348,7 +348,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 + iota1, 100))
                 arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 + iota1, 100))
-                #v1 = R * omega_max
+                v1 = R * omega_max
 
                 if R > 1e-3:
                     t1 = R * iota1/ v1
