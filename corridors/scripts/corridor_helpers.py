@@ -195,16 +195,16 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
             parent = current_corridor.parent
             backtracking_corridors = [current_corridor, parent]
 
-            # Add current corridor to the orphanage
-            rejected_child = current_corridor
-            parent.remove_child_corridor(0)
-            orphanage.add_child_corridor(rejected_child)
+            # # Add current corridor to the orphanage
+            # rejected_child = current_corridor
+            # parent.remove_child_corridor(0)
+            # orphanage.add_child_corridor(rejected_child)
 
-            # Place children of the parent that are too similar to children
-            # in the orphanage
-            for i in range(len(parent.children)-1,-1,-1):
-                if orphanage.has_similar_child(parent.children[i], distance_threshold=2.0, tilt_threshold=-0.1):
-                    parent.remove_child_corridor(i)
+            # # Place children of the parent that are too similar to children
+            # # in the orphanage
+            # for i in range(len(parent.children)-1,-1,-1):
+            #     if orphanage.has_similar_child(parent.children[i], distance_threshold=2.0, tilt_threshold=-0.1):
+            #         parent.remove_child_corridor(i)
 
             # make sure to backtrack enough generations to make sure that
             # we don't backtrack for only a very small distance
@@ -227,6 +227,8 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
                 parent = parent.parent
                 if parent is not None:
                     backtracking_corridors.append(parent)
+
+            print(f"[manager - helper] Found {len(backtracking_corridors)} corridors to backtrack in.")
 
             return (current_corridor.growth_center, parent,
                     backtracking_corridors, orphanage)

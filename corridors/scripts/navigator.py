@@ -246,7 +246,9 @@ def main():
                     GOAL_IN_SIGHT = True
 
             else: # Backtracking:
-                backtracking_list = list_of_corridors.reverse()
+                # backtracking_list = list_of_corridors.reverse() # .reverse() does not return anything, it modifies the list
+                backtracking_list = list_of_corridors.copy()
+                backtracking_list.reverse()
                 print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
                 goal_point_last_corridor = compute_initial_point(backtracking_list[0], m)
                 fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
@@ -258,7 +260,7 @@ def main():
                     False, 
                     goal_point_last_corridor[0], 
                     goal_point_last_corridor[1], 
-                    backtracking_list[0].tilt+pi/2
+                    backtracking_list[0].tilt+np.pi/2
                 )
                 computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
                 for maneuver_segment in fwd_computed_maneuver:
@@ -266,12 +268,12 @@ def main():
 
                 print("[navigator] Backtracking maneuver computed")
                 print(computed_maneuver)
-                computed_maneuver = np.array([0,0,0]).reshape(1,3)
+                # computed_maneuver = np.array([0,0,0]).reshape(1,3)
                 # # The computed maneuver should be sent to the controller, which
                 # # will define the instantaneous twist to be sent to the robot
                 maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
-                # # Publish computed path for visualization on RViz
-                # path_Pub.publish(generate_path_message(computed_path))
+                # Publish computed path for visualization on RViz
+                path_Pub.publish(generate_path_message(computed_path))
 
         # Finish execution if goal has been reached
         if isDone:
