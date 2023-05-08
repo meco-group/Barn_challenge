@@ -196,9 +196,9 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
             backtracking_corridors = [current_corridor, parent]
 
             # # Add current corridor to the orphanage
-            # rejected_child = current_corridor
-            # parent.remove_child_corridor(0)
-            # orphanage.add_child_corridor(rejected_child)
+            rejected_child = current_corridor
+            parent.remove_child_corridor(0)
+            orphanage.add_child_corridor(rejected_child, True)
 
             # # Place children of the parent that are too similar to children
             # # in the orphanage
@@ -212,27 +212,41 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
             while (parent is not None and 
                 (dist(current_corridor.center, parent.center) <= minimal_backtrack_distance or 
                 (parent.fully_explored and len(parent.children) == 1))):
-                
-                # add child to orphanage
-                rejected_child = parent.children[0]
-                parent.remove_child_corridor(0)
-                orphanage.add_child_corridor(rejected_child)
 
                 #
-                for i in range(len(parent.children)-1,-1,-1):
-                    if orphanage.has_similar_child(parent.children[i], distance_threshold=2.0, tilt_threshold=-0.1):
-                        parent.remove_child_corridor(i)
+                # for i in range(len(parent.children)-1,-1,-1):
+                #     if orphanage.has_similar_child(parent.children[i], distance_threshold=2.0, tilt_threshold=-0.1):
+                #         parent.remove_child_corridor(i)
 
                 # Move up one generation
                 parent = parent.parent
                 if parent is not None:
                     backtracking_corridors.append(parent)
+                                    # add child to orphanage
+                    rejected_child = parent.children[0]
+                    parent.remove_child_corridor(0)
+                    orphanage.add_child_corridor(rejected_child, True)
 
             print(f"[manager - helper] Found {len(backtracking_corridors)} corridors to backtrack in.")
 
             return (current_corridor.growth_center, parent,
                     backtracking_corridors, orphanage)
 
+def clear_backtrack_like_corridors(root_corridor, orphanage):
+    corridor = root_corridor
+
+    print(f"[manager-helper] orphanage has {len(orphanage.children)} children")
+    print("[manager-helper] looping over children")
+    # remove children that are close to backtracked corridors
+    for i in range(len(corridor.children)-1,-1,-1):
+        if orphanage.has_similar_child(corridor.children[i], distance_threshold=2.0, tilt_threshold=-0.1):
+            print("[manager] Removing backtracki-like corridor")
+            corridor.remove_child_corridor(i)
+
+    print(f"[manager-helper] calling clearing recursively")
+    # loop over remaining children and do the same there
+    for child in corridor.children:
+        clear_backtrack_like_corridors(child, orphanage)
 
 def check_end_of_corridor_reached(current_corridor, current_pos,
                                   threshold=0.3):

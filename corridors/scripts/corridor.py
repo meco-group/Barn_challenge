@@ -167,11 +167,11 @@ class Corridor:
         # print('growing left')
         self.grow_edge(datapoints, Corridor.LFT,
                        step_multiplier=step_multiplier)
-        print('growing finished')
+        # print('growing finished')
 
         # Rotate corridor only if width becomes larger than height
         if self.width > self.height:
-            print('rotate corridor')
+            # print('rotate corridor')
             self.rotate_corridor()
 
     def check_inside(self, datapoints):

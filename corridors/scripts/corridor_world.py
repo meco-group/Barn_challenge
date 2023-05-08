@@ -111,11 +111,11 @@ class CorridorWorld:
 
         return W
 
-    def add_child_corridor(self, child):
+    def add_child_corridor(self, child, force_add_child=False):
         '''Add child corridor to this corridor and add this
         corridor as parent to the child
         '''
-        if self.parent is None or \
+        if force_add_child or self.parent is None or \
             check_significantly_different(self.parent, child, 1.0, 0.0):
             self.children.append(child)
             child.parent = self

@@ -485,6 +485,9 @@ def main():
                                 backtrack_mode_activated = False
                             else:
                                 print(f"[manager] Publishing {len(backtracking_corridors)} backtracking corridors")
+                                # clear all backtrack-like corridors from the tree
+                                clear_backtrack_like_corridors(root_corridor, orphanage)
+
                                 publish_corridors(backtracking_corridors,
                                                   corridor_pub)
                 
