@@ -58,7 +58,7 @@ find_package(catkin REQUIRED COMPONENTS
    CorridorLocalListMsg.msg
    CorridorWorldListMsg.msg
    CorridorWorldMsg.msg
-   AngleListMsg.msg
+   GoalMsg.msg
    ManeuverMsg.msg
 #   Message1.msg
 #   Message2.msg

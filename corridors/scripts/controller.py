@@ -11,7 +11,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Twist
 import math as m
 import numpy as np
-from barn_challenge.msg import ManeuverMsg
+from barn_challenge.msg import ManeuverMsg, GoalMsg
 
 
 class messageClass():
@@ -49,6 +49,11 @@ def odomCallback(data):
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
 
+def goalPositionCallback(data):
+    global goal
+    goal = data.goal
+
+
 def ManeuverCallback(data):
     global v_full, w_full
 
@@ -79,7 +84,7 @@ def ManeuverCallback(data):
     # print(dist, np.arctan2(yf - y0, xf - x0) - thetaf)
 
     repetitions = 15
-    vmax = .3
+    vmax = .5
     wmax = .5
     # # first minimize heading error
     # if thetaf - theta0 + np.pi/2 > np.pi/8:
@@ -121,6 +126,10 @@ def main():
 
     global maneuver_mes
 
+    global goal
+    goal = np.array([0, 10])
+    goal_sub = rospy.Subscriber('/goal_position', GoalMsg, goalPositionCallback)
+
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
     maneuver_sub = rospy.Subscriber('/maneuver', ManeuverMsg, ManeuverCallback)
@@ -136,8 +145,8 @@ def main():
     twist = Twist()
     twist.linear.x = 0.
     twist.angular.z = 0.
-    message.goalx = message.posx
-    message.goaly = message.posy + 10
+    message.goalx = goal[0]
+    message.goaly = goal[1]
 
     global v_full, w_full
     v_full = []
@@ -159,10 +168,10 @@ def main():
         vel_Pub.publish(twist)
         # This should go in a controller node (replace with maneuver publisher)
 
-        distToGoal = distance((message.goalx, message.goaly),
+        distToGoal = distance((goal[0], goal[1]),
                               (message.posx, message.posy))
 
-        if distToGoal < 0.5:
+        if distToGoal < 0.1:
             twist.linear.x = 0.
             twist.angular.z = 0.
             print('I arrived')
