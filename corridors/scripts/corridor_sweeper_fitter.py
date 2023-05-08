@@ -395,65 +395,92 @@ def main():
 
         print('Building new corridors')
         x, y, theta = odom_data.posx, odom_data.posy, odom_data.yaw
+        rotation_angle = orig_heading - np.pi/2
+        final_corridor = [np.cos(rotation_angle)*0 - np.sin(rotation_angle)*7,
+                          np.sin(rotation_angle)*0 + np.cos(rotation_angle)*7]
         last_best_corr = best_corridors[-1]
-        sweep_size = len(free_angles_all)
-        centers = sweep_size*[[0, 0]]
-        tilts = list(free_angles_all)
-        if sweep_size == 1:
-            centers = 2*[[0, 0]]
-            tilts.append(0.0)
-        elif sweep_size == 0:
-            centers = 2*[[0, 0]]
-            tilts.append(0.0)
-            tilts.append(np.pi/3)
 
-        last_best_corr.sweep_corridor(width=.6, height=1.,
-                                      centers=centers, tilts=tilts, copy=True)
+        if not stop_fitting:
+            print('continue', y, final_corridor[1])
+            if y > final_corridor[1]:
+                print('create final corridor')
+                centers = 2*[[0, 0]]
+                tilts = [rotation_angle, -rotation_angle]
+                last_best_corr.sweep_corridor(width=.6, height=1.,
+                                              centers=centers, tilts=tilts,
+                                              copy=True)
+                for i, corridor in enumerate(last_best_corr.children):
+                    corridor.grow_all_edges(xy, step_multiplier=5)
+                    message.corridors.append(corridor)  # TODO do dit weg
+                    corridor.get_vertices_for_visualization(x, y, theta)
+                    best_corridors += [corridor]
+                    corridor.rviz_visualization('rect_fitter',
+                                                i+100, 0.7, 0.7, 0.7,
+                                                1/sweeper_fitter_rate)
+                    break
+                stop_fitting = True
+            else:
+                sweep_size = len(free_angles_all)
+                centers = sweep_size*[[0, 0]]
+                tilts = list(free_angles_all)
+                if sweep_size == 1:
+                    centers = 2*[[0, 0]]
+                    tilts.append(0.0)
+                elif sweep_size == 0:
+                    centers = 2*[[0, 0]]
+                    tilts.append(0.0)
+                    tilts.append(np.pi/3)
 
-        for i, corridor in enumerate(last_best_corr.children):
-            corridor.grow_all_edges(xy)
-            message.corridors.append(corridor)  # TODO do dit weg
-            corridor.get_vertices_for_visualization(x, y, theta)
-            # corridor.rviz_visualization('rect_fitter', i, 0., 0., 0.7,
-            #                             1/sweeper_fitter_rate)
+                last_best_corr.sweep_corridor(width=.6, height=1.,
+                                              centers=centers, tilts=tilts,
+                                              copy=True)
 
-        next_best_corrs = sorted(last_best_corr.children, key=lambda corridor:
-                                 max([xs.y for xs in corridor.corners_world]),
-                                 reverse=True)[:2]
+                for i, corridor in enumerate(last_best_corr.children):
+                    corridor.grow_all_edges(xy)
+                    message.corridors.append(corridor)  # TODO do dit weg
+                    corridor.get_vertices_for_visualization(x, y, theta)
+                    # corridor.rviz_visualization('rect_fitter', i, 0.,0.,0.7,
+                    #                             1/sweeper_fitter_rate)
 
-        best_corridors += [next_best_corrs[0], next_best_corrs[1]]
-        for i, corridor in enumerate(next_best_corrs):
-            corridor.rviz_visualization('rect_fitter',
-                                        i+100, 0.7, 0.7, 0.7,
-                                        1/sweeper_fitter_rate)
+                next_best_corrs = sorted(last_best_corr.children,
+                                         key=lambda corridor:
+                                         max([xs.y for xs in corridor.corners_world]),
+                                         reverse=True)[:2]
 
-        # Create corridor message for communication
-        corridors_msg = CorridorLocalListMsg()
+                best_corridors += [next_best_corrs[0], next_best_corrs[1]]
+                for i, corridor in enumerate(next_best_corrs):
+                    corridor.rviz_visualization('rect_fitter',
+                                                i+100, 0.7, 0.7, 0.7,
+                                                1/sweeper_fitter_rate)
 
-        for i, corridor in enumerate(next_best_corrs):
-            corridor_msg = CorridorLocalMsg()
-            corridor_msg.height_local = corridor.height
-            corridor_msg.width_local = corridor.width
-            corridor_msg.quality_local = corridor.quality
-            corridor_msg.center_local = corridor.center
-            corridor_msg.growth_center_local = corridor.growth_center
-            corridor_msg.tilt_local = corridor.tilt
-            corridor_msg.init_pos_global = [x, y, theta]
+            # Create corridor message for communication
+            corridors_msg = CorridorLocalListMsg()
 
-            xy_corners = []
-            for xy in corridor.corners_world:
-                xy_corners.append(xy.x)
-                xy_corners.append(xy.y)
-            corridor_msg.corners_local = xy_corners
+            for i, corridor in enumerate(next_best_corrs):
+                corridor_msg = CorridorLocalMsg()
+                corridor_msg.height_local = corridor.height
+                corridor_msg.width_local = corridor.width
+                corridor_msg.quality_local = corridor.quality
+                corridor_msg.center_local = corridor.center
+                corridor_msg.growth_center_local = corridor.growth_center
+                corridor_msg.tilt_local = corridor.tilt
+                corridor_msg.init_pos_global = [x, y, theta]
 
-            corridors_msg.corridors.append(corridor_msg)
+                xy_corners = []
+                for xy in corridor.corners_world:
+                    xy_corners.append(xy.x)
+                    xy_corners.append(xy.y)
+                corridor_msg.corners_local = xy_corners
 
-        corridors_msg.len = 2
+                corridors_msg.corridors.append(corridor_msg)
 
-        corridor_pub.publish(corridors_msg)
+            corridors_msg.len = 2
 
-        marker_array = visualizeArrows(free_angles_all, 1/sweeper_fitter_rate)
-        marker_pub.publish(marker_array)
+            corridor_pub.publish(corridors_msg)
+
+            marker_array = visualizeArrows(free_angles_all,
+                                           1/sweeper_fitter_rate)
+            marker_pub.publish(marker_array)
 
         rate.sleep()
 

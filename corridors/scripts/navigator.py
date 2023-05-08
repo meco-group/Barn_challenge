@@ -48,7 +48,7 @@ def odomCallback(data):
 def goalPositionCallback(data):
     global goal
     goal = data.goal
-    print("Goal position callback executed!")
+    # print("Goal position callback executed!")
 
 
 def corridorListCallback(data):
@@ -161,7 +161,7 @@ def main():
     # v_min = -0.5
     # omega_max = 1.57
     # omega_min = -1.57
-    v_max = 0.3
+    v_max = 0.5
     v_min = -0.3
     omega_max = 0.3
     omega_min = -0.3
@@ -202,7 +202,7 @@ def main():
                     # second corridor
 
                 if not check_inside_one_point(
-                corridor1, np.array([message.goalx, message.goaly])):
+                corridor1, np.array([goal[0], goal[1]])):
                     # Compute the maneuvers within the corridors (by Sonia).
                     # Be aware that the tilt angle of the vehicle should be
                     # measured from the x-axis of the world frame
@@ -220,21 +220,21 @@ def main():
                     path_Pub.publish(generate_path_message(computed_path))
 
                 else:
-                    
-                    # Compute the maneuvers within the corridors (by Sonia).
-                    # Be aware that the tilt angle of the vehicle should be
-                    # measured from the x-axis of the world frame
-                    computed_maneuver, computed_path, poses = planner(
-                        corridor1=corridor1,
-                        u_bounds=u_bounds,
-                        a=a, b=b, m=m,
-                        x0=message.posx, y0=message.posy, theta0=message.theta,
-                        plot=False,
-                        corridor2=corridor2,
-                        xf=message.goalx, yf=message.goaly)
-                    print("[navigator] Heading to the goal")
-                    
                     if not GOAL_IN_SIGHT:
+                        # Compute the maneuvers within the corridors (by Sonia).
+                        # Be aware that the tilt angle of the vehicle should be
+                        # measured from the x-axis of the world frame
+                        computed_maneuver, computed_path, poses = planner(
+                            corridor1=corridor1,
+                            u_bounds=u_bounds,
+                            a=a, b=b, m=m,
+                            x0=message.posx, y0=message.posy, theta0=message.theta,
+                            plot=False,
+                            corridor2=corridor2,
+                            xf=goal[0], yf=goal[1])
+                        print("[navigator] Heading to the goal", goal[0], goal[1])
+                    
+                    
                         # print(computed_maneuver)
                         # if not isDone:
                         # The computed maneuver should be sent to the controller, which
@@ -243,7 +243,10 @@ def main():
                         # Publish computed path for visualization on RViz
                         path_Pub.publish(generate_path_message(computed_path))
                         # isDone = True
-                    GOAL_IN_SIGHT = True
+                        GOAL_IN_SIGHT = True
+                    else:
+                        # TODO: Check if theta of vehicle is in the direction of the goal....if not, recompute
+                        print(f"[navigator] Skipping computing maneuver...already heading to goal {goal[0]},{goal[1]}")
 
             else: # Backtracking:
                 # backtracking_list = list_of_corridors.reverse() # .reverse() does not return anything, it modifies the list
