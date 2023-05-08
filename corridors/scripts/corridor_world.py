@@ -10,7 +10,6 @@ from corridor_helpers import *
 
 
 GOAL = (-2, 13)
-GOAL_2 = (-2, 11)
 
 
 class CorridorWorld:

@@ -115,7 +115,7 @@ class Corridor:
 
         return W
 
-    def grow_edge(self, datapoints, edge):
+    def grow_edge(self, datapoints, edge, step_multiplier):
         '''Grow specified edge of the corridor.
 
         :param datapoints: array with 2d homogeneous datapoints
@@ -127,11 +127,12 @@ class Corridor:
         step = self.DELTA
         # Do a first check to see if initial corridor contains datapoints.
         if self.check_inside(datapoints):
-            print('discard corridor')
+            pass
+            # print('discard corridor')
         else:
             # Do maximum 5 big steps in any direction.
             for i in range(5):
-                self.W[2, edge] -= step
+                self.W[2, edge] -= step*step_multiplier
                 self.corners = get_corners(self.W)
                 # Continue as long as there are no datapoints inside the grown
                 # corridor.
@@ -142,7 +143,7 @@ class Corridor:
                 # inside.
                 else:
                     while self.check_inside(datapoints):
-                        self.W[2, edge] += step/5
+                        self.W[2, edge] += step*step_multiplier/5
                         self.corners = get_corners(self.W)
                     break
 
@@ -151,18 +152,21 @@ class Corridor:
         self.width = - self.wr[2] - self.wl[2]
         self.center = self.get_center()
 
-    def grow_all_edges(self, datapoints):
+    def grow_all_edges(self, datapoints, step_multiplier=1):
         '''Grow all edges of the corridor.
 
         :param datapoints: array with 2d homogeneous datapoints
         :type datapoints: numpy.ndarray
         '''
         # print('growing forward')
-        self.grow_edge(datapoints, Corridor.FWD)
+        self.grow_edge(datapoints, Corridor.FWD,
+                       step_multiplier=step_multiplier)
         # print('growing right')
-        self.grow_edge(datapoints, Corridor.RGT)
+        self.grow_edge(datapoints, Corridor.RGT,
+                       step_multiplier=step_multiplier)
         # print('growing left')
-        self.grow_edge(datapoints, Corridor.LFT)
+        self.grow_edge(datapoints, Corridor.LFT,
+                       step_multiplier=step_multiplier)
         print('growing finished')
 
         # Rotate corridor only if width becomes larger than height
