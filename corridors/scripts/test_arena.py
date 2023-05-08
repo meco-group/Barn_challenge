@@ -7,14 +7,14 @@ from corridor_world import CorridorWorld
 
 
 #PARAMETERS
-# v_max = 2
-# v_min = -2
-# omega_max = 2
-# omega_min = -2
-v_max = 0.5
-v_min = -0.5
-omega_max = 1.57
-omega_min = -1.57
+v_max = 4
+v_min = -4
+omega_max = 2
+omega_min = -2
+# v_max = 0.5
+# v_min = -0.5
+# omega_max = 1.57
+# omega_min = -1.57
 u_bounds = np.array([v_min, v_max, omega_min, omega_max])
 a = 0.430
 b = 0.508
@@ -83,7 +83,7 @@ goal_pos = [-11.64, 18.37]
 #sequence_man, computed_path = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_world)
 # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 corridor_list = [corridor1_world, corridor2_world, corridor3_world]
-maneuver_list, computed_path_list, poses_sequence_list= planner_corridor_sequence(corridor_list, u_bounds, a, b, m, False, x0, y0, veh_tilt+pi/2, xf = goal_pos[0], yf = goal_pos[1])
+maneuver_list, computed_path_list, poses_sequence_list= planner_corridor_sequence(corridor_list, u_bounds, a, b, m, False, init_pos[0], init_pos[1], veh_tilt+pi/2, xf = goal_pos[0], yf = goal_pos[1])
 print(maneuver_list)
 print(poses_sequence_list)
 
@@ -106,8 +106,8 @@ def plot_result_in_world(path, *args):
     implot = plt.imshow(im, extent=(-24,36,-4,28), alpha=1, zorder=1)
     
     # Plot global path
-    global_path = np.array([init_pos,[-0.5464,7.1233],[-9.126,10.39],[-9.404,10.59],[-9.542,10.876],goal_pos])
-    plt.plot(global_path[:,0],global_path[:,1], 'm', linewidth=1.5, zorder=2)
+    # global_path = np.array([init_pos,[-0.5464,7.1233],[-9.126,10.39],[-9.404,10.59],[-9.542,10.876],goal_pos])
+    # plt.plot(global_path[:,0],global_path[:,1], 'm', linewidth=1.5, zorder=2)
 
     # Plot corridors
     for corridor in args:
@@ -129,7 +129,13 @@ def plot_result_in_world(path, *args):
     
 # plot_result_in_world(computed_path_list, corridor1_world)
 # plot_result_in_world(computed_path_list, corridor1_world, corridor2_world)
-# plot_result_in_world(computed_path_list, corridor1_world, corridor2_world, corridor3_world)
+plot_result_in_world(computed_path_list, corridor1_world, corridor2_world, corridor3_world)
+
+corridor_margin1 = CorridorWorld(corridor1_world.width-(a+2*m), corridor1_world.height-2*m, corridor1_world.center, corridor1_world.tilt)
+corridor_margin2 = CorridorWorld(corridor2_world.width-(a+2*m), corridor2_world.height-2*m, corridor2_world.center, corridor2_world.tilt)
+corridor_margin3 = CorridorWorld(corridor3_world.width-(a+2*m), corridor3_world.height-2*m, corridor3_world.center, corridor3_world.tilt)
+                
+# plot_result_in_world(computed_path_list, corridor1_world, corridor2_world, corridor3_world, corridor_margin1, corridor_margin2, corridor_margin3)
 
 
 # import imageio
