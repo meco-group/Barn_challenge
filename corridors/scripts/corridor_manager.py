@@ -377,8 +377,7 @@ def main():
     rviz_visualization_goal(*rotated_goal, 0.)
 
     rotated_goal_msg = GoalMsg()
-    rotated_goal_msg.angles = rotated_goal
-    print(rotated_goal_msg.angles)
+    rotated_goal_msg.goal = rotated_goal
     goal_pub.publish(rotated_goal_msg)
 
     print('[manager] Manager ready')
