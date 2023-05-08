@@ -59,16 +59,17 @@ def ManeuverCallback(data):
 
     length = data.len
     maneuver = data.maneuver
-    # vx, wz, t, v_full, w_full = [], [], [], [], []
-    # for i in range(length):
-    #     vx.append(maneuver[i].x)
-    #     wz.append(maneuver[i].y)
-    #     t.append(maneuver[i].z)
+    vx, wz, t, v_full, w_full = [], [], [], [], []
+    for i in range(length):
+        vx.append(maneuver[i].x)
+        wz.append(maneuver[i].y)
+        t.append(maneuver[i].z)
 
-    # for time, v, w in zip(t, vx, wz):
-    #     repetitions = int(time*controller_rate)
-    #     v_full += [v]*repetitions
-    #     w_full += [w]*repetitions
+    for time, v, w in zip(t, vx, wz):
+        if not m.isnan(time):
+            repetitions = int(time*controller_rate)
+            v_full += [v]*repetitions
+            w_full += [w]*repetitions
 
     # print(data.x0)
     x0, y0, theta0 = data.x0[0].x, data.x0[0].y, data.x0[0].z
@@ -85,28 +86,28 @@ def ManeuverCallback(data):
     repetitions = 15
     vmax = .5
     wmax = .5
-    # first minimize heading error
-    if thetaf - theta0 + np.pi/2 > np.pi/8:
-        w_full = [vmax]*repetitions
-        v_full = [0.]*repetitions
-        print('pure rotation CC')
-    elif thetaf - theta0 + np.pi/2 < -np.pi/8:
-        w_full = [-vmax]*repetitions
-        v_full = [0.]*repetitions
-        print('pure rotation C')
-    else:
-        v_full = [vmax]*repetitions
-        print(np.arctan2(yf - y0, xf - x0) - theta0)
-        if np.arctan2(yf - y0, xf - x0) - theta0 > 0.05:
-            w_full = [wmax]*repetitions
-            print('translation + rotation CC')
-        elif np.arctan2(yf - y0, xf - x0) - theta0 < -0.05:
-            w_full = [-wmax]*repetitions
-            print('translation + rotation C')
-        else:
-            w_full = [0.]*repetitions
-            print('pure translation')
-    print('dist', dist)
+    # # first minimize heading error
+    # if thetaf - theta0 + np.pi/2 > np.pi/8:
+    #     w_full = [vmax]*repetitions
+    #     v_full = [0.]*repetitions
+    #     print('pure rotation CC')
+    # elif thetaf - theta0 + np.pi/2 < -np.pi/8:
+    #     w_full = [-vmax]*repetitions
+    #     v_full = [0.]*repetitions
+    #     print('pure rotation C')
+    # else:
+    #     v_full = [vmax]*repetitions
+    #     print(np.arctan2(yf - y0, xf - x0) - theta0)
+    #     if np.arctan2(yf - y0, xf - x0) - theta0 > 0.05:
+    #         w_full = [wmax]*repetitions
+    #         print('translation + rotation CC')
+    #     elif np.arctan2(yf - y0, xf - x0) - theta0 < -0.05:
+    #         w_full = [-wmax]*repetitions
+    #         print('translation + rotation C')
+    #     else:
+    #         w_full = [0.]*repetitions
+    #         print('pure translation')
+    # print('dist', dist)
     if dist < 1.:
         print(dist*vmax)
         v_full = [dist*vmax]*repetitions

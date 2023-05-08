@@ -55,7 +55,7 @@ m = 0.1
 #######################################################################
 
 import sys
-test = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+test = int(sys.argv[1]) if len(sys.argv) > 1 else 8
 
 # The local tilt angle (wrt the body frame) is measured wrt the forward direction (x-axis in the body frame)
 # To use the compute_trajectory function (by Sonia) the tilt angle must, however, be measured from the right direction (x-axis in the world frame)
@@ -179,6 +179,23 @@ elif test == 7:
     # In local frame
     tilt1_local = pi/2        # With respect to the vehicle
     tilt2_local = pi/2 - pi/5 # With respect to the vehicle
+#####################################
+# Test 8: Test the treshold
+#####################################
+elif test == 8:
+    print("Testing right-right")
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = -pi/2 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = 0.05       # With respect to the vehicle
+    tilt2_local = pi/2 - pi/5 # With respect to the vehicle
 
 # Compute center of the corridors wrt body frame
 center1_local = np.array([-(height1/2)*sin(tilt1_local), (height1/2)*cos(tilt1_local)])
@@ -204,8 +221,8 @@ y0 = initial_point[1]
 # x0 = 1.5 - a/2
 # x0 = 0.5 + a/2 + m
 # y0 += a/2 + m
-x0 = 1
-y0 = 6.57
+#x0 = 1
+#y0 = 6.57
 
 if USE_ROS:
     # Check conversion from local to world frame (same as implemented in corridor_manager)
@@ -219,7 +236,7 @@ if USE_ROS:
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 else:
     # corridor2_world = None
-    sequence_man, computed_path = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_world)
+    sequence_man, computed_path, pose_sequence = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world)
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 
 print(sequence_man)
