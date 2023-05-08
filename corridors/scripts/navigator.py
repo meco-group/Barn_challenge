@@ -14,7 +14,7 @@ import numpy as np
 
 from corridor_world import CorridorWorld
 from barn_challenge.msg import CorridorWorldMsg, CorridorWorldListMsg,\
-    ManeuverMsg, AngleListMsg
+    ManeuverMsg, GoalMsg
 
 from motion_planner import planner, check_inside_one_point, compute_goal_point
 
@@ -44,10 +44,12 @@ def odomCallback(data):
     message.posy = data.pose.pose.position.y
     message.theta = yawFromQuaternion(data.pose.pose.orientation)
 
+
 def goalPositionCallback(data):
     global goal
-    goal = data.angles.copy()
+    goal = data.goal
     print("Goal position callback executed!")
+
 
 def corridorListCallback(data):
     if not GOAL_IN_SIGHT:
@@ -91,7 +93,7 @@ def generate_maneuver_message(maneuver_array):
     xf_msg = Vector3()
     x0_msg.x, x0_msg.y, x0_msg.z = message.posx, message.posy, message.theta
     if GOAL_IN_SIGHT:
-        xf_msg.x, xf_msg.y, xf_msg.z = message.goalx, message.goaly, 0.
+        xf_msg.x, xf_msg.y, xf_msg.z = goal[0], goal[1], 0.
     else:
         xf_msg.x, xf_msg.y = compute_goal_point(list_of_corridors[0], 0.3)
         xf_msg.z = list_of_corridors[0].tilt
@@ -126,7 +128,7 @@ def main():
 
     global goal
     goal = np.array([0, 10])
-    goal_sub = rospy.Subscriber('/goal_position', AngleListMsg, goalPositionCallback)
+    goal_sub = rospy.Subscriber('/goal_position', GoalMsg, goalPositionCallback)
 
     # Publishers
     path_Pub = rospy.Publisher('/path_corridors', Path, queue_size=1)
@@ -179,7 +181,7 @@ def main():
                 # second corridor
 
             if not check_inside_one_point(
-               corridor1, np.array([message.goalx, message.goaly])):
+               corridor1, np.array([goal[0], goal[1]])):
                 # Compute the maneuvers within the corridors (by Sonia).
                 # Be aware that the tilt angle of the vehicle should be
                 # measured from the x-axis of the world frame
@@ -202,7 +204,7 @@ def main():
                     x0=message.posx, y0=message.posy, theta0=message.theta,
                     plot=False,
                     corridor2=corridor2,
-                    xf=message.goalx, yf=message.goaly)
+                    xf=goal[0], yf=goal[1])
                 print("--- HEADING TO THE GOAL ---")
                 # isDone = True
 

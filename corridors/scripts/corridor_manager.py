@@ -13,10 +13,11 @@ import numpy as np
 from barn_challenge.msg import \
     CorridorLocalMsg, CorridorLocalListMsg, \
     CorridorWorldMsg, CorridorWorldListMsg, \
-    AngleListMsg
+    GoalMsg
 from corridor_helpers import *
 from corridor_world import CorridorWorld
 from motion_planner import check_inside_one_point
+from visualization_msgs.msg import Marker
 
 
 class odomMsgClass():
@@ -217,6 +218,34 @@ def publish_corridors(corridors, publisher):
     publisher.publish(to_send_list)
 
 
+def rviz_visualization_goal(x, y, z):
+    '''Visualize corridors.
+    '''
+    marker = Marker()
+    marker.header.stamp = rospy.Time.now()
+    marker.header.frame_id = 'odom'
+    marker.ns = 'goal2'
+    marker.id = 1
+    marker.action = 0
+    marker.scale.x = .1
+    marker.scale.y = .1
+    marker.scale.z = .1
+    marker.color.r = 1.
+    marker.color.g = 1.
+    marker.color.b = 1.
+    marker.color.a = 1.0
+    marker.lifetime = rospy.Time(1.)
+    marker.type = marker.SPHERE
+    marker.pose.position.x = x
+    marker.pose.position.y = y
+    marker.pose.position.z = z
+    marker.pose.orientation.w = 1
+
+    name = '/' + marker.ns
+    marker_pub = rospy.Publisher(name, Marker, queue_size=1)
+    marker_pub.publish(marker)
+
+
 def visualize_corridor_tree(root_corridor, current_corridor, margin):
     '''
     Visualization for debugging purposes. The current branch along with
@@ -339,22 +368,25 @@ def main():
     # almost ready to go, but first publish the GOAL POSITION
     # considering the initial tilt of the robot
     global rotated_goal
-    goal = np.array([0.0, 10.0])
+    goal = [0.0, 10.0]
     rotation_angle = curr_pose.theta - np.pi/2
-    rotated_goal = np.array([np.cos(rotation_angle)*goal[0] - 
-                             np.sin(rotation_angle)*goal[1],
-                             np.sin(rotation_angle)*goal[0] +
-                             np.cos(rotation_angle)*goal[1],])
-    goal_pub = rospy.Publisher("/goal_position", AngleListMsg, queue_size=1)
-    
-    rotated_goal_msg = AngleListMsg()
-    rotated_goal_msg.angles = rotated_goal.copy()
+    rotated_goal = [np.cos(rotation_angle)*goal[0] - np.sin(rotation_angle)*goal[1],
+                    np.sin(rotation_angle)*goal[0] + np.cos(rotation_angle)*goal[1]]
+    goal_pub = rospy.Publisher("/goal_position", GoalMsg, queue_size=10)
+
+    rviz_visualization_goal(*rotated_goal, 0.)
+
+    rotated_goal_msg = GoalMsg()
+    rotated_goal_msg.angles = rotated_goal
     print(rotated_goal_msg.angles)
     goal_pub.publish(rotated_goal_msg)
 
     print('[manager] Manager ready')
     while not rospy.is_shutdown():
         # If goal in sight, there is no more work to do
+        goal_pub.publish(rotated_goal_msg)
+        rviz_visualization_goal(*rotated_goal, 0.)
+
         if GOAL_IN_SIGHT:
             print("[manager] Goal in sight -- stopping")
             visualize_corridor_tree(root_corridor, current_corridor, margin=0.1)
