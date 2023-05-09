@@ -108,6 +108,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         GOAL_IN_SIGHT = True
         print("*************************************")
         print("[manager] Goal is in sight!")
+        publish_final_corridor(new_corridor, corridor_pub)
     else:
         # Check if this new corridor improves enough
         (stuck, d) = check_stuck(receiving_corridor, new_corridor)
@@ -210,6 +211,7 @@ def publish_corridors(corridors, publisher):
             xy_corners.append(list(xy))
         # print(xy_corners)
         to_send.corners_global = []
+        to_send.goal_in_sight = False
 
         to_send_list.len += 1
         to_send_list.corridors.append(to_send)
@@ -217,6 +219,33 @@ def publish_corridors(corridors, publisher):
     print("[manager] Published ", to_send_list.len, " corridor(s)")
     publisher.publish(to_send_list)
 
+def publish_final_corridor(final_corridor, publisher):
+    '''
+    This function publishes the final corridors so the navigator can use
+    them.
+    '''
+
+    to_send_list = CorridorWorldListMsg()
+
+    to_send = CorridorWorldMsg()
+    to_send.height_global = final_corridor.height
+    to_send.width_global = final_corridor.width
+    to_send.quality_global = final_corridor.quality
+    to_send.center_global = final_corridor.center.copy()
+    to_send.growth_center_global = final_corridor.growth_center.copy()
+    to_send.tilt_global = final_corridor.tilt
+    xy_corners = []
+    for xy in final_corridor.corners:
+        xy_corners.append(list(xy))
+    # print(xy_corners)
+    to_send.corners_global = []
+    to_send.goal_in_sight = True
+
+    to_send_list.len = 1
+    to_send_list.corridors = [to_send]
+
+    print("[manager] Published final corridor")
+    publisher.publish(to_send_list)
 
 def rviz_visualization_goal(x, y, z):
     '''Visualize corridors.
