@@ -174,11 +174,12 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
     if corridor2 is None:
         man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
     else:
-        #Check whether initial point (x0,y0) is inside corridor2
+        # Check whether initial point (x0,y0) is inside corridor2
         if check_inside_one_point(corridor2, np.array([x0,y0])):
             man_seq, path, poses = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
         else:
-            x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            corridor2_margin = CorridorWorld(corridor2.width-(a+2*m), corridor2.height-2*m, corridor2.center, corridor2.tilt)
+            x_corner, y_corner = get_corner_point(corridor1, corridor2_margin)
             # test_point = compute_initial_point(corridor2, 0)
             # x_corner, y_corner = test_point[0], test_point[1]
             psi = arctan2((y_corner - y0),(x_corner - x0)) - pi/2
@@ -186,19 +187,25 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
             if UpFRONT:
                 man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, False, xf = xf, yf = yf, corridor2 = corridor2)
             else:
+                # Create a corridor that resembles corridor1 but is rotated -pi.
                 corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt - pi)
 
+                # Compute 
                 goal_pos1 = compute_goal_point(corridor1_back, 0)
                 distance0 = linalg.norm(goal_pos1-[x_corner, y_corner])
                 goal_pos2 = compute_goal_point(corridor1_back, 0.8*distance0)
 
+                # Compute maneuver of going backwards
                 man_seq1, path1, poses1 = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 - pi , False, xf = goal_pos2[0], yf = goal_pos2[1])
                 man_seq1[:,0:1] = -man_seq1[:,0:1]
                 orientation = arctan2((path1[-2,1] - path1[-1,1]), path1[-2,0] - path1[-1,0])
+                # Compute maneuver from point backwards to corridor2
                 man_seq2, path2, poses2 = compute_trajectory(corridor1, u_bounds, a, b, m, path1[-1,0], path1[-1,1], orientation, plot, corridor2 = corridor2)
+                # Concatenate path, maneuver and poses
                 path = np.vstack((path1,path2))
                 man_seq = np.vstack((man_seq1,man_seq2))
                 poses = np.vstack((poses1,poses2))
+
     return man_seq, path, poses
 
 
