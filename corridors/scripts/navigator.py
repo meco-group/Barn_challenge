@@ -65,7 +65,11 @@ def corridorListCallback(data):
                     corridor_message.height_global,
                     corridor_message.center_global,
                     corridor_message.tilt_global)
-                list_of_corridors.append(corridor_instance)
+                if corridor_message.goal_in_sight:
+                    list_of_corridors = [corridor_instance]
+                    GOAL_IN_SIGHT = True
+                else:
+                    list_of_corridors.append(corridor_instance)
             BACKTRACKING = False
         elif data.len > 1:
             print("[navigator] .... got new corridors for backtracking")
@@ -138,6 +142,7 @@ def main():
 
     global GOAL_IN_SIGHT
     GOAL_IN_SIGHT = False
+    HEADING_TO_GOAL = False
 
     # Subscribers
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
@@ -201,8 +206,7 @@ def main():
                     # Get rid of first corridor as soon as you are already in the
                     # second corridor
 
-                if not check_inside_one_point(
-                corridor1, np.array([goal[0], goal[1]])):
+                if not check_inside_one_point(corridor1, np.array([goal[0], goal[1]])):
                     # Compute the maneuvers within the corridors (by Sonia).
                     # Be aware that the tilt angle of the vehicle should be
                     # measured from the x-axis of the world frame
@@ -220,7 +224,7 @@ def main():
                     path_Pub.publish(generate_path_message(computed_path))
 
                 else:
-                    if not GOAL_IN_SIGHT:
+                    if GOAL_IN_SIGHT and not HEADING_TO_GOAL:
                         # Compute the maneuvers within the corridors (by Sonia).
                         # Be aware that the tilt angle of the vehicle should be
                         # measured from the x-axis of the world frame
@@ -243,7 +247,8 @@ def main():
                         # Publish computed path for visualization on RViz
                         path_Pub.publish(generate_path_message(computed_path))
                         # isDone = True
-                        GOAL_IN_SIGHT = True
+                        # GOAL_IN_SIGHT = True
+                        HEADING_TO_GOAL = True
                     else:
                         # TODO: Check if theta of vehicle is in the direction of the goal....if not, recompute
                         goal_heading = np.arctan2(message.posx - goal[0], goal[1] - message.posy)

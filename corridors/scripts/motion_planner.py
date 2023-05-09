@@ -244,6 +244,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
     corridor2 = kwargs['corridor2'] if 'corridor2' in kwargs else None
 
     treshold = 0.06 #3.4 degrees
+    # treshold = 0.10
 
     R = v_max/omega_max
     ## Compute the trajetory in case you have only one corridor
