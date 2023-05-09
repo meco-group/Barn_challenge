@@ -432,7 +432,7 @@ def main():
             a = odom_data.posx - goal[0]
             b = goal[1] - odom_data.posy
             angle_test = m.atan2(a, b) + np.pi/2 - theta
-            final_corridor = Corridor(width=.7, height=1., center=[0, 0],
+            final_corridor = Corridor(width=1.5, height=1., center=[0, 0],
                                       tilt=angle_test, parent=last_best_corr,
                                       copy=True)
             final_corridor.grow_edge(xy, Corridor.FWD, step_multiplier=3)

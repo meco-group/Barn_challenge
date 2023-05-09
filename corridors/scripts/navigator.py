@@ -171,7 +171,7 @@ def main():
     omega_min = -0.3
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
     a = 0.430
-    b = 0.508
+    b = 0.20
     m = 0.10
 
     print("[navigator] Initializing Navigator")
@@ -263,7 +263,7 @@ def main():
                                 xf=goal[0], yf=goal[1])
                             print("[navigator] Heading to the goal", goal[0], goal[1])
 
-                            print(computed_maneuver, "case 3")
+                            # print(computed_maneuver, "case 3")
                             maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
                             path_Pub.publish(generate_path_message(computed_path))
 

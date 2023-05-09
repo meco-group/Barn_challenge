@@ -253,7 +253,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         # print(f"R = {R} m")
         #initialize the output with two maneuvers
         maneuver_sequence = np.empty((0,3))
-        goal_pos = compute_goal_point(corridor1,m) #not best implemention, you compute goal_pos but you might not need it 
+        goal_pos = compute_goal_point(corridor1,b) #not best implemention, you compute goal_pos but you might not need it 
         xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else goal_pos[0]
         yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else goal_pos[1]
 
@@ -284,10 +284,10 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 xc1 = x0 + R * cos(theta0 + pi/2)
                 yc1 = y0 + R * sin(theta0 + pi/2)
                 #Compute the radius of the initial circle
-                R_max = sqrt((yf-yc1)**2+(xf-xc1)**2)
+                a1 = sqrt((yf-yc1)**2+(xf-xc1)**2)
                 #v1= v_max
                 #if the final position is within the initial circle
-                if R_max <= R:
+                if a1 <= R:
                     alfa = arctan2((yf-y0),(xf-x0))
                     epsilon = alfa - theta0
                     omega = omega_max if (sin(epsilon) > 0) else omega_min #CHECK ALL THE CASES
@@ -308,7 +308,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                     #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
                     a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
-                    c1 = sqrt(a1**2 - R**2) #lenght line segment
+                    c1 = sqrt(abs(a1**2 - R**2)) #lenght line segment # TODO/ check this
                     delta1 = arctan2((yf-yc1),(xf-xc1)) + 2*pi #always positive angle
                     gamma1 = arcsin(c1/a1)
                     x1 = xc1 + R*cos(delta1 + gamma1)
@@ -406,7 +406,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
     ### Two corridors
     else:
-        goal_pos = compute_goal_point(corridor2,m)
+        goal_pos = compute_goal_point(corridor2,b)
         xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else goal_pos[0]
         yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else goal_pos[1]
 
