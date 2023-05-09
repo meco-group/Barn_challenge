@@ -48,7 +48,6 @@ def odomCallback(data):
 def goalPositionCallback(data):
     global goal
     goal = data.goal
-    # print("Goal position callback executed!")
 
 
 def corridorListCallback(data):
