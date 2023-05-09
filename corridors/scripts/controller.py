@@ -65,6 +65,19 @@ def ManeuverCallback(data):
         wz.append(maneuver[i].y)
         t.append(maneuver[i].z)
 
+    # convert short period of vmax by longer period of lower
+    # velocity to combat slipping
+    time_burst_threshold = 1.0
+    vmax = 0.5
+    if data.len >= 2 and vx[0] >= 0.4 and vx[1] <= 0.1 and \
+            t[0] < time_burst_threshold:
+        vx[0] = max(0.1, vmax*t[0]/time_burst_threshold)
+        t[0] = time_burst_threshold
+    elif data.len == 1 and vx[0] >= 0.4 and \
+            t[0] < time_burst_threshold:
+        vx[0] = max(0.1, vmax*t[0]/time_burst_threshold)
+        t[0] = time_burst_threshold
+
     for time, v, w in zip(t, vx, wz):
         if not m.isnan(time):
             repetitions = int(time*controller_rate)
