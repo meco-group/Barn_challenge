@@ -187,6 +187,7 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
             if UpFRONT:
                 man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, False, xf = xf, yf = yf, corridor2 = corridor2)
             else:
+                # SEMI-BACKTRACKING
                 # Create a corridor that resembles corridor1 but is rotated -pi.
                 corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt - pi)
 
@@ -533,7 +534,11 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 y3 = yf + c2 * sin(delta2 + 2*pi + beta2)
                 eta2 = arctan2((y2-yc2),(x2-xc2))+2*pi
                 chord2 = sqrt((y3-y2)**2 + (x3-x2)**2)
-                iota2 = 2 * arcsin((chord2/2)/R)
+                
+                if R > 1e-3:
+                    iota2 = 2 * arcsin((chord2/2)/R)
+                else:
+                    iota2 = abs(corridor1.tilt - corridor2.tilt)
                 
                 v1 = R1 * abs(omega_min)
                 if R1 > 1e-3:
@@ -541,7 +546,10 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 else: 
                     t1 = iota1 / abs(omega_min)
                 t2 = 2 * c1 / v_max
-                t3 = R * iota2 / v2
+                if R > 1e-3:
+                    t3 = R * iota2 / v2
+                else:
+                    t3 = iota2 / abs(omega_max)
                 t4 = c2 / v_max
 
                 maneuver_sequence[0,:] = np.array([v1, omega_min, t1])
@@ -605,7 +613,13 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 else:
                     iota1 = abs(theta0 - corridor1.tilt)
                 chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
-                iota2 = 2*arcsin((chord2/2)/R)
+                
+                # iota2 = 2*arcsin((chord2/2)/R)
+                if R > 1e-3:
+                    iota2 = 2*arcsin((chord2/2)/R)
+                else:
+                    iota2 = abs(corridor1.tilt - corridor2.tilt)
+
                 v1 = R1 * omega_max
 
                 if R1 > 1e-3:
@@ -613,7 +627,12 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 else: 
                     t1 = iota1 / omega_max
                 t2 = 2*c1/v_max
-                t3 = R*iota2/v2
+                
+                if R > 1e-3:
+                    t3 = R*iota2/v2
+                else:
+                    t3 = iota2 / abs(omega_min)
+                    
                 t4 = c2/v_max
 
                 maneuver_sequence[0,:] = np.array([v1, omega_max, t1])
