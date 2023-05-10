@@ -7,8 +7,8 @@ Created on Tue Mar 28 15:38:15 2023
 """
 
 import rospy
-from nav_msgs.msg import Odometry, Path
-from geometry_msgs.msg import PoseStamped, Vector3
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped, Vector3, Pose2D
 import math
 import numpy as np
 
@@ -38,11 +38,9 @@ def yawFromQuaternion(orientation):
 
 
 def odomCallback(data):
-    message.velx = data.twist.twist.linear.x
-    message.rotz = data.twist.twist.angular.z
-    message.posx = data.pose.pose.position.x
-    message.posy = data.pose.pose.position.y
-    message.theta = yawFromQuaternion(data.pose.pose.orientation)
+    message.posx = data.x
+    message.posy = data.y
+    message.theta = data.theta
 
 
 def goalPositionCallback(data):
@@ -93,12 +91,12 @@ def generate_path_message(input_path):
         return path
     for i in range(input_path.shape[0]):
         pose = PoseStamped()
-        pose.header.frame_id = "odom"
+        pose.header.frame_id = "map"
         pose.pose.position.x = input_path[i, 0]
         pose.pose.position.y = input_path[i, 1]
         pose.pose.position.z = 0
         pose.header.seq = path.header.seq + 1
-        path.header.frame_id = "odom"
+        path.header.frame_id = "map"
         path.header.stamp = rospy.Time.now()
         pose.header.stamp = path.header.stamp
         path.poses.append(pose)
@@ -144,7 +142,7 @@ def main():
     HEADING_TO_GOAL = False
 
     # Subscribers
-    odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    odom_sub = rospy.Subscriber('/pose_map', Pose2D, odomCallback)
     corridor_list_sub = rospy.Subscriber('/chosen_corridor',
                                          CorridorWorldListMsg,
                                          corridorListCallback)

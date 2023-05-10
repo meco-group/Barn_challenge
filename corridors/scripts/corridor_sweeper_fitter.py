@@ -7,14 +7,14 @@ Created on Tue April 11, 2023
 """
 
 import rospy
-from geometry_msgs.msg import Point
-from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Point, Pose2D
 from sensor_msgs.msg import LaserScan
 import sensor_msgs.point_cloud2 as pc2
 import laser_geometry.laser_geometry as lg
 from visualization_msgs.msg import Marker, MarkerArray
 import math as m
 import numpy as np
+import tf2_ros
 
 from barn_challenge.msg import \
     GoalMsg, CorridorLocalMsg, CorridorLocalListMsg
@@ -110,13 +110,9 @@ def pointCallback(data):
 
 
 def odomCallback(data):
-    odom_data.posx = data.pose.pose.position.x
-    odom_data.posy = data.pose.pose.position.y
-    odom_data.posz = data.pose.pose.position.z
-    odom_data.yaw = yawFromQuaternion(data.pose.pose.orientation)
-
-    odom_data.velx = data.twist.twist.linear.x
-    odom_data.rotz = data.twist.twist.angular.z
+    odom_data.posx = data.x
+    odom_data.posy = data.y
+    odom_data.yaw = data.theta
 
 
 def goalPositionCallback(data):
@@ -128,7 +124,7 @@ def visualizeArrows(angles, rate):
     marker_array = MarkerArray()
     for i in range(len(angles)):
         marker = Marker()
-        marker.header.frame_id = 'odom'
+        marker.header.frame_id = 'map'
         marker.type = marker.ARROW
         marker.action = marker.ADD
         marker.header.stamp = rospy.Time.now()
@@ -183,14 +179,14 @@ def main():
     scan_sub_fitter = rospy.Subscriber('/front/scan', LaserScan,
                                        scanFitterCallback)
     scan_sub = rospy.Subscriber('/front/scan', LaserScan, scanCallback)
-    odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    odom_sub = rospy.Subscriber('/pose_map', Pose2D, odomCallback)
     point_sub = rospy.Subscriber("/front/scan", LaserScan, pointCallback,
                                  queue_size=1)
-    goal_sub = rospy.Subscriber('/goal_position', GoalMsg, goalPositionCallback)
+    goal_sub = rospy.Subscriber('/goal_position', GoalMsg,
+                                goalPositionCallback)
     marker_pub = rospy.Publisher('/angles_marker', MarkerArray, queue_size=10)
     corridor_pub = rospy.Publisher("/corridor", CorridorLocalListMsg,
                                    queue_size=10)
-
     rospy.init_node('sweeper_fitter', anonymous=True)
     sweeper_fitter_rate = 2
     rate = rospy.Rate(sweeper_fitter_rate)
@@ -206,6 +202,10 @@ def main():
 
     best_corridors = [corridor_0]
     last_best_corr = best_corridors[-1]
+
+    tf_buffer = tf2_ros.Buffer()
+    listener = tf2_ros.TransformListener(tf_buffer)
+    tf_buffer.lookup_transform('odom', 'map', rospy.Time(0), rospy.Duration(10.))
 
     print('sweeper and fitter ready')
     while not rospy.is_shutdown():

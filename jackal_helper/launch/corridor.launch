@@ -2,8 +2,14 @@
   <arg name="goal_x" default="0" />
   <arg name="goal_y" default="10" /> 
   
+  <param name="use_sim_time" value="true" />
+  <node pkg="gmapping" type="slam_gmapping" name="gmapping" output="screen" >
+    <remap from="scan" to="/front/scan" />
+  </node>
+  
   <!-- <node pkg="barn_challenge" type="corridor_sweeper.py" name="sweeper" output="screen" /> -->
   <!-- <node pkg="barn_challenge" type="corridor_fitter.py" name="fitter" output="screen" /> -->
+  <node pkg="barn_challenge" type="odom_remap.py" name="odom_remap" output="screen" />
   <node pkg="barn_challenge" type="corridor_sweeper_fitter.py" name="fitter" output="screen" />
   <node pkg="barn_challenge" type="navigator.py" name="navigator" output="screen" />
   <node pkg="barn_challenge" type="corridor_manager.py" name="manager" output="screen" />

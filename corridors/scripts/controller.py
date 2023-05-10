@@ -7,8 +7,7 @@ Created on Tue Mar 28 15:38:15 2023
 """
 
 import rospy
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Pose2D
 import math as m
 import numpy as np
 from barn_challenge.msg import ManeuverMsg, GoalMsg
@@ -34,19 +33,10 @@ def distance(point1, point2):
     return np.linalg.norm(point1 - point2)
 
 
-def yawFromQuaternion(orientation):
-    return m.atan2((2.0*(orientation.w * orientation.z +
-                         orientation.x * orientation.y)),
-                   (1.0 - 2.0*(orientation.y * orientation.y +
-                               orientation.z * orientation.z)))
-
-
 def odomCallback(data):
-    message.velx = data.twist.twist.linear.x
-    message.rotz = data.twist.twist.angular.z
-    message.posx = data.pose.pose.position.x
-    message.posy = data.pose.pose.position.y
-    message.theta = yawFromQuaternion(data.pose.pose.orientation)
+    message.posx = data.x
+    message.posy = data.y
+    message.theta = data.theta
 
 
 def goalPositionCallback(data):
@@ -144,7 +134,7 @@ def main():
     goal_sub = rospy.Subscriber('/goal_position', GoalMsg, goalPositionCallback)
 
     # Subscribers
-    odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    odom_sub = rospy.Subscriber('/pose_map', Pose2D, odomCallback)
     maneuver_sub = rospy.Subscriber('/maneuver', ManeuverMsg, ManeuverCallback)
 
     # Publishers

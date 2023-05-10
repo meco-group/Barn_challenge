@@ -7,7 +7,7 @@ Created on Tue Mar 28 15:38:15 2023
 """
 
 import rospy
-from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Pose2D
 import math as m
 import numpy as np
 from barn_challenge.msg import \
@@ -181,12 +181,9 @@ def yaw_from_quaternion(orientation):
 
 
 def odomCallback(data):
-    curr_pose.velx = data.twist.twist.linear.x
-    curr_pose.rotz = data.twist.twist.angular.z
-
-    curr_pose.posx = data.pose.pose.position.x
-    curr_pose.posy = data.pose.pose.position.y
-    curr_pose.theta = yaw_from_quaternion(data.pose.pose.orientation)
+    curr_pose.posx = data.x
+    curr_pose.posy = data.y
+    curr_pose.theta = data.theta
 
 
 def publish_corridors(corridors, publisher):
@@ -252,7 +249,7 @@ def rviz_visualization_goal(x, y, z):
     '''
     marker = Marker()
     marker.header.stamp = rospy.Time.now()
-    marker.header.frame_id = 'odom'
+    marker.header.frame_id = 'map'
     marker.ns = 'goal2'
     marker.id = 1
     marker.action = 0
@@ -368,7 +365,7 @@ def main():
     # Subscribe to odometry
     global curr_pose
     curr_pose = odomMsgClass()
-    odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    odom_sub = rospy.Subscriber('/pose_map', Pose2D, odomCallback)
 
     # Prepare to publish corridors
     corridor_pub = rospy.Publisher("/chosen_corridor", CorridorWorldListMsg, queue_size=10)
