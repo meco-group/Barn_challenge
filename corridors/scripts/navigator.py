@@ -81,7 +81,7 @@ def corridorListCallback(data):
                     corridor_message.center_global,
                     corridor_message.tilt_global)
                 list_of_corridors.append(corridor_instance)
-            print(f"[navigator] Backtracking... got {len(list_of_corridors)} == {data.len} corridors")
+            # print(f"[navigator] Backtracking... got {data.len} corridors")
             BACKTRACKING = True
 
 
@@ -170,6 +170,8 @@ def main():
     omega_max = 0.3
     omega_min = -0.3
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
+    Bck_vel_gain = 0.5
+    u_bounds_back = np.array([Bck_vel_gain*v_min, Bck_vel_gain*v_max, Bck_vel_gain*omega_min, Bck_vel_gain*omega_max])
     a = 0.430
     b = 0.20
     m = 0.10
@@ -201,9 +203,23 @@ def main():
                 if corridor2 is not None and check_inside_one_point(
                 corridor2, np.array([message.posx, message.posy])):
                     # corridor1, corridor2 = corridor2, None
-                    list_of_corridors.pop(0)
-                    # Get rid of first corridor as soon as you are already in the
-                    # second corridor
+                    ##############################
+                    # list_of_corridors.pop(0)
+                    ## Get rid of first corridor as soon as you are already in the
+                    ## second corridor
+                    ##############################
+
+                    ##############################
+                    goal_corridor_2 = compute_goal_point(corridor2, 0)
+                    # goal_heading2 = np.arctan2(message.posx - goal_corridor_2[0], goal_corridor_2[1] - message.posy)
+
+                    c = np.sqrt((goal_corridor_2[1]-message.posy)**2 + (goal_corridor_2[0]-message.posx)**2) # distance to corridor goal
+                    threshold2 = np.abs(np.arctan((corridor2.width/2 - a/2 - m)/c))
+
+                    # print(f"\ttheta = {message.theta}, \tcorridor2.tilt = {corridor2.tilt}")
+                    if np.abs((message.theta - np.pi/2) - corridor2.tilt) >= threshold2:
+                        list_of_corridors.pop(0)
+                    ##############################
 
                 if not check_inside_one_point(corridor1, np.array([goal[0], goal[1]])):
                     # Compute the maneuvers within the corridors (by Sonia).
@@ -250,9 +266,13 @@ def main():
                         HEADING_TO_GOAL = True
                     else:
                         # TODO: Check if theta of vehicle is in the direction of the goal....if not, recompute
+                        #################################
+                        c = np.sqrt((goal[1]-message.posy)**2 + (goal[0]-message.posx)**2) # distance to corridor goal
+                        threshold = np.abs(np.arctan((corridor1.width/2 - a/2 - m)/c))
+                        #################################
                         goal_heading = np.arctan2(message.posx - goal[0], goal[1] - message.posy)
                         print(f"[navigator] Difference in heading is {round(np.abs(message.theta - np.pi/2 - goal_heading)/2/np.pi*360, 3)}")
-                        if np.abs(message.theta - np.pi/2 - goal_heading) >= 0.06:
+                        if np.abs(message.theta - np.pi/2 - goal_heading) >= threshold:
                             computed_maneuver, computed_path, poses = planner(
                                 corridor1=corridor1,
                                 u_bounds=u_bounds,
@@ -278,7 +298,7 @@ def main():
                 goal_point_last_corridor = compute_initial_point(backtracking_list[0], m)
                 fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
                     backtracking_list, 
-                    u_bounds, 
+                    u_bounds_back, 
                     a, 
                     b, 
                     m, 
