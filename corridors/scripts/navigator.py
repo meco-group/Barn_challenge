@@ -306,7 +306,10 @@ def main():
                     False, 
                     goal_point_last_corridor[0], 
                     goal_point_last_corridor[1], 
-                    backtracking_list[0].tilt+np.pi/2
+                    backtracking_list[0].tilt+np.pi/2,
+                    xf = message.posx,
+                    yf = message.posy,
+                    thetaf = message.theta0+np.pi/2
                 )
                 computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
                 for maneuver_segment in fwd_computed_maneuver:

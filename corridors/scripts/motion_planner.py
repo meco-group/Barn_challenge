@@ -774,23 +774,24 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
 
 def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, theta0, **kwargs):
-    xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else None
-    yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else None
-    thetaf = kwargs['thetaf'] if ('thetaf' in kwargs and kwargs['thetaf'] is not None) else None
+    xf = kwargs['xf'] if 'xf' in kwargs else None
+    yf = kwargs['yf'] if 'yf' in kwargs else None
+    thetaf = kwargs['thetaf'] if 'thetaf' in kwargs else None
 
     maneuver_list = np.empty((0,3))
     computed_path_list = np.empty((0,2))
     poses_sequence_list = np.empty((0,3))
 
     for i in range(len(corridor_list)-1):
-        maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = True, corridor2 = corridor_list[i+1])
+        
         if i == len(corridor_list)-2:
+            maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = True, corridor2 = corridor_list[i+1], xf = xf, yf = yf)
             maneuver_list = np.vstack((maneuver_list, maneuver))
             computed_path_list = np.vstack((computed_path_list, computed_path))
             poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence))
             b = 1
-
         else:
+            maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = True, corridor2 = corridor_list[i+1])
             maneuver_list = np.vstack((maneuver_list, maneuver[0:2,:]))
             computed_path_list = np.vstack((computed_path_list, computed_path[0:-101]))
             poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence[0:2,:]))
