@@ -170,7 +170,7 @@ def main():
     omega_max = 0.3
     omega_min = -0.3
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
-    Bck_vel_gain = 0.5
+    Bck_vel_gain = 1
     u_bounds_back = np.array([Bck_vel_gain*v_min, Bck_vel_gain*v_max, Bck_vel_gain*omega_min, Bck_vel_gain*omega_max])
     a = 0.430
     b = 0.20
@@ -293,10 +293,42 @@ def main():
 
             else: # Backtracking:
                 # backtracking_list = list_of_corridors.reverse() # .reverse() does not return anything, it modifies the list
-                backtracking_list = list_of_corridors.copy()
-                backtracking_list.reverse()
+
+                ############################################################
+                # Implementation using forward mode (and reversing maneuver)
+                ############################################################
+                # backtracking_list = list_of_corridors.copy()
+                # backtracking_list.reverse()
+                # print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
+                # goal_point_last_corridor = compute_initial_point(backtracking_list[0], m)
+                # fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
+                #     backtracking_list, 
+                #     u_bounds_back, 
+                #     a, 
+                #     b, 
+                #     m, 
+                #     False, 
+                #     goal_point_last_corridor[0], 
+                #     goal_point_last_corridor[1], 
+                #     backtracking_list[0].tilt+np.pi/2,
+                #     xf = message.posx,
+                #     yf = message.posy,
+                #     # thetaf = message.theta0+np.pi/2
+                # )
+                # computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
+                # for maneuver_segment in fwd_computed_maneuver:
+                #     computed_maneuver = np.vstack((np.array([-maneuver_segment[0], -maneuver_segment[1], maneuver_segment[2]]), computed_maneuver))
+
+                ############################################################
+                # Implementation using forward mode (and reversing maneuver)
+                ############################################################
+                backtracking_list = []
+                for corridor_instance in list_of_corridors:
+                    # Add corridor rotated 180 degrees
+                    backtracking_list.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, corridor_instance.tilt - np.pi))
+                
                 print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
-                goal_point_last_corridor = compute_initial_point(backtracking_list[0], m)
+                goal_point_last_corridor = compute_initial_point(backtracking_list[-1], m)
                 fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
                     backtracking_list, 
                     u_bounds_back, 
@@ -304,16 +336,16 @@ def main():
                     b, 
                     m, 
                     False, 
-                    goal_point_last_corridor[0], 
-                    goal_point_last_corridor[1], 
-                    backtracking_list[0].tilt+np.pi/2,
-                    xf = message.posx,
-                    yf = message.posy,
-                    thetaf = message.theta0+np.pi/2
+                    x0 = message.posx, 
+                    y0 = message.posy, 
+                    theta0 = message.theta+np.pi,
+                    xf = goal_point_last_corridor[0],
+                    yf = goal_point_last_corridor[1],
                 )
                 computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
                 for maneuver_segment in fwd_computed_maneuver:
                     computed_maneuver = np.vstack((np.array([-maneuver_segment[0], -maneuver_segment[1], maneuver_segment[2]]), computed_maneuver))
+
 
                 print("[navigator] Backtracking maneuver computed")
                 print(computed_maneuver)
