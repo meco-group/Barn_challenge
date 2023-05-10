@@ -166,7 +166,7 @@ def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1,
         # plt.show(block=True)
 
 
-def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
+def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot=False, **kwargs):
     corridor2 = kwargs['corridor2'] if 'corridor2' in kwargs else None
     xf = kwargs['xf'] if 'xf' in kwargs else None
     yf = kwargs['yf'] if 'yf' in kwargs else None
@@ -185,7 +185,7 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
             psi = arctan2((y_corner - y0),(x_corner - x0)) - pi/2
             UpFRONT = sin(theta0 - psi) >= 0 # TODO: FIX THIS
             if UpFRONT:
-                man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, False, xf = xf, yf = yf, corridor2 = corridor2)
+                man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf, corridor2 = corridor2)
             else:
                 # SEMI-BACKTRACKING
                 # Create a corridor that resembles corridor1 but is rotated -pi.
@@ -197,7 +197,7 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
                 goal_pos2 = compute_goal_point(corridor1_back, 0.8*distance0)
 
                 # Compute maneuver of going backwards
-                man_seq1, path1, poses1 = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 - pi , False, xf = goal_pos2[0], yf = goal_pos2[1])
+                man_seq1, path1, poses1 = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 - pi , plot, xf = goal_pos2[0], yf = goal_pos2[1])
                 man_seq1[:,0:1] = -man_seq1[:,0:1]
                 orientation = arctan2((path1[-2,1] - path1[-1,1]), path1[-2,0] - path1[-1,0])
                 # Compute maneuver from point backwards to corridor2
@@ -291,8 +291,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         else:
             #if sqrt((yf-y0)**2 + (xf-x0)**2) >= R:
             ###Turn right
-            
-            if cos(theta0 - (ref_orientation-pi/2)) < 0:
+            # print(f"Turn right: difference in angles: {theta0 - (ref_orientation)}, cos(diff): {cos(theta0 - (ref_orientation))}")
+            if cos(theta0+pi/2 - ref_orientation) < 0:
                 
                 #Compute center point of osculating circle
                 xc1 = x0 + R * cos(theta0 - pi/2)
@@ -785,13 +785,13 @@ def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, th
     for i in range(len(corridor_list)-1):
         
         if i == len(corridor_list)-2:
-            maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = True, corridor2 = corridor_list[i+1], xf = xf, yf = yf)
+            maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = False, corridor2 = corridor_list[i+1], xf = xf, yf = yf)
             maneuver_list = np.vstack((maneuver_list, maneuver))
             computed_path_list = np.vstack((computed_path_list, computed_path))
             poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence))
             b = 1
         else:
-            maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = True, corridor2 = corridor_list[i+1])
+            maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = False, corridor2 = corridor_list[i+1])
             maneuver_list = np.vstack((maneuver_list, maneuver[0:2,:]))
             computed_path_list = np.vstack((computed_path_list, computed_path[0:-101]))
             poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence[0:2,:]))
