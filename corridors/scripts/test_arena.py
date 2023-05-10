@@ -106,8 +106,8 @@ def plot_result_in_world(path, *args):
     implot = plt.imshow(im, extent=(-24,36,-4,28), alpha=1, zorder=1)
     
     # Plot global path
-    # global_path = np.array([init_pos,[-0.5464,7.1233],[-9.126,10.39],[-9.404,10.59],[-9.542,10.876],goal_pos])
-    # plt.plot(global_path[:,0],global_path[:,1], 'm', linewidth=1.5, zorder=2)
+    global_path = np.array([init_pos,[-0.5464,7.1233],[-9.126,10.39],[-9.404,10.59],[-9.542,10.876],goal_pos])
+    plt.plot(global_path[:,0],global_path[:,1], 'm', linewidth=1.5, zorder=2)
 
     # Plot corridors
     for corridor in args:
@@ -117,7 +117,7 @@ def plot_result_in_world(path, *args):
                 [corner[1] for corner in corners],
                 'k--', linewidth=1)
 
-    # # Plot path
+    # Plot path
     if path is not None:
         plt.plot(path[:,0],path[:,1], 'g', linewidth=1.5, zorder=2)
 

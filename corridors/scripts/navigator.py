@@ -201,24 +201,26 @@ def main():
                 # always be the one where the robot is.
 
                 if corridor2 is not None and check_inside_one_point(
-                corridor2, np.array([message.posx, message.posy])):
-                    # corridor1, corridor2 = corridor2, None
+                    # CorridorWorld(corridor2.width-(a), corridor2.height, corridor2.center, corridor2.tilt),
+                    corridor2, 
+                    np.array([message.posx, message.posy])):
                     ##############################
-                    # list_of_corridors.pop(0)
+                    list_of_corridors.pop(0)
                     ## Get rid of first corridor as soon as you are already in the
                     ## second corridor
                     ##############################
 
                     ##############################
-                    goal_corridor_2 = compute_goal_point(corridor2, 0)
+                    # goal_corridor_2 = compute_goal_point(corridor2, 0)
                     # goal_heading2 = np.arctan2(message.posx - goal_corridor_2[0], goal_corridor_2[1] - message.posy)
 
-                    c = np.sqrt((goal_corridor_2[1]-message.posy)**2 + (goal_corridor_2[0]-message.posx)**2) # distance to corridor goal
-                    threshold2 = np.abs(np.arctan((corridor2.width/2 - a/2 - m)/c))
+                    # c = np.sqrt((goal_corridor_2[1]-message.posy)**2 + (goal_corridor_2[0]-message.posx)**2) # distance to corridor goal
+                    # threshold2 = np.abs(np.arctan((corridor2.width/2 - a/2 - m)/c))
+                    # threshold2 = 0.25
 
-                    # print(f"\ttheta = {message.theta}, \tcorridor2.tilt = {corridor2.tilt}")
-                    if np.abs((message.theta - np.pi/2) - corridor2.tilt) >= threshold2:
-                        list_of_corridors.pop(0)
+                    # print(f"\tdiff heading: {np.abs((message.theta - np.pi/2) - corridor2.tilt) <= threshold2}")
+                    # if np.abs((message.theta - np.pi/2) - corridor2.tilt) <= threshold2:
+                    #     list_of_corridors.pop(0)
                     ##############################
 
                 if not check_inside_one_point(corridor1, np.array([goal[0], goal[1]])):
@@ -265,7 +267,6 @@ def main():
                         # GOAL_IN_SIGHT = True
                         HEADING_TO_GOAL = True
                     else:
-                        # TODO: Check if theta of vehicle is in the direction of the goal....if not, recompute
                         #################################
                         c = np.sqrt((goal[1]-message.posy)**2 + (goal[0]-message.posx)**2) # distance to corridor goal
                         threshold = np.abs(np.arctan((corridor1.width/2 - a/2 - m)/c))
