@@ -53,6 +53,7 @@ def goalPositionCallback(data):
 def corridorListCallback(data):
     global list_of_corridors
     global BACKTRACKING
+    global EXECUTING_BACKTRACKING
     global GOAL_IN_SIGHT
 
     if not GOAL_IN_SIGHT: # Avoid reading new corridors once the goal is in sight
@@ -70,6 +71,7 @@ def corridorListCallback(data):
                 else:
                     list_of_corridors.append(corridor_instance)
             BACKTRACKING = False
+            EXECUTING_BACKTRACKING = False
         elif data.len > 1:
             print("[navigator] .... got new corridors for backtracking")
             # TODO: If more than one corridor is sent, backtrack
@@ -135,6 +137,9 @@ def main():
 
     global BACKTRACKING
     BACKTRACKING = False
+
+    global EXECUTING_BACKTRACKING
+    EXECUTING_BACKTRACKING = False
 
     global list_of_corridors
     list_of_corridors = []
@@ -322,6 +327,7 @@ def main():
                 ############################################################
                 # Implementation using forward mode (and reversing maneuver)
                 ############################################################
+                # if not EXECUTING_BACKTRACKING:
                 backtracking_list = []
                 for corridor_instance in list_of_corridors:
                     # Add corridor rotated 180 degrees
@@ -344,7 +350,7 @@ def main():
                 )
                 computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
                 for maneuver_segment in fwd_computed_maneuver:
-                    computed_maneuver = np.vstack((np.array([-maneuver_segment[0], -maneuver_segment[1], maneuver_segment[2]]), computed_maneuver))
+                    computed_maneuver = np.vstack((computed_maneuver, np.array([-maneuver_segment[0], maneuver_segment[1], maneuver_segment[2]])))
 
 
                 print("[navigator] Backtracking maneuver computed")
@@ -355,6 +361,8 @@ def main():
                 maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
                 # Publish computed path for visualization on RViz
                 path_Pub.publish(generate_path_message(computed_path))
+
+                EXECUTING_BACKTRACKING = True
 
         # Finish execution if goal has been reached
         if isDone:

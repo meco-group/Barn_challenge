@@ -478,8 +478,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 epsilon2 = arctan2((y2 - yc2), (x2 - xc2)) + 2 * pi
                 delta2 = arctan2((yc2-yf),(xc2-xf))
-                a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
-                c2 = sqrt(a2**2 - R**2)
+                a2 = sqrt((yf-yc2)**2+(xf-xc2)**2) 
+                c2 = sqrt(a2**2 - R**2) # TODO: NaN could come from here
                 beta2 = arcsin(R/a2)
                 eta2 = delta2 + beta2
                 x3 = xf + c2 * cos(eta2)
@@ -587,7 +587,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 xc1 = x0 + R1 * cos(theta0 + pi/2)
                 yc1 = y0 + R1 * sin(theta0 + pi/2)
                 a1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)/2
-                c1 = sqrt(a1**2 - R1**2)
+                c1 = sqrt(a1**2 - R1**2) # TODO: NaN could come from here
                 delta1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive
                 epsilon1 = arctan2((yc2-yc1),(xc2-xc1)) + 2*pi #always positive
                 gamma1 = arcsin(c1/a1)
@@ -649,7 +649,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 xc1 = x0 + R1*cos(theta0 - pi/2)
                 yc1 = y0 + R1*sin(theta0-pi/2)
                 c1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)
-                a1 = sqrt(c1**2-R1**2)
+                a1 = sqrt(c1**2-R1**2) # TODO: NaN could come from here
                 delta1 = arctan2((yc2-yc1),(xc2-xc1)) +2*pi
                 beta1 = arcsin(R1/a1)
                 x1 = xc1 + R1*cos(delta1+pi/2)
