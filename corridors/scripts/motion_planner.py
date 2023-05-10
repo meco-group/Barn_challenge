@@ -632,7 +632,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     t3 = R*iota2/v2
                 else:
                     t3 = iota2 / abs(omega_min)
-                    
+
                 t4 = c2/v_max
 
                 maneuver_sequence[0,:] = np.array([v1, omega_max, t1])
@@ -773,7 +773,11 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
     return maneuver_sequence, computed_path, poses_sequence
 
 
-def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, theta0):
+def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, theta0, **kwargs):
+    xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else None
+    yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else None
+    thetaf = kwargs['thetaf'] if ('thetaf' in kwargs and kwargs['thetaf'] is not None) else None
+
     maneuver_list = np.empty((0,3))
     computed_path_list = np.empty((0,2))
     poses_sequence_list = np.empty((0,3))
