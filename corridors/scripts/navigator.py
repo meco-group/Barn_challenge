@@ -327,42 +327,45 @@ def main():
                 ############################################################
                 # Implementation using forward mode (and reversing maneuver)
                 ############################################################
-                # if not EXECUTING_BACKTRACKING:
-                backtracking_list = []
-                for corridor_instance in list_of_corridors:
-                    # Add corridor rotated 180 degrees
-                    backtracking_list.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, corridor_instance.tilt - np.pi))
-                
-                print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
-                goal_point_last_corridor = compute_initial_point(backtracking_list[-1], m)
-                fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
-                    backtracking_list, 
-                    u_bounds_back, 
-                    a, 
-                    b, 
-                    m, 
-                    False, 
-                    x0 = message.posx, 
-                    y0 = message.posy, 
-                    theta0 = message.theta+np.pi,
-                    xf = goal_point_last_corridor[0],
-                    yf = goal_point_last_corridor[1],
-                )
-                computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
-                for maneuver_segment in fwd_computed_maneuver:
-                    computed_maneuver = np.vstack((computed_maneuver, np.array([-maneuver_segment[0], maneuver_segment[1], maneuver_segment[2]])))
+                if not EXECUTING_BACKTRACKING: # TODO check this
+                    backtracking_list = []
+                    for corridor_instance in list_of_corridors:
+                        # Add corridor rotated 180 degrees
+                        backtracking_list.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, corridor_instance.tilt - np.pi))
+                    
+                    print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
+                    goal_point_last_corridor = compute_initial_point(backtracking_list[-1], m)
+                    # print(f"### Backtracking: veh angle = {message.theta-np.pi}, corridor angle = {backtracking_list[0].tilt}")
+                    fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
+                        backtracking_list, 
+                        u_bounds_back, 
+                        a, 
+                        b, 
+                        m, 
+                        False, 
+                        x0 = message.posx, 
+                        y0 = message.posy, 
+                        theta0 = message.theta+np.pi,
+                        xf = goal_point_last_corridor[0],
+                        yf = goal_point_last_corridor[1],
+                    )
+                    print("[navigator] Forward-Backtracking maneuver computed")
+                    print(fwd_computed_maneuver)
+                    computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
+                    for maneuver_segment in fwd_computed_maneuver:
+                        computed_maneuver = np.vstack((computed_maneuver, np.array([-maneuver_segment[0], maneuver_segment[1], maneuver_segment[2]])))
 
 
-                print("[navigator] Backtracking maneuver computed")
-                print(computed_maneuver)
-                # computed_maneuver = np.array([0,0,0]).reshape(1,3)
-                # # The computed maneuver should be sent to the controller, which
-                # # will define the instantaneous twist to be sent to the robot
-                maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
-                # Publish computed path for visualization on RViz
-                path_Pub.publish(generate_path_message(computed_path))
+                    print("[navigator] Backtracking maneuver computed")
+                    print(computed_maneuver)
+                    # computed_maneuver = np.array([0,0,0]).reshape(1,3)
+                    # # The computed maneuver should be sent to the controller, which
+                    # # will define the instantaneous twist to be sent to the robot
+                    maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
+                    # Publish computed path for visualization on RViz
+                    path_Pub.publish(generate_path_message(computed_path))
 
-                EXECUTING_BACKTRACKING = True
+                    EXECUTING_BACKTRACKING = True
 
         # Finish execution if goal has been reached
         if isDone:
