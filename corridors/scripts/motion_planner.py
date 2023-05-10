@@ -250,8 +250,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
     omega_max = u_bounds[3]
     corridor2 = kwargs['corridor2'] if 'corridor2' in kwargs else None
 
-    treshold = 0.06 #3.4 degrees
-    # treshold = 0.10
+    threshold = 0.06 #3.4 degrees
+    # threshold = 0.10
 
     R = v_max/omega_max
     ## Compute the trajetory in case you have only one corridor
@@ -267,8 +267,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         #Compute the angle with respect to the horizontal of line connecting initial and goal pos
         ref_orientation = arctan2(yf-y0,xf-x0)
         #In case the difference between the robot orientation and the angle of the line connecting the 
-        #initial and final position is smaller than a treshold, just go straight ahead
-        if abs(theta0 - ref_orientation) <= treshold:
+        #initial and final position is smaller than a threshold, just go straight ahead
+        if abs(theta0 - ref_orientation) <= threshold:
             print("[motion_planner] going fwd")
             c = sqrt((yf-y0)**2 + (xf-x0)**2)
             beta = abs(theta0-ref_orientation)
