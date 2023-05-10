@@ -178,8 +178,8 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
         if check_inside_one_point(corridor2, np.array([x0,y0])):
             man_seq, path, poses = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
         else:
-            corridor2_margin = CorridorWorld(corridor2.width-(a+2*m), corridor2.height-2*m, corridor2.center, corridor2.tilt)
-            x_corner, y_corner = get_corner_point(corridor1, corridor2_margin)
+            # corridor2_margin = CorridorWorld(corridor2.width-(a+2*m), corridor2.height-2*m, corridor2.center, corridor2.tilt)
+            x_corner, y_corner = get_corner_point(corridor1, corridor2)
             # test_point = compute_initial_point(corridor2, 0)
             # x_corner, y_corner = test_point[0], test_point[1]
             psi = arctan2((y_corner - y0),(x_corner - x0)) - pi/2
