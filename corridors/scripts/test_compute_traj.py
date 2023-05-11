@@ -56,7 +56,7 @@ m = 0.1
 
 import sys
 test_one_corridor = False
-test = int(sys.argv[1]) if len(sys.argv) > 1 else 14
+test = int(sys.argv[1]) if len(sys.argv) > 1 else 17
 
 # The local tilt angle (wrt the body frame) is measured wrt the forward direction (x-axis in the body frame)
 # To use the compute_trajectory function (by Sonia) the tilt angle must, however, be measured from the right direction (x-axis in the world frame)
@@ -273,6 +273,63 @@ if test == 14:
     tilt2_local = pi/4 + pi/5 # With respect to the vehicle
     xf = 0.67
     yf = 6.2
+#####################################
+# Test 15: Turn right and then left, final position within second circle
+#####################################
+elif test == 15: 
+    print("Testing right-left")
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = -pi/4         # With respect to the vehicle
+    tilt2_local = -pi/4 + pi/5 # With respect to the vehicle
+    xf = 0.67
+    yf = 6.2
+#####################################
+# Test 16: Turn left and then right, final position within second circle
+#####################################
+elif test == 16:
+    print("Testing left-right")
+    # vehicle pose
+    veh_posx = 0
+    veh_posy = 0 
+    veh_tilt = -pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 2.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = pi/4        # With respect to the vehicle
+    tilt2_local = pi/4 - pi/5 # With respect to the vehicle
+    xf = 0.37
+    yf = 1.7
+#####################################
+# Test 17: Turn right and then right, final position within second circle
+#####################################
+elif test == 17:
+    print("Testing right-right")
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = -pi/4        # With respect to the vehicle
+    tilt2_local = -pi/4 - pi/5 # With respect to the vehicle
+    xf = 1.3
+    yf = 6.2
 # Compute center of the corridors wrt body frame
 center1_local = np.array([-(height1/2)*sin(tilt1_local), (height1/2)*cos(tilt1_local)])
 center2_local = center1_local + np.array([-0.5*sin(tilt1_local)-(height2/2)*sin(tilt2_local), 0.5*cos(tilt1_local)+(height2/2)*cos(tilt2_local)])
@@ -313,7 +370,7 @@ if USE_ROS:
 else:
     if test_one_corridor:
         corridor2_world = None
-    if test == 9 or test == 10 or test ==11 or test == 12 or test ==13 or test ==14:
+    if test == 9 or test == 10 or test ==11 or test == 12 or test ==13 or test ==14 or test == 15 or test ==16 or test == 17:
         sequence_man, computed_path, pose_sequence = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world, xf = xf, yf = yf)
     else: 
         sequence_man, computed_path, pose_sequence = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world)
