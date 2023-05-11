@@ -299,7 +299,7 @@ class Corridor:
         '''
         rect_marker = Marker()
         rect_marker.header.stamp = rospy.Time.now()
-        rect_marker.header.frame_id = 'odom'
+        rect_marker.header.frame_id = 'map'
         rect_marker.ns = name
         rect_marker.id = i
         rect_marker.action = 0

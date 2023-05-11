@@ -8,7 +8,7 @@ def get_max_radius(posx, posy, theta, corridor, margin):
     corridor. However, it is assumed that the corridor does not have a tilt
     (it is aligned with the y-axis)
     '''
-    if np.cos(theta) == 1:
+    if np.cos(theta) == 1 or np.abs(theta) <= 1e-3:
         radius = 100000
     elif theta > 0:
         radius = ((corridor.width/2 - margin) +

@@ -7,7 +7,7 @@ Created on Tue Mar 28 15:38:15 2023
 """
 
 import rospy
-from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Pose2D
 import math as m
 import numpy as np
 from barn_challenge.msg import \
@@ -108,6 +108,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         GOAL_IN_SIGHT = True
         print("*************************************")
         print("[manager] Goal is in sight!")
+        publish_final_corridor(new_corridor, corridor_pub)
     else:
         # Check if this new corridor improves enough
         (stuck, d) = check_stuck(receiving_corridor, new_corridor)
@@ -180,12 +181,9 @@ def yaw_from_quaternion(orientation):
 
 
 def odomCallback(data):
-    curr_pose.velx = data.twist.twist.linear.x
-    curr_pose.rotz = data.twist.twist.angular.z
-
-    curr_pose.posx = data.pose.pose.position.x
-    curr_pose.posy = data.pose.pose.position.y
-    curr_pose.theta = yaw_from_quaternion(data.pose.pose.orientation)
+    curr_pose.posx = data.x
+    curr_pose.posy = data.y
+    curr_pose.theta = data.theta
 
 
 def publish_corridors(corridors, publisher):
@@ -210,6 +208,7 @@ def publish_corridors(corridors, publisher):
             xy_corners.append(list(xy))
         # print(xy_corners)
         to_send.corners_global = []
+        to_send.goal_in_sight = False
 
         to_send_list.len += 1
         to_send_list.corridors.append(to_send)
@@ -217,13 +216,40 @@ def publish_corridors(corridors, publisher):
     print("[manager] Published ", to_send_list.len, " corridor(s)")
     publisher.publish(to_send_list)
 
+def publish_final_corridor(final_corridor, publisher):
+    '''
+    This function publishes the final corridors so the navigator can use
+    them.
+    '''
+
+    to_send_list = CorridorWorldListMsg()
+
+    to_send = CorridorWorldMsg()
+    to_send.height_global = final_corridor.height
+    to_send.width_global = final_corridor.width
+    to_send.quality_global = final_corridor.quality
+    to_send.center_global = final_corridor.center.copy()
+    to_send.growth_center_global = final_corridor.growth_center.copy()
+    to_send.tilt_global = final_corridor.tilt
+    xy_corners = []
+    for xy in final_corridor.corners:
+        xy_corners.append(list(xy))
+    # print(xy_corners)
+    to_send.corners_global = []
+    to_send.goal_in_sight = True
+
+    to_send_list.len = 1
+    to_send_list.corridors = [to_send]
+
+    print("[manager] Published final corridor")
+    publisher.publish(to_send_list)
 
 def rviz_visualization_goal(x, y, z):
     '''Visualize corridors.
     '''
     marker = Marker()
     marker.header.stamp = rospy.Time.now()
-    marker.header.frame_id = 'odom'
+    marker.header.frame_id = 'map'
     marker.ns = 'goal2'
     marker.id = 1
     marker.action = 0
@@ -339,7 +365,7 @@ def main():
     # Subscribe to odometry
     global curr_pose
     curr_pose = odomMsgClass()
-    odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    odom_sub = rospy.Subscriber('/pose_map', Pose2D, odomCallback)
 
     # Prepare to publish corridors
     corridor_pub = rospy.Publisher("/chosen_corridor", CorridorWorldListMsg, queue_size=10)

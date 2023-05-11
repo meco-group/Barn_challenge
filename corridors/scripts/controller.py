@@ -7,8 +7,7 @@ Created on Tue Mar 28 15:38:15 2023
 """
 
 import rospy
-from nav_msgs.msg import Odometry
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Pose2D
 import math as m
 import numpy as np
 from barn_challenge.msg import ManeuverMsg, GoalMsg
@@ -34,19 +33,10 @@ def distance(point1, point2):
     return np.linalg.norm(point1 - point2)
 
 
-def yawFromQuaternion(orientation):
-    return m.atan2((2.0*(orientation.w * orientation.z +
-                         orientation.x * orientation.y)),
-                   (1.0 - 2.0*(orientation.y * orientation.y +
-                               orientation.z * orientation.z)))
-
-
 def odomCallback(data):
-    message.velx = data.twist.twist.linear.x
-    message.rotz = data.twist.twist.angular.z
-    message.posx = data.pose.pose.position.x
-    message.posy = data.pose.pose.position.y
-    message.theta = yawFromQuaternion(data.pose.pose.orientation)
+    message.posx = data.x
+    message.posy = data.y
+    message.theta = data.theta
 
 
 def goalPositionCallback(data):
@@ -64,6 +54,19 @@ def ManeuverCallback(data):
         vx.append(maneuver[i].x)
         wz.append(maneuver[i].y)
         t.append(maneuver[i].z)
+
+    # convert short period of vmax by longer period of lower
+    # velocity to combat slipping
+    time_burst_threshold = 1.0
+    vmax = 0.5
+    if data.len >= 2 and vx[0] >= 0.4 and vx[1] <= 0.1 and \
+            t[0] < time_burst_threshold:
+        vx[0] = max(0.1, vmax*t[0]/time_burst_threshold)
+        t[0] = time_burst_threshold
+    elif data.len == 1 and vx[0] >= 0.4 and \
+            t[0] < time_burst_threshold:
+        vx[0] = max(0.1, vmax*t[0]/time_burst_threshold)
+        t[0] = time_burst_threshold
 
     for time, v, w in zip(t, vx, wz):
         if not m.isnan(time):
@@ -131,7 +134,7 @@ def main():
     goal_sub = rospy.Subscriber('/goal_position', GoalMsg, goalPositionCallback)
 
     # Subscribers
-    odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback)
+    odom_sub = rospy.Subscriber('/pose_map', Pose2D, odomCallback)
     maneuver_sub = rospy.Subscriber('/maneuver', ManeuverMsg, ManeuverCallback)
 
     # Publishers
@@ -151,13 +154,21 @@ def main():
     global v_full, w_full
     v_full = []
     w_full = []
+    v_previous = 0
+    w_previous = 0
+
+    smoother = .05
 
     print('I started moving')
     while not rospy.is_shutdown():
 
         if len(v_full) > 0:
-            twist.linear.x = v_full.pop(0)
-            twist.angular.z = w_full.pop(0)
+            v_next = v_full.pop(0)
+            w_next = w_full.pop(0)
+            twist.linear.x = v_next*smoother + v_previous*(1-smoother)
+            twist.angular.z = w_next*smoother + w_previous*(1-smoother)
+            v_previous = twist.linear.x
+            w_previous = twist.angular.z
         else:
             twist.linear.x = 0.
             twist.angular.z = 0.
