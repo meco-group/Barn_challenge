@@ -55,7 +55,8 @@ m = 0.1
 #######################################################################
 
 import sys
-test = int(sys.argv[1]) if len(sys.argv) > 1 else 13
+test_one_corridor = False
+test = int(sys.argv[1]) if len(sys.argv) > 1 else 14
 
 # The local tilt angle (wrt the body frame) is measured wrt the forward direction (x-axis in the body frame)
 # To use the compute_trajectory function (by Sonia) the tilt angle must, however, be measured from the right direction (x-axis in the world frame)
@@ -253,6 +254,25 @@ if test == 13:
     tilt2_local = pi/4 + pi/5 # With respect to the vehicle
     xf = 1
     yf = 3.5
+#####################################
+# Test 14: Turn left and then left, final position within second circle
+#####################################
+if test == 14:
+    print("Testing left-left")
+    # vehicle pose
+    veh_posx = 1
+    veh_posy = 3 
+    veh_tilt = -pi/4 # Vehicle tilt with respect to the world frame
+    # corridors
+    width1 = 1
+    height1 = 5.5
+    width2 = 1
+    height2 = 5.5
+    # In local frame
+    tilt1_local = pi/4         # With respect to the vehicle
+    tilt2_local = pi/4 + pi/5 # With respect to the vehicle
+    xf = 0.67
+    yf = 6.2
 # Compute center of the corridors wrt body frame
 center1_local = np.array([-(height1/2)*sin(tilt1_local), (height1/2)*cos(tilt1_local)])
 center2_local = center1_local + np.array([-0.5*sin(tilt1_local)-(height2/2)*sin(tilt2_local), 0.5*cos(tilt1_local)+(height2/2)*cos(tilt2_local)])
@@ -291,8 +311,9 @@ if USE_ROS:
     sequence_man, computed_path = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = False, corridor2 = corridor2_converted)
     # sequence_man = planner(corridor1_converted, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True)
 else:
-    corridor2_world = None
-    if test == 9 or test == 10 or test ==11 or test == 12 or test ==13:
+    if test_one_corridor:
+        corridor2_world = None
+    if test == 9 or test == 10 or test ==11 or test == 12 or test ==13 or test ==14:
         sequence_man, computed_path, pose_sequence = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world, xf = xf, yf = yf)
     else: 
         sequence_man, computed_path, pose_sequence = planner(corridor1_world, u_bounds, a, b, m, x0, y0, veh_tilt+pi/2, plot = True, corridor2 = corridor2_world)
