@@ -56,7 +56,7 @@ m = 0.1
 
 import sys
 test_one_corridor = False
-test = int(sys.argv[1]) if len(sys.argv) > 1 else 17
+test = int(sys.argv[1]) if len(sys.argv) > 1 else 4
 
 # The local tilt angle (wrt the body frame) is measured wrt the forward direction (x-axis in the body frame)
 # To use the compute_trajectory function (by Sonia) the tilt angle must, however, be measured from the right direction (x-axis in the world frame)
