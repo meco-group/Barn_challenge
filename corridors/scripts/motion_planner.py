@@ -460,6 +460,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             # CASE 1: Turn left-left
             # if theta0 <= pi/2 or theta0 >= 3*pi/2:
             if cos(theta0 - corridor1.tilt) > 0:
+                print('CASE 1: Turn left-left')
 
                 #Compute the coordinates of the center of circle 1
                 xc1 = x0 + R1 * cos(theta0 + pi/2)
@@ -478,6 +479,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 #If the final position is inside the second circle, stop, turn in place and reach the final position through a straight line primitive
                 if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R:
+                    print('CASE 1a: final pos into second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = arctan2((yf-y2),(xf-x2))
                     theta2 = arctan2((y2-y1),(x2-x1))
@@ -490,6 +492,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     x3 = x2
                     y3 = y2
                 else:
+                    print('CASE 1b: final pos outside second circle (normal situation)')
                     epsilon2 = arctan2((y2 - yc2), (x2 - xc2)) + 2 * pi
                     delta2 = arctan2((yc2-yf),(xc2-xf))
                     a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
@@ -525,13 +528,17 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
             #CASE 2: Turn right-left
             else:
+                print('CASE 2: Turn right-left')
+
                 xc1 = x0 + R1 * cos(theta0 - pi/2)
                 yc1 = y0 + R1 * sin(theta0 - pi/2)
                 new_case = False
                 #Check whether the first and second circles are overlapping
                 if sqrt((yc2-yc1)**2+(xc2-xc1)**2) <= (R + R1):
+                    print('CASE 2a: overlapping circles')
                     ipo = sqrt((xc2-x0)**2 + (yc2-y0)**2)
                     if ipo <= R:
+                        print('CASE 2aa: overlapping circles and initial pos inside second circle')
                         new_case = True
                     c1 = sqrt((ipo)**2-R**2)
                     beta = arcsin(R/ipo)
@@ -577,6 +584,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 #If the final position is inside the second circle, stop, turn in place and reach the final position through a straight line primitive
                 if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R and not(new_case):
+                    print('CASE 2b: final pos inside second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = arctan2((yf-y2),(xf-x2))
                     theta2 = arctan2((y2-y1),(x2-x1))
@@ -661,13 +669,16 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             #CASE 3:Turn left-right
             # if theta0 <= pi/2 or theta0 >= 3*pi/2: turn left-right
             if cos(theta0 - corridor1.tilt) > 0:
+                print('CASE 3: turn left-right')
                 xc1 = x0 + R1 * cos(theta0 + pi/2)
                 yc1 = y0 + R1 * sin(theta0 + pi/2)
                 new_case = False
                 #Check whether the first and second circles are overlapping
                 if sqrt((yc2-yc1)**2+(xc2-xc1)**2) <= (R + R1):
+                    print('CASE 3a: overlapping circles')
                     ipo = sqrt((xc2-x0)**2 + (yc2-y0)**2)
                     if ipo <= R:
+                        print('CASE 3aa: initial pos inside second circle')
                         new_case = True
                     c1 = sqrt((ipo)**2-R**2)
                     beta = arcsin(R/ipo)
@@ -714,6 +725,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y1 = yc1 + R1 * sin(linspace(delta1, delta1 + iota1,100))
                 #If the final position is inside the second circle, stop, turn in place and reach the final position through a straight line primitive
                 if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R and not(new_case):
+                    print('CASE 3b: final pos inside second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = arctan2((yf-y2),(xf-x2))
                     theta2 = arctan2((y2-y1),(x2-x1))
@@ -784,6 +796,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
             #CASE 4:Turn right-right
             else:
+                print('CASE 4: turn right-right')
                 xc1 = x0 + R1*cos(theta0 - pi/2)
                 yc1 = y0 + R1*sin(theta0-pi/2)
                 c1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)
@@ -796,6 +809,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 x2 = x1 + c1*cos(delta1)
                 y2 = y1 + c1*sin(delta1)
                 if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R:
+                    print('CASE 4a: final pos inside second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = arctan2((yf-y2),(xf-x2))
                     theta2 = arctan2((y2-y1),(x2-x1))
