@@ -86,11 +86,51 @@ corridor_list = [corridor1_world, corridor2_world, corridor3_world]
 maneuver_list, computed_path_list, poses_sequence_list= planner_corridor_sequence(corridor_list, u_bounds, a, b, m, False, init_pos[0], init_pos[1], veh_tilt+pi/2, xf = goal_pos[0], yf = goal_pos[1])
 print(maneuver_list)
 print(poses_sequence_list)
+#FIRST PART ENDS HERE------------------------------------
 
 
+#SECOND PART---------------------------------------------
+def plot_primitives(maneuver_list, **kwargs):
+    primitives_number = kwargs['primitives_number'] if ('primitives_number' in kwargs and kwargs['primitives_number'] is not None) else len(maneuver_list)
+    figure_forward_velocity = plt.figure()
+    ax = figure_forward_velocity.add_subplot(211)
+    plt.xlim([0, 8])
+    #plt.title('Forward velocity')
+    #plt.xlabel('Time [s]')
+    plt.ylabel('V [m/s]')
+    init_time = 0
+    color = '#030764'
+    for i in range(primitives_number):
+        plt.plot([init_time, init_time + maneuver_list[i,2]], [maneuver_list[i,0], maneuver_list[i,0]], color)
+        init_time = init_time + maneuver_list[i,2]
+        if color == '#030764':
+            color = '#F97306'
+        else:
+            color = '#030764'
+    #figure_angular_velocity = plt.figure()
+    ax = figure_forward_velocity.add_subplot(212)
+    plt.xlim([0, 8])
+    plt.ylim([-2.2, 2.2])
 
+    #plt.title('Angular velocity')
+    plt.xlabel('Time [s]')
+    plt.ylabel('Omega [rad/s]')
+    init_time = 0
+    color = '#030764'
+    init_vel = maneuver_list[i,1]
+    for i in range(primitives_number):
+        plt.plot([init_time, init_time, init_time + maneuver_list[i,2]], [init_vel, maneuver_list[i,1], maneuver_list[i,1]], color)
+        init_time = init_time + maneuver_list[i,2]
+        init_vel = maneuver_list[i,1]
+        if color == '#030764':
+            color = '#F97306'
+        else:
+            color = '#030764'
+    plt.show(block=True)
+    return figure_forward_velocity
 
-def plot_result_in_world(path, *args):
+    
+def plot_result_in_world(path,  primitives_number, *args):
     '''This function will plot any corridors provided as arguments'''
     print("Plotting with image")
     figure_solution = plt.figure()
@@ -98,16 +138,16 @@ def plot_result_in_world(path, *args):
     ax = figure_solution.add_subplot(111)
 
     # Plot initial and final point
-    plt.scatter([init_pos[0], goal_pos[0]], [init_pos[1], goal_pos[1]], s=100, c=['g','r'], zorder=10)
+    plt.scatter([init_pos[0], goal_pos[0]], [init_pos[1], goal_pos[1]], s=10, c=['g','r'], zorder=10)
 
     # Plot world image
-    im = plt.imread("world_grid.png")
+    #im = plt.imread("world_grid.png")
     # im = plt.imread("world_grid_path.png")
-    implot = plt.imshow(im, extent=(-24,36,-4,28), alpha=1, zorder=1)
+    #implot = plt.imshow(im, extent=(-24,36,-4,28), alpha=1, zorder=1)
     
     # Plot global path
     global_path = np.array([init_pos,[-0.5464,7.1233],[-9.126,10.39],[-9.404,10.59],[-9.542,10.876],goal_pos])
-    plt.plot(global_path[:,0],global_path[:,1], 'm', linewidth=1.5, zorder=2)
+    #plt.plot(global_path[:,0],global_path[:,1], 'm', linewidth=1.5, zorder=2)
 
     # Plot corridors
     for corridor in args:
@@ -116,47 +156,100 @@ def plot_result_in_world(path, *args):
         plt.plot([corner[0] for corner in corners], 
                 [corner[1] for corner in corners],
                 'k--', linewidth=1)
-
+    #plt.legend()
     # Plot path
     if path is not None:
-        plt.plot(path[:,0],path[:,1], 'g', linewidth=1.5, zorder=2)
-
-
+        #plt.plot(path[:,0],path[:,1], 'g', linewidth=1.5, zorder=2)
+        if primitives_number == 1:
+            plt.plot(path[0:100,0],path[0:100,1], '#030764', linewidth=1.5, zorder=2)
+        elif primitives_number ==2: 
+            plt.plot(path[0:100,0],path[0:100,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[100:102,0],path[100:102,1], '#F97306', linewidth=1.5, zorder=2)
+        elif primitives_number == 3:
+            plt.plot(path[0:100,0],path[0:100,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[100:102,0],path[100:102,1], '#F97306', linewidth=1.5, zorder=2)
+            plt.plot(path[102:203,0],path[102:203,1], '#030764', linewidth=1.5, zorder=2)
+        elif primitives_number == 4:
+            plt.plot(path[0:100,0],path[0:100,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[100:102,0],path[100:102,1], '#F97306', linewidth=1.5, zorder=2)
+            plt.plot(path[102:203,0],path[102:203,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[203:205,0],path[203:205,1], '#F97306', linewidth=1.5, zorder=2)
+        elif primitives_number == 5: 
+            plt.plot(path[0:100,0],path[0:100,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[100:102,0],path[100:102,1], '#F97306', linewidth=1.5, zorder=2)
+            plt.plot(path[102:203,0],path[102:203,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[203:205,0],path[203:205,1], '#F97306', linewidth=1.5, zorder=2)
+            plt.plot(path[205:305,0],path[205:305,1], '#030764', linewidth=1.5, zorder=2)
+        else:
+            plt.plot(path[0:100,0],path[0:100,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[100:102,0],path[100:102,1], '#F97306', linewidth=1.5, zorder=2)
+            plt.plot(path[102:203,0],path[102:203,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[203:205,0],path[203:205,1], '#F97306', linewidth=1.5, zorder=2)
+            plt.plot(path[205:305,0],path[205:305,1], '#030764', linewidth=1.5, zorder=2)
+            plt.plot(path[305:307,0],path[305:307,1], '#F97306', linewidth=1.5, zorder=2)
 
     ax.set_aspect('equal')
     plt.show(block=True)
+    return figure_solution
 
     
 # plot_result_in_world(computed_path_list, corridor1_world)
 # plot_result_in_world(computed_path_list, corridor1_world, corridor2_world)
-plot_result_in_world(computed_path_list, corridor1_world, corridor2_world, corridor3_world)
+plot_result_in_world(computed_path_list, 6, corridor1_world, corridor2_world, corridor3_world)
 
 corridor_margin1 = CorridorWorld(corridor1_world.width-(a+2*m), corridor1_world.height-2*m, corridor1_world.center, corridor1_world.tilt)
 corridor_margin2 = CorridorWorld(corridor2_world.width-(a+2*m), corridor2_world.height-2*m, corridor2_world.center, corridor2_world.tilt)
 corridor_margin3 = CorridorWorld(corridor3_world.width-(a+2*m), corridor3_world.height-2*m, corridor3_world.center, corridor3_world.tilt)
                 
 # plot_result_in_world(computed_path_list, corridor1_world, corridor2_world, corridor3_world, corridor_margin1, corridor_margin2, corridor_margin3)
+#######################
+generate_gif = True
+file_name_path = ['path1.png', 'path2.png', 'path3.png', 'path4.png', 'path5.png', 'path6.png']
+file_name_controls = ['controls1.png', 'controls2.png','controls3.png','controls4.png','controls5.png','controls6.png' ]
+if generate_gif:
+    for primitives_number in range(len(maneuver_list)):
+        path_figure = plot_result_in_world(computed_path_list, primitives_number + 1, corridor1_world, corridor2_world, corridor3_world)
+        path_figure.savefig(file_name_path[primitives_number])
+        primitives_figure =plot_primitives(maneuver_list, primitives_number = primitives_number + 1)
+        primitives_figure.savefig(file_name_controls[primitives_number])
 
 
-# import imageio
-# gif_name = 'arena_ugm2.gif'
-# filenames = [
-#     'Figure_1.png',
-#     'Figure_2.png',
-#     'Figure_3.png',
-#     'Figure_4.png',
-#     'Figure_5a.png',
-#     'Figure_5b.png',
-#     'Figure_5c.png',
-#     'Figure_6.png',
-#     'Figure_7.png'
-#     ]
-# images = []
-# for filename in filenames:
-#     images.append(imageio.imread(filename))
+plot_primitives(maneuver_list, primitives_number = 6)
+
+import imageio
+gif_name = 'primitives.gif'
+filenames = [
+    'path1.png',
+    'path2.png',
+    'path3.png',
+    'path4.png',
+    'path5.png',
+    'path6.png',
+    ]
+images = []
+for filename in filenames:
+    images.append(imageio.imread(filename))
 # # imageio.mimsave(gif_name, images)
 
 # # Save them as frames into a gif 
-# kargs = { 'duration': 2000, 'loop': 0 }
-# imageio.mimsave(gif_name, images, 'GIF', **kargs)
+kargs = { 'duration': 1000, 'loop': 0 }
+imageio.mimsave(gif_name, images, 'GIF', **kargs)
+
+gif_name = 'controls.gif'
+filenames = [
+    'controls1.png',
+    'controls2.png',
+    'controls3.png',
+    'controls4.png',
+    'controls5.png',
+    'controls6.png',
+    ]
+images = []
+for filename in filenames:
+    images.append(imageio.imread(filename))
+# # imageio.mimsave(gif_name, images)
+
+# # Save them as frames into a gif 
+kargs = { 'duration': 1000, 'loop': 0 }
+imageio.mimsave(gif_name, images, 'GIF', **kargs)
 

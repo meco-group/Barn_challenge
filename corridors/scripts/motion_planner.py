@@ -285,8 +285,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             v1 = v_max
             t1 = hyp/v1
             maneuver_sequence = np.vstack((maneuver_sequence,np.array([v1, 0, t1])))
-            poses_sequence = np.vstack((np.array(([x0,y0, theta0], [xf,yf,theta0]))))
-            computed_path = np.vstack((np.array(([x0,y0], [xf,yf]))))
+            poses_sequence = np.vstack((np.array(([x0,y0, theta0], [x0, y0, theta0] [xf,yf,theta0]))))
+            computed_path = np.vstack((np.array(([x0,y0], [x0, y0] [xf,yf]))))
 
         else:
             #if sqrt((yf-y0)**2 + (xf-x0)**2) >= R:
