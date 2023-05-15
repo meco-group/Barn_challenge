@@ -527,9 +527,12 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             else:
                 xc1 = x0 + R1 * cos(theta0 - pi/2)
                 yc1 = y0 + R1 * sin(theta0 - pi/2)
+                new_case = False
                 #Check whether the first and second circles are overlapping
                 if sqrt((yc2-yc1)**2+(xc2-xc1)**2) <= (R + R1):
                     ipo = sqrt((xc2-x0)**2 + (yc2-y0)**2)
+                    if ipo <= R:
+                        new_case = True
                     c1 = sqrt((ipo)**2-R**2)
                     beta = arcsin(R/ipo)
                     delta = arctan2((yc2-y0),(xc2-x0))
@@ -573,7 +576,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     omega1 = omega_min
 
                 #If the final position is inside the second circle, stop, turn in place and reach the final position through a straight line primitive
-                if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R:
+                if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R and not(new_case):
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = arctan2((yf-y2),(xf-x2))
                     theta2 = arctan2((y2-y1),(x2-x1))
@@ -585,7 +588,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y2 = y2
                     x3 = x2
                     y3 = y2
-                else:
+                elif not(new_case):
                     delta2 = arctan2((yc2-yf),(xc2-xf))
                     a2 = sqrt((yc2-yf)**2 + (xc2-xf)**2)
                     c2 = sqrt(a2**2 - R**2)
@@ -599,7 +602,34 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     omega3 = omega_max
                     arc_x2 = xc2 + R * cos(linspace(eta2, eta2 + iota2, 100))
                     arc_y2 = yc2 + R * sin(linspace(eta2, eta2 + iota2, 100))
-                    
+                else:
+                    #If the initial position is inside the second circle
+                    delta = arctan2((yc2-y0),(xc2-x0))
+                    epsilon1 = delta - theta0
+                    omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
+                    v1 = 0
+                    t1 = abs(epsilon1/omega1)
+                    arc_x1 = x0
+                    arc_y1 = y0
+                    x1 = x0
+                    y1 = y0
+                    c1 = sqrt((xc2-x0)**2 - (yc2-y0)**2)
+                    x2 = x1 + c1 * cos(alfa)
+                    y2 = y1 + c1 * sin(alfa)
+
+                    delta2 = arctan2((yf-y2),(xf-x2))
+                    epsilon2 = delta2 - delta 
+                    omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
+                    v2 = 0
+                    t3 = abs(epsilon2/omega3)
+                    arc_x2 = x2
+                    arc_y2 = y2
+                    x3 = x2
+                    y3 = y2
+                    c2 = sqrt((xf-xc2)**2 - (yf-yc2)**2)
+                    #xf = x1 + c1 * cos(alfa)
+                    #y2 = y1 + c1 * sin(alfa)
+ 
                 t2 = c1 / v_max
                 #t3 is computed previously
                 t4 = c2 / v_max
@@ -633,9 +663,12 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             if cos(theta0 - corridor1.tilt) > 0:
                 xc1 = x0 + R1 * cos(theta0 + pi/2)
                 yc1 = y0 + R1 * sin(theta0 + pi/2)
+                new_case = False
                 #Check whether the first and second circles are overlapping
                 if sqrt((yc2-yc1)**2+(xc2-xc1)**2) <= (R + R1):
                     ipo = sqrt((xc2-x0)**2 + (yc2-y0)**2)
+                    if ipo <= R:
+                        new_case = True
                     c1 = sqrt((ipo)**2-R**2)
                     beta = arcsin(R/ipo)
                     delta = arctan2((yc2-y0),(xc2-x0))
@@ -680,7 +713,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_x1 = xc1 + R1 * cos(linspace(delta1, delta1 + iota1,100))
                     arc_y1 = yc1 + R1 * sin(linspace(delta1, delta1 + iota1,100))
                 #If the final position is inside the second circle, stop, turn in place and reach the final position through a straight line primitive
-                if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R:
+                if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R and not(new_case):
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = arctan2((yf-y2),(xf-x2))
                     theta2 = arctan2((y2-y1),(x2-x1))
@@ -692,7 +725,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y2 = y2
                     x3 = x2
                     y3 = y2
-                else:
+                elif not(new_case):
                     delta2 = arctan2((y2-yc2),(x2-xc2)) +2*pi #always positive
                     epsilon2 = arctan2((yc2-yf),(xc2-xf))
                     a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
@@ -711,6 +744,34 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     t3 = R*iota2/v2
                     arc_x2 = xc2 + R * cos(linspace(delta2 , delta2 - iota2, 100))
                     arc_y2 = yc2 + R * sin(linspace(delta2 , delta2 - iota2, 100))
+
+                else:
+                    #If the initial position is inside the second circle
+                    delta = arctan2((yc2-y0),(xc2-x0))
+                    epsilon1 = delta - theta0
+                    omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
+                    v1 = 0
+                    t1 = abs(epsilon1/omega1)
+                    arc_x1 = x0
+                    arc_y1 = y0
+                    x1 = x0
+                    y1 = y0
+                    c1 = sqrt((xc2-x0)**2 - (yc2-y0)**2)
+                    x2 = x1 + c1 * cos(alfa)
+                    y2 = y1 + c1 * sin(alfa)
+
+                    delta2 = arctan2((yf-y2),(xf-x2))
+                    epsilon2 = delta2 - delta 
+                    omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
+                    v2 = 0
+                    t3 = abs(epsilon2/omega3)
+                    arc_x2 = x2
+                    arc_y2 = y2
+                    x3 = x2
+                    y3 = y2
+                    c2 = sqrt((xf-xc2)**2 - (yf-yc2)**2)
+                    #xf = x1 + c1 * cos(alfa)
+                    #y2 = y1 + c1 * sin(alfa)
                      
                 t2 = 2*c1/v_max
                 #t3 is computed previously
