@@ -9,13 +9,13 @@ from alignment_radius import get_max_alignment_radius
 
 def correct_angle_range(angle):
     
-    # if angle <= -pi:
-    #     return correct_angle_range(angle + 2*pi)
-    # elif angle >= pi:
-    #     return correct_angle_range(angle - 2*pi)
-    # else: 
-    #     return angle
-    return angle
+    if angle <= -0:
+        return correct_angle_range(angle + 2*pi)
+    elif angle >= 2*pi:
+        return correct_angle_range(angle - 2*pi)
+    else: 
+        return angle
+    # return angle
 
 
 def compute_goal_point(corridor, m):
@@ -314,7 +314,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 #v1= v_max
                 #if the final position is within the initial circle
                 if a1 <= R: # Rotate on the spot
-                    alfa = arctan2((yf-y0),(xf-x0))
+                    alfa = correct_angle_range(arctan2((yf-y0),(xf-x0)))
                     epsilon = alfa - theta0
                     omega = omega_max if (sin(epsilon) > 0) else omega_min #CHECK ALL THE CASES
                     c = sqrt((yf-y0)**2 + (xf-x0)**2)
@@ -335,7 +335,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
                     # a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
                     c1 = sqrt(abs(a1**2 - R**2)) #lenght line segment # TODO/ check this
-                    delta1 = arctan2((yf-yc1),(xf-xc1)) + 2*pi #always positive angle
+                    delta1 = correct_angle_range(arctan2((yf-yc1),(xf-xc1))) #always positive angle
                     gamma1 = arcsin(c1/a1)
                     x1 = xc1 + R*cos(delta1 + gamma1)
                     y1 = yc1 + R*sin(delta1 + gamma1)
@@ -344,7 +344,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                         iota1 = 2 * arcsin((chord1/2)/R)
                     else:
                         iota1 = abs(theta0 - corridor1.tilt)
-                    epsilon1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive angle
+                    epsilon1 = correct_angle_range(arctan2((y0-yc1),(x0-xc1))) #always positive angle
 
                     arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 - iota1, 100))
                     arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 - iota1, 100))
@@ -368,7 +368,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
                 #if the final position is within the initial circle
                 if a1 <= R:
-                    alfa = arctan2((yf-y0),(xf-x0))
+                    alfa = correct_angle_range(arctan2((yf-y0),(xf-x0)))
                     epsilon = alfa - theta0
                     omega = omega_max if (sin(epsilon) > 0) else omega_min #CHECK ALL THE CASES
                     c = sqrt((yf-y0)**2 + (xf-x0)**2)
@@ -388,7 +388,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     #Build triangle rectangle between (x_center, y_center), (xf,yf), (x1,y1)
                     # a1 = sqrt((xf-xc1)**2 + (yf-yc1)**2)
                     c1 = sqrt(a1**2 - R**2) #lenght line segment
-                    delta1 = arctan2((yf-yc1),(xf-xc1)) + 2*pi #always positive angle
+                    delta1 = correct_angle_range(arctan2((yf-yc1),(xf-xc1))) #always positive angle
                     gamma1 = arcsin(c1/a1)
                     x1 = xc1 + R*cos(delta1 - gamma1)                
                     y1 = yc1 + R*sin(delta1 - gamma1)
@@ -397,7 +397,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                         iota1 = 2 * arcsin((chord1/2)/R)
                     else:
                         iota1 = abs(theta0 - corridor1.tilt)
-                    epsilon1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive angle
+                    epsilon1 = correct_angle_range(arctan2((y0-yc1),(x0-xc1))) #always positive angle
 
                     arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 + iota1, 100))
                     arc_y1 = yc1+R*sin(linspace(epsilon1, epsilon1 + iota1, 100))
@@ -413,7 +413,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     maneuver_sequence = np.vstack((maneuver_sequence,np.array([v1, omega_max, t1])))
                     maneuver_sequence = np.vstack((maneuver_sequence,np.array([v_max, 0, t2])))
 
-            theta1 = arctan2((yf-y1),(xf-x1))
+            theta1 = correct_angle_range(arctan2((yf-y1),(xf-x1)))
             thetaf = theta1
             poses_sequence = np.vstack((np.array(([x0,y0, theta0], [x1, y1, theta1], [xf,yf,thetaf]))))
 
@@ -479,9 +479,9 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 yc1 = y0 + R1 * sin(theta0 + pi/2)
 
                 c1 = sqrt((yc2 - yc1)**2 + (xc2 - xc1)**2)
-                delta1 = arctan2((yc2 - yc1), (xc2-xc1))
+                delta1 = correct_angle_range(arctan2((yc2 - yc1), (xc2-xc1)))
                 epsilon1 = delta1 - pi/2
-                zeta1 = arctan2((y0 - yc1),(x0 - xc1)) + 2 * pi
+                zeta1 = correct_angle_range(arctan2((y0 - yc1),(x0 - xc1)))
                 x1 = xc1 + R1* cos(epsilon1)
                 y1 = yc1 + R1 * sin(epsilon1)
                 # chord1 = sqrt((x1 - x0)**2 + (y1-y0)**2)
@@ -494,8 +494,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R:
                     print('CASE 1a: final pos into second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
-                    alfa2 = arctan2((yf-y2),(xf-x2))
-                    theta2 = arctan2((y2-y1),(x2-x1))
+                    alfa2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
+                    theta2 = correct_angle_range(arctan2((y2-y1),(x2-x1)))
                     epsilon2 = alfa2 - theta2
                     omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
                     v2 = 0
@@ -506,12 +506,12 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     y3 = y2
                 else:
                     print(f'CASE 1b: final pos outside second circle (normal situation)')
-                    epsilon2 = arctan2((y2 - yc2), (x2 - xc2)) + 2 * pi
-                    delta2 = arctan2((yc2-yf),(xc2-xf))
+                    epsilon2 = correct_angle_range(arctan2((y2 - yc2), (x2 - xc2)))
+                    delta2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
                     a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
                     c2 = sqrt(a2**2 - R**2)
                     beta2 = arcsin(R/a2)
-                    eta2 = delta2 + beta2
+                    eta2 = delta2 - beta2
                     x3 = xf + c2 * cos(eta2)
                     y3 = yf + c2 * sin(eta2)
                     chord2 = sqrt((x3-x2)**2 + (y3-y2)**2)
@@ -563,7 +563,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     else:
                         c1 = sqrt((ipo)**2-R**2)
                         beta = arcsin(R/ipo)
-                        delta = arctan2((yc2-y0),(xc2-x0))
+                        delta = correct_angle_range(arctan2((yc2-y0),(xc2-x0)))
                         alfa = delta - beta
                         epsilon1 = alfa - theta0
                         omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
@@ -580,14 +580,14 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 else:
                     a1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)/2
                     c1 = sqrt(a1**2-R1**2)
-                    delta1 = arctan2((yc2-yc1),(xc2-xc1))
+                    delta1 = correct_angle_range(arctan2((yc2-yc1),(xc2-xc1)))
                     gamma1 = arcsin(c1/a1)
                     x1 = xc1 + R1 * cos(delta1 + gamma1)
                     y1 = yc1 + R1 * sin(delta1 + gamma1)
-                    epsilon1 = arctan2((yc1-y1),(xc1-x1))
+                    epsilon1 = correct_angle_range(arctan2((yc1-y1),(xc1-x1)))
                     x2 = x1 + 2 * c1 * cos(epsilon1 + pi/2)
                     y2 = y1 + 2 * c1 * sin(epsilon1 + pi/2)
-                    eta1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi
+                    eta1 = correct_angle_range(arctan2((y0-yc1),(x0-xc1)))
                     chord1 = sqrt((y1-y0)**2 + (x1 - x0)**2)
                     if R1 > 1e-3:
                         iota1 = 2 * arcsin((chord1/2)/R1)
@@ -607,8 +607,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R and not(new_case):
                     print('CASE 2b: final pos inside second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
-                    alfa2 = arctan2((yf-y2),(xf-x2))
-                    theta2 = arctan2((y2-y1),(x2-x1))
+                    alfa2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
+                    theta2 = correct_angle_range(arctan2((y2-y1),(x2-x1)))
                     epsilon2 = alfa2 - theta2
                     omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
                     v2 = 0
@@ -618,13 +618,13 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     x3 = x2
                     y3 = y2
                 elif not(new_case):
-                    delta2 = arctan2((yc2-yf),(xc2-xf))
+                    delta2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
                     a2 = sqrt((yc2-yf)**2 + (xc2-xf)**2)
                     c2 = sqrt(a2**2 - R**2)
                     beta2 = arcsin(R/a2)
-                    x3 = xf + c2 * cos(delta2 + 2*pi + beta2)
-                    y3 = yf + c2 * sin(delta2 + 2*pi + beta2)
-                    eta2 = arctan2((y2-yc2),(x2-xc2))#+2*pi
+                    x3 = xf + c2 * cos(delta2 + beta2)
+                    y3 = yf + c2 * sin(delta2 + beta2)
+                    eta2 = correct_angle_range(arctan2((y2-yc2),(x2-xc2)))#+2*pi
                     chord2 = sqrt((y3-y2)**2 + (x3-x2)**2)
                     iota2 = 2 * arcsin((chord2/2)/R)
                     t3 = R*iota2/v2
@@ -633,8 +633,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y2 = yc2 + R * sin(linspace(eta2, eta2 + iota2, 100))
                 else:
                     #If the initial position is inside the second circle
-                    delta = arctan2((yc2-y0),(xc2-x0))
-                    epsilon1 = delta - theta0
+                    delta = correct_angle_range(arctan2((yc2-y0),(xc2-x0)))
+                    epsilon1 = delta - correct_angle_range(theta0)
                     omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
                     v1 = 0
                     t1 = abs(epsilon1/omega1)
@@ -646,7 +646,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     x2 = x1 + c1 * cos(delta)
                     y2 = y1 + c1 * sin(delta)
 
-                    delta2 = arctan2((yf-y2),(xf-x2))
+                    delta2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
                     epsilon2 = delta2 - delta 
                     omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
                     v2 = 0
@@ -704,9 +704,9 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     else:
                         c1 = sqrt((ipo)**2-R**2)
                         beta = arcsin(R/ipo)
-                        delta = arctan2((yc2-y0),(xc2-x0))
+                        delta = correct_angle_range(arctan2((yc2-y0),(xc2-x0)))
                         alfa = delta + beta
-                        epsilon1 = alfa - theta0
+                        epsilon1 = alfa - correct_angle_range(theta0)
                         omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
                         v1 = 0
                         t1 = abs(epsilon1/omega1)
@@ -720,14 +720,14 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 else:
                     a1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)/2
                     c1 = sqrt(a1**2 - R1**2) # TODO: NaN could come from here
-                    delta1 = arctan2((y0-yc1),(x0-xc1)) + 2*pi #always positive
-                    epsilon1 = arctan2((yc2-yc1),(xc2-xc1)) + 2*pi #always positive
+                    delta1 = correct_angle_range(arctan2((y0-yc1),(x0-xc1))) #always positive
+                    epsilon1 = correct_angle_range(arctan2((yc2-yc1),(xc2-xc1))) #always positive
                     gamma1 = arcsin(c1/a1)
 
                     eta1 = epsilon1 - gamma1
                     x1 = xc1 + R1*cos(eta1)
                     y1 = yc1 + R1*sin(eta1)
-                    eta1 = arctan2((yc1-y1),(xc1-x1))
+                    eta1 = correct_angle_range(arctan2((yc1-y1),(xc1-x1)))
                     x2 = x1+2*c1*cos(eta1 - pi/2)
                     y2 = y1 + 2*c1*sin(eta1 - pi/2)
                     chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
@@ -749,8 +749,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R and not(new_case):
                     print('CASE 3b: final pos inside second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
-                    alfa2 = arctan2((yf-y2),(xf-x2))
-                    theta2 = arctan2((y2-y1),(x2-x1))
+                    alfa2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
+                    theta2 = correct_angle_range(arctan2((y2-y1),(x2-x1)))
                     epsilon2 = alfa2 - theta2
                     omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
                     v2 = 0
@@ -760,14 +760,14 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     x3 = x2
                     y3 = y2
                 elif not(new_case):
-                    delta2 = arctan2((y2-yc2),(x2-xc2)) #+2*pi #always positive
-                    epsilon2 = arctan2((yc2-yf),(xc2-xf))
+                    delta2 = correct_angle_range(arctan2((y2-yc2),(x2-xc2))) #+2*pi #always positive
+                    epsilon2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
                     a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
                     c2 = sqrt(a2**2-R**2)
                     beta2 = arcsin(R/a2)
-                    x3 = xf + c2*cos(epsilon2 - beta2)
-                    y3 = yf + c2*sin(epsilon2-beta2)
-                    eta2 = arctan2((y3-yc2),(x3-xc2)) #+2*pi #always positive
+                    x3 = xf + c2*cos(epsilon2 + beta2)
+                    y3 = yf + c2*sin(epsilon2 + beta2)
+                    eta2 = correct_angle_range(arctan2((y3-yc2),(x3-xc2))) #+2*pi #always positive
                     omega3 = omega_min
                     chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
                     # iota2 = 2*arcsin((chord2/2)/R)
@@ -781,8 +781,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 else:
                     #If the initial position is inside the second circle
-                    delta = arctan2((yc2-y0),(xc2-x0))
-                    epsilon1 = delta - theta0
+                    delta = correct_angle_range(arctan2((yc2-y0),(xc2-x0)))
+                    epsilon1 = delta - correct_angle_range(theta0)
                     omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
                     v1 = 0
                     t1 = abs(epsilon1/omega1)
@@ -794,7 +794,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     x2 = x1 + c1 * cos(delta)
                     y2 = y1 + c1 * sin(delta)
 
-                    delta2 = arctan2((yf-y2),(xf-x2))
+                    delta2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
                     epsilon2 = delta2 - delta 
                     omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
                     v2 = 0
@@ -824,19 +824,19 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 c1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)
                 # a1 = sqrt(c1**2-R1**2) # TODO: NaN could come from here
-                delta1 = arctan2((yc2-yc1),(xc2-xc1)) #+2*pi
+                delta1 = correct_angle_range(arctan2((yc2-yc1),(xc2-xc1))) #+2*pi
                 # beta1 = arcsin(R1/a1)
                 x1 = xc1 + R1*cos(delta1+pi/2)
                 y1 = yc1 + R1*sin(delta1+pi/2)
-                epsilon1 = arctan2((y0-yc1),(x0-xc1)) #+2*pi
+                epsilon1 = correct_angle_range(arctan2((y0-yc1),(x0-xc1))) #+2*pi
                 x2 = x1 + c1*cos(delta1)
                 y2 = y1 + c1*sin(delta1)
 
                 if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R:
                     print('CASE 4a: final pos inside second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
-                    alfa2 = arctan2((yf-y2),(xf-x2))
-                    theta2 = arctan2((y2-y1),(x2-x1))
+                    alfa2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
+                    theta2 = correct_angle_range(arctan2((y2-y1),(x2-x1)))
                     epsilon2 = alfa2 - theta2
                     omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
                     v2 = 0
@@ -847,12 +847,12 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     y3 = y2
                 else: 
                     print('CASE 4b: final pos outside second circle (normal situation)')
-                    epsilon2 = arctan2((y2-yc2),(x2-xc2)) #+2*pi
-                    delta2 = arctan2((yc2-yf),(xc2-xf))
+                    epsilon2 = correct_angle_range(arctan2((y2-yc2),(x2-xc2))) #+2*pi
+                    delta2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
                     a2 = sqrt((yf-yc2)**2 + (xf-xc2)**2)
                     c2 = sqrt(a2**2 - R**2)
                     beta2 = arcsin(R/a2)
-                    eta2 = delta2 - beta2
+                    eta2 = delta2 + beta2
                     x3 = xf + c2 * cos(eta2)
                     y3 = yf + c2 * sin(eta2)
                     # zeta2 = arctan2((y3-yc2),(x3-xc2))
@@ -889,9 +889,9 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 #arc_x2 = xc2 + R * cos(linspace(epsilon2, epsilon2 - iota2,100))
                 #arc_y2 = yc2 + R * sin(linspace(epsilon2, epsilon2  -iota2 ,100))
 
-        theta1 = arctan2((y2-y1),(x2-x1))
+        theta1 = correct_angle_range(arctan2((y2-y1),(x2-x1)))
         theta2 = theta1
-        theta3 = arctan2((yf-y2),(xf-x2))
+        theta3 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
         thetaf = theta3
         poses_sequence = np.vstack((np.array(([x0,y0, theta0], [x1, y1, theta1],[x2,y2,theta2], [x3,y3,theta3], [xf,yf,thetaf]))))
 
