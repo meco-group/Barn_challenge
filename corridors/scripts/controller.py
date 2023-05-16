@@ -165,8 +165,12 @@ def main():
         if len(v_full) > 0:
             v_next = v_full.pop(0)
             w_next = w_full.pop(0)
-            twist.linear.x = v_next*smoother + v_previous*(1-smoother)
             twist.angular.z = w_next*smoother + w_previous*(1-smoother)
+            if (abs(twist.angular.z) > 0.2) and (abs(v_next) < 0.1):
+                twist.linear.x = 0
+            else:
+                twist.linear.x = v_next*smoother + v_previous*(1-smoother)
+
             v_previous = twist.linear.x
             w_previous = twist.angular.z
         else:
