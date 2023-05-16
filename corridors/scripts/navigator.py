@@ -356,7 +356,9 @@ def main():
                 ############################################################
                 if not EXECUTING_BACKTRACKING: # TODO check this
                     backtracking_list = []
-                    for corridor_instance in list_of_corridors:
+                    # for corridor_instance in list_of_corridors:
+                    for i in range(2):
+                        corridor_instance = list_of_corridors[i]
                         # Add corridor rotated 180 degrees
                         tilt = corridor_instance.tilt + np.pi
                         # print('orig tilt',corridor_instance.tilt)
