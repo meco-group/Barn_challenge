@@ -178,6 +178,7 @@ def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1,
 
 
 def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot=False, **kwargs):
+    STOP_PLANNING = False
     corridor2 = kwargs['corridor2'] if 'corridor2' in kwargs else None
     xf = kwargs['xf'] if 'xf' in kwargs else None
     yf = kwargs['yf'] if 'yf' in kwargs else None
@@ -194,32 +195,42 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot=False, **kwargs):
             # test_point = compute_initial_point(corridor2, 0)
             # x_corner, y_corner = test_point[0], test_point[1]
             psi = arctan2((y_corner - y0),(x_corner - x0)) - pi/2
-            UpFRONT = sin(theta0 - psi) >= 0 # TODO: FIX THIS
-            if UpFRONT:
+            UpFRONT = sin(theta0 - psi) >= 0. # TODO: FIX THIS
+            margin = 0.25
+            corridor_margin = CorridorWorld(corridor2.width - margin,
+                                            corridor2.height - margin,
+                                            corridor2.center,
+                                            corridor2.tilt)
+
+            if check_inside_one_point(corridor_margin, np.array([x0, y0])):
+                print('normal')
                 man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf, corridor2 = corridor2)
             else:
-                print("#################### Semi-backtracking\n#################################")
+                print('stop planning')
+                STOP_PLANNING = True
                 # SEMI-BACKTRACKING
                 # Create a corridor that resembles corridor1 but is rotated -pi.
-                corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt - pi)
+                corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt + pi)
 
                 # Compute 
-                goal_pos1 = compute_goal_point(corridor1_back, 0)
-                distance0 = linalg.norm(goal_pos1-[x_corner, y_corner])
-                goal_pos2 = compute_goal_point(corridor1_back, 0.8*distance0)
+                # goal_pos1 = compute_goal_point(corridor1_back, 0)
+                # distance0 = linalg.norm(goal_pos1-[x_corner, y_corner])
+                # goal_pos2 = compute_goal_point(corridor1_back, 0.8*distance0)
+                goal_pos2 = corridor2.growth_center
 
                 # Compute maneuver of going backwards
-                man_seq1, path1, poses1 = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 - pi , plot, xf = goal_pos2[0], yf = goal_pos2[1])
-                man_seq1[:,0:1] = -man_seq1[:,0:1]
-                orientation = arctan2((path1[-2,1] - path1[-1,1]), path1[-2,0] - path1[-1,0])
-                # Compute maneuver from point backwards to corridor2
-                man_seq2, path2, poses2 = compute_trajectory(corridor1, u_bounds, a, b, m, path1[-1,0], path1[-1,1], orientation, plot, corridor2 = corridor2)
-                # Concatenate path, maneuver and poses
-                path = np.vstack((path1,path2))
-                man_seq = np.vstack((man_seq1,man_seq2))
-                poses = np.vstack((poses1,poses2))
+                man_seq, path, poses = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 + pi , plot, xf = goal_pos2[0], yf = goal_pos2[1])
+                man_seq[:,0:1] = -man_seq[:,0:1]
+                orientation = arctan2((path[-2,1] - path[-1,1]), path[-2,0] - path[-1,0]) 
 
-    return man_seq, path, poses
+                # Compute maneuver from point backwards to corridor2
+                # man_seq2, path2, poses2 = compute_trajectory(corridor1, u_bounds, a, b, m, path1[-1,0], path1[-1,1], orientation, plot, corridor2 = corridor2)
+                # Concatenate path, maneuver and poses
+                # path = np.vstack((path1,path2))
+                # man_seq = np.vstack((man_seq1,man_seq2))
+                # poses = np.vstack((poses1,poses2))
+
+    return man_seq, path, poses, STOP_PLANNING
 
 
 def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwargs):
@@ -981,22 +992,18 @@ def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, th
     for i in range(len(corridor_list)-1):
         
         if i == len(corridor_list)-2:
-            maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = False, corridor2 = corridor_list[i+1], xf = xf, yf = yf)
+            maneuver, computed_path, poses_sequence, STOP_PLANNING = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = False, corridor2 = corridor_list[i+1], xf = xf, yf = yf)
             maneuver_list = np.vstack((maneuver_list, maneuver))
             computed_path_list = np.vstack((computed_path_list, computed_path))
             poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence))
-            ba = 1
         else:
-            maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = False, corridor2 = corridor_list[i+1])
+            maneuver, computed_path, poses_sequence, STOP_PLANNING = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = False, corridor2 = corridor_list[i+1])
             maneuver_list = np.vstack((maneuver_list, maneuver[0:2,:]))
             computed_path_list = np.vstack((computed_path_list, computed_path[0:-101]))
             poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence[0:2,:]))
             x0 = poses_sequence[2,0]
             y0 = poses_sequence[2,1]
             theta0 = poses_sequence[2,2] 
-            aa = 1
-        # print("Partial maneuver:")
-        # print(maneuver)
     # maneuver, computed_path, poses_sequence = planner(corridor_list[-1], u_bounds, a, b, m, x0, y0, theta0, plot = True)
     # maneuver_list = np.vstack((maneuver_list, maneuver))
     # computed_path_list = np.vstack((computed_path_list, computed_path))
