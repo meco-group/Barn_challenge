@@ -7,6 +7,17 @@ from corridor_helpers import get_intersection
 from alignment_radius import get_max_alignment_radius
 
 
+def correct_angle_range(angle):
+    
+    # if angle <= -pi:
+    #     return correct_angle_range(angle + 2*pi)
+    # elif angle >= pi:
+    #     return correct_angle_range(angle - 2*pi)
+    # else: 
+    #     return angle
+    return angle
+
+
 def compute_goal_point(corridor, m):
     '''
     Compute the goal position given a corridor and a margin m (float).
@@ -187,6 +198,7 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot=False, **kwargs):
             if UpFRONT:
                 man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf, corridor2 = corridor2)
             else:
+                print("#################### Semi-backtracking\n#################################")
                 # SEMI-BACKTRACKING
                 # Create a corridor that resembles corridor1 but is rotated -pi.
                 corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt - pi)
@@ -548,21 +560,22 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     if ipo <= R:
                         print('CASE 2aa: overlapping circles and initial pos inside second circle')
                         new_case = True
-                    c1 = sqrt((ipo)**2-R**2)
-                    beta = arcsin(R/ipo)
-                    delta = arctan2((yc2-y0),(xc2-x0))
-                    alfa = delta - beta
-                    epsilon1 = alfa - theta0
-                    omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
-                    v1 = 0
-                    t1 = abs(epsilon1/omega1)
-                    arc_x1 = x0
-                    arc_y1 = y0
-                    x1 = x0
-                    y1 = y0
-                    x2 = x1 + c1 * cos(alfa)
-                    y2 = y1 + c1 * sin(alfa)
-                    t1 = abs(epsilon1/omega1)
+                    else:
+                        c1 = sqrt((ipo)**2-R**2)
+                        beta = arcsin(R/ipo)
+                        delta = arctan2((yc2-y0),(xc2-x0))
+                        alfa = delta - beta
+                        epsilon1 = alfa - theta0
+                        omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
+                        v1 = 0
+                        t1 = abs(epsilon1/omega1)
+                        arc_x1 = x0
+                        arc_y1 = y0
+                        x1 = x0
+                        y1 = y0
+                        x2 = x1 + c1 * cos(alfa)
+                        y2 = y1 + c1 * sin(alfa)
+                        t1 = abs(epsilon1/omega1)
                     
                 else:
                     a1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)/2
@@ -630,8 +643,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     x1 = x0
                     y1 = y0
                     c1 = sqrt((xc2-x0)**2 - (yc2-y0)**2)
-                    x2 = x1 + c1 * cos(alfa)
-                    y2 = y1 + c1 * sin(alfa)
+                    x2 = x1 + c1 * cos(delta)
+                    y2 = y1 + c1 * sin(delta)
 
                     delta2 = arctan2((yf-y2),(xf-x2))
                     epsilon2 = delta2 - delta 
@@ -688,21 +701,22 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     if ipo <= R:
                         print('CASE 3aa: initial pos inside second circle')
                         new_case = True
-                    c1 = sqrt((ipo)**2-R**2)
-                    beta = arcsin(R/ipo)
-                    delta = arctan2((yc2-y0),(xc2-x0))
-                    alfa = delta + beta
-                    epsilon1 = alfa - theta0
-                    omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
-                    v1 = 0
-                    t1 = abs(epsilon1/omega1)
-                    arc_x1 = x0
-                    arc_y1 = y0
-                    x1 = x0
-                    y1 = y0
-                    x2 = x1 + c1 * cos(alfa)
-                    y2 = y1 + c1 * sin(alfa)
-                    t1 = abs(epsilon/omega1)
+                    else:
+                        c1 = sqrt((ipo)**2-R**2)
+                        beta = arcsin(R/ipo)
+                        delta = arctan2((yc2-y0),(xc2-x0))
+                        alfa = delta + beta
+                        epsilon1 = alfa - theta0
+                        omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
+                        v1 = 0
+                        t1 = abs(epsilon1/omega1)
+                        arc_x1 = x0
+                        arc_y1 = y0
+                        x1 = x0
+                        y1 = y0
+                        x2 = x1 + c1 * cos(alfa)
+                        y2 = y1 + c1 * sin(alfa)
+                        t1 = abs(epsilon/omega1)
                 else:
                     a1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)/2
                     c1 = sqrt(a1**2 - R1**2) # TODO: NaN could come from here
@@ -777,8 +791,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     x1 = x0
                     y1 = y0
                     c1 = sqrt((xc2-x0)**2 - (yc2-y0)**2)
-                    x2 = x1 + c1 * cos(alfa)
-                    y2 = y1 + c1 * sin(alfa)
+                    x2 = x1 + c1 * cos(delta)
+                    y2 = y1 + c1 * sin(delta)
 
                     delta2 = arctan2((yf-y2),(xf-x2))
                     epsilon2 = delta2 - delta 
@@ -971,7 +985,7 @@ def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, th
             maneuver_list = np.vstack((maneuver_list, maneuver))
             computed_path_list = np.vstack((computed_path_list, computed_path))
             poses_sequence_list = np.vstack((poses_sequence_list, poses_sequence))
-            b = 1
+            ba = 1
         else:
             maneuver, computed_path, poses_sequence = planner(corridor_list[i], u_bounds, a, b, m, x0, y0, theta0, plot = False, corridor2 = corridor_list[i+1])
             maneuver_list = np.vstack((maneuver_list, maneuver[0:2,:]))
@@ -980,9 +994,13 @@ def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, th
             x0 = poses_sequence[2,0]
             y0 = poses_sequence[2,1]
             theta0 = poses_sequence[2,2] 
-            a = 1
+            aa = 1
+        # print("Partial maneuver:")
+        # print(maneuver)
     # maneuver, computed_path, poses_sequence = planner(corridor_list[-1], u_bounds, a, b, m, x0, y0, theta0, plot = True)
     # maneuver_list = np.vstack((maneuver_list, maneuver))
     # computed_path_list = np.vstack((computed_path_list, computed_path))
-
+    # print("---------------------")
+    # print(maneuver_list)
+    # print("---------------------")
     return maneuver_list, computed_path_list, poses_sequence_list
