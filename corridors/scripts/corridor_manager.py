@@ -67,7 +67,8 @@ def transform_corridor_to_world(new_corridor):
 
 def process_new_corridor(new_corridor_msg, root_corridor,
                          current_corridor, orphanage,
-                         explore_full_corridor, corridor_pub):
+                         explore_full_corridor, corridor_pub,
+                         backtrack_mode_activated):
     '''
     This function takes a new corridor message (new_corridor) and decides
     wether or not to put it in the corridor tree.
@@ -80,7 +81,8 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         root_corridor = new_corridor
         current_corridor = root_corridor
         print("[manager] Root corridor is now created")
-        publish_corridors([root_corridor], corridor_pub)
+        publish_corridors([root_corridor], corridor_pub,
+                          backtrack_mode_activated)
         return (root_corridor, current_corridor)
     # Else, check if the new corridor should be added
 
@@ -186,11 +188,15 @@ def odomCallback(data):
     curr_pose.theta = data.theta
 
 
-def publish_corridors(corridors, publisher):
+def publish_corridors(corridors, publisher, backtrack_mode_activated):
     '''
     This function publishes the list of corridors so the navigator can use
     them.
     '''
+    if backtrack_mode_activated:
+        print("\n[MANAGER WARNING]")
+        print("Illegal attempt to publish a corridor!\n")
+
     if len(corridors) == 0:
         return
 
@@ -440,7 +446,8 @@ def main():
             for corridor in new_corridor_list:
                 (root_corridor, current_corridor) = process_new_corridor(
                     corridor, root_corridor, current_corridor, orphanage,
-                    explore_full_corridor, corridor_pub)
+                    explore_full_corridor, corridor_pub,
+                    backtrack_mode_activated)
 
             new_corridor_present = False
             new_corridor_list = []
@@ -515,13 +522,14 @@ def main():
                                 clear_backtrack_like_corridors(root_corridor, orphanage)
 
                                 publish_corridors(backtracking_corridors,
-                                                  corridor_pub)
+                                                  corridor_pub, backtrack_mode_activated)
                 
                 # If we succesfully selected a child, publish it and proceed
                 else:
                     print("[manager] Selected child corridor")
                     waiting_to_backtrack = False
-                    publish_corridors([current_corridor], corridor_pub)
+                    publish_corridors([current_corridor], corridor_pub,
+                                      backtrack_mode_activated)
 
         if current_corridor is not None:
             visualize_corridor_tree(root_corridor, current_corridor, margin=.1)
