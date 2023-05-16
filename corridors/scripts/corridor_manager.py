@@ -119,7 +119,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
 
         if not stuck and not backtracked:
             print("[manager] Child corridor added")
-            receiving_corridor.add_child_corridor(new_corridor)
+            receiving_corridor.add_child_corridor(new_corridor, margin=.2)
             receiving_corridor.sort_children()
             receiving_corridor.remove_similar_children()
         elif stuck:

@@ -111,7 +111,7 @@ class CorridorWorld:
 
         return W
 
-    def add_child_corridor(self, child, force_add_child=False):
+    def add_child_corridor(self, child, force_add_child=False, margin=0):
         '''Add child corridor to this corridor and add this
         corridor as parent to the child
         '''
@@ -120,7 +120,7 @@ class CorridorWorld:
             self.children.append(child)
             child.parent = self
             if (max([child.corners[k][1] for k in range(4)]) >
-            max([self.corners[k][1] for k in range(4)])):
+            max([self.corners[k][1] for k in range(4)]) + margin):
                 child.quality = 1.0
             else:
                 child.quality = 0.1

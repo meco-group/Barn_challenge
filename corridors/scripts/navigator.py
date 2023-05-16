@@ -176,7 +176,7 @@ def main():
     Bck_vel_gain = 1
     u_bounds_back = np.array([Bck_vel_gain*v_min, Bck_vel_gain*v_max, Bck_vel_gain*omega_min, Bck_vel_gain*omega_max])
     a = 0.430
-    b = 0.20
+    b = 0.3
     m = 0.10
 
     print("[navigator] Initializing Navigator")
@@ -187,12 +187,13 @@ def main():
 
     while not rospy.is_shutdown():
 
+        # print('theta',message.theta-np.pi/2)
         #####################################################
         # Compute path and maneuver within corridors
         #####################################################
 
         if len(list_of_corridors) > 0:
-
+            print('tilt',list_of_corridors[0].tilt)
             if not BACKTRACKING:
                 corridor1 = list_of_corridors[0]
                 corridor2 = (list_of_corridors[1]
@@ -250,7 +251,7 @@ def main():
                         # measured from the x-axis of the world frame
                         computed_maneuver, computed_path, poses = planner(
                             corridor1=corridor1,
-                            u_bounds=u_bounds,
+                            u_bounds=np.array([4*v_min, 4*v_max, omega_min, omega_max]),
                             a=a, b=b, m=m,
                             x0=message.posx, y0=message.posy, theta0=message.theta,
                             plot=False,
@@ -279,7 +280,7 @@ def main():
                         if np.abs(message.theta - np.pi/2 - goal_heading) >= threshold:
                             computed_maneuver, computed_path, poses = planner(
                                 corridor1=corridor1,
-                                u_bounds=u_bounds,
+                                u_bounds=np.array([4*v_min, 4*v_max, omega_min, omega_max]),
                                 a=a, b=b, m=m,
                                 x0=message.posx, y0=message.posy, theta0=message.theta,
                                 plot=False,
@@ -329,11 +330,15 @@ def main():
                     backtracking_list = []
                     for corridor_instance in list_of_corridors:
                         # Add corridor rotated 180 degrees
-                        backtracking_list.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, corridor_instance.tilt - np.pi))
+                        tilt = corridor_instance.tilt + np.pi
+                        # print('orig tilt',corridor_instance.tilt)
+                        # print('tilt',tilt, corridor_instance)
+                        backtracking_list.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, tilt))
                     
                     print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
                     goal_point_last_corridor = compute_initial_point(backtracking_list[-1], m)
                     # print(f"### Backtracking: veh angle = {message.theta-np.pi}, corridor angle = {backtracking_list[0].tilt}")
+                    # print('theta for planner sequence', message.theta + np.pi - np.pi/2)
                     fwd_computed_maneuver, computed_path, poses = planner_corridor_sequence(
                         backtracking_list, 
                         u_bounds_back, 
@@ -343,7 +348,7 @@ def main():
                         False, 
                         x0 = message.posx, 
                         y0 = message.posy, 
-                        theta0 = message.theta+np.pi,
+                        theta0 = message.theta + np.pi,
                         xf = goal_point_last_corridor[0],
                         yf = goal_point_last_corridor[1],
                     )

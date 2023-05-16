@@ -207,6 +207,7 @@ def main():
     listener = tf2_ros.TransformListener(tf_buffer)
     tf_buffer.lookup_transform('odom', 'map', rospy.Time(0), rospy.Duration(10.))
 
+    rospy.sleep(1.)
     print('sweeper and fitter ready')
     while not rospy.is_shutdown():
         sectors = np.full((2*sector_num+1), 1.0)
