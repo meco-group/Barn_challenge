@@ -209,7 +209,7 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
             # make sure to backtrack enough generations to make sure that
             # we don't backtrack for only a very small distance
             # Also, backtrack to a corridor that has not yet been fuly explored
-            while (parent is not None and 
+            while (parent.parent is not None and 
                 (dist(current_corridor.center, parent.center) <= minimal_backtrack_distance or 
                 (parent.fully_explored and len(parent.children) == 1))):
 
