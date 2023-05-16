@@ -251,12 +251,13 @@ def main():
                         # measured from the x-axis of the world frame
                         computed_maneuver, computed_path, poses = planner(
                             corridor1=corridor1,
-                            u_bounds=np.array([4*v_min, 4*v_max, omega_min, omega_max]),
+                            u_bounds=np.array([v_min, v_max, omega_min, omega_max]),
                             a=a, b=b, m=m,
                             x0=message.posx, y0=message.posy, theta0=message.theta,
                             plot=False,
                             corridor2=corridor2,
                             xf=goal[0], yf=goal[1])
+                        computed_maneuver[-1][0] = 2.
                         print("[navigator] Heading to the goal", goal[0], goal[1])
                     
                     
@@ -280,12 +281,13 @@ def main():
                         if np.abs(message.theta - np.pi/2 - goal_heading) >= threshold:
                             computed_maneuver, computed_path, poses = planner(
                                 corridor1=corridor1,
-                                u_bounds=np.array([4*v_min, 4*v_max, omega_min, omega_max]),
+                                u_bounds=np.array([v_min, v_max, omega_min, omega_max]),
                                 a=a, b=b, m=m,
                                 x0=message.posx, y0=message.posy, theta0=message.theta,
                                 plot=False,
                                 corridor2=corridor2,
                                 xf=goal[0], yf=goal[1])
+                            computed_maneuver[-1][0] = 2.
                             print("[navigator] Heading to the goal", goal[0], goal[1])
 
                             # print(computed_maneuver, "case 3")
