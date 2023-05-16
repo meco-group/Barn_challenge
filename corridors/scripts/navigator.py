@@ -53,16 +53,19 @@ def corridorListCallback(data):
     global BACKTRACKING
     global EXECUTING_BACKTRACKING
     global GOAL_IN_SIGHT
+    global RESUME_PLANNING
 
     if not GOAL_IN_SIGHT: # Avoid reading new corridors once the goal is in sight
         if data.len == 1:
             print("[navigator] .... got new corridor")
+            RESUME_PLANNING = True
             for corridor_message in data.corridors:
                 corridor_instance = CorridorWorld(
                     corridor_message.width_global,
                     corridor_message.height_global,
                     corridor_message.center_global,
                     corridor_message.tilt_global)
+                corridor_instance.growth_center = corridor_message.growth_center_global
                 if corridor_message.goal_in_sight:
                     list_of_corridors = [corridor_instance]
                     GOAL_IN_SIGHT = True
@@ -146,6 +149,9 @@ def main():
     GOAL_IN_SIGHT = False
     HEADING_TO_GOAL = False
 
+    global RESUME_PLANNING
+    RESUME_PLANNING = False
+
     # Subscribers
     odom_sub = rospy.Subscriber('/pose_map', Pose2D, odomCallback)
     corridor_list_sub = rospy.Subscriber('/chosen_corridor',
@@ -181,6 +187,8 @@ def main():
 
     print("[navigator] Initializing Navigator")
 
+    STOP_PLANNING = False
+    pos_restart_planning = None
     isDone = False
     message.goalx = message.posx
     message.goaly = message.posy + 10
@@ -191,6 +199,24 @@ def main():
         #####################################################
         # Compute path and maneuver within corridors
         #####################################################
+
+        if STOP_PLANNING:
+            # check if pos_restart_planning is None -> store it
+            if pos_restart_planning is None:
+                pos_restart_planning = list_of_corridors[1].growth_center
+                timer = rospy.Time.now().to_sec()
+                RESUME_PLANNING = False
+
+            print('nav growth center',list_of_corridors[1].growth_center)
+            x_gc, y_gc = pos_restart_planning
+            x_c, y_c = message.posx, message.posy
+            dist = np.sqrt((x_gc - x_c)**2 + (y_gc - y_c)**2)
+            print('dist', dist)
+            if RESUME_PLANNING or dist < 0.15 or rospy.Time.now().to_sec() - timer > 10:
+                STOP_PLANNING = False
+                pos_restart_planning = None
+            rate.sleep()
+            continue
 
         if len(list_of_corridors) > 0:
             print('tilt',list_of_corridors[0].tilt)
@@ -231,7 +257,7 @@ def main():
                     # Compute the maneuvers within the corridors (by Sonia).
                     # Be aware that the tilt angle of the vehicle should be
                     # measured from the x-axis of the world frame
-                    computed_maneuver, computed_path, poses = planner(
+                    computed_maneuver, computed_path, poses, STOP_PLANNING = planner(
                         corridor1=corridor1,
                         u_bounds=u_bounds,
                         a=a, b=b, m=m,
@@ -249,7 +275,7 @@ def main():
                         # Compute the maneuvers within the corridors (by Sonia).
                         # Be aware that the tilt angle of the vehicle should be
                         # measured from the x-axis of the world frame
-                        computed_maneuver, computed_path, poses = planner(
+                        computed_maneuver, computed_path, poses, STOP_PLANNING = planner(
                             corridor1=corridor1,
                             u_bounds=np.array([v_min, v_max, omega_min, omega_max]),
                             a=a, b=b, m=m,
@@ -279,7 +305,7 @@ def main():
                         goal_heading = np.arctan2(message.posx - goal[0], goal[1] - message.posy)
                         print(f"[navigator] Difference in heading is {round(np.abs(message.theta - np.pi/2 - goal_heading)/2/np.pi*360, 3)}")
                         if np.abs(message.theta - np.pi/2 - goal_heading) >= threshold:
-                            computed_maneuver, computed_path, poses = planner(
+                            computed_maneuver, computed_path, poses, STOP_PLANNING = planner(
                                 corridor1=corridor1,
                                 u_bounds=np.array([v_min, v_max, omega_min, omega_max]),
                                 a=a, b=b, m=m,
