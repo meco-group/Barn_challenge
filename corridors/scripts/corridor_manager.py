@@ -196,6 +196,7 @@ def publish_corridors(corridors, publisher, backtrack_mode_activated):
     if backtrack_mode_activated:
         print("\n[MANAGER WARNING]")
         print("Illegal attempt to publish a corridor!\n")
+        return
 
     if len(corridors) == 0:
         return
@@ -507,7 +508,6 @@ def main():
                             waiting_to_backtrack = False
                             # pass the backtracking corridors to the motion
                             # planner
-                            backtrack_mode_activated = True
                             (backtrack_point, current_corridor,
                              backtracking_corridors, orphanage) = \
                                 get_back_track_point(current_corridor,
@@ -523,6 +523,8 @@ def main():
 
                                 publish_corridors(backtracking_corridors,
                                                   corridor_pub, backtrack_mode_activated)
+                                backtrack_mode_activated = True
+
                 
                 # If we succesfully selected a child, publish it and proceed
                 else:
