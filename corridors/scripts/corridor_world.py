@@ -115,8 +115,10 @@ class CorridorWorld:
         '''Add child corridor to this corridor and add this
         corridor as parent to the child
         '''
-        if force_add_child or self.parent is None or \
-            check_significantly_different(self.parent, child, 1.0, 0.0):
+        if force_add_child or \
+           (check_significantly_different(self, child) and \
+            (self.parent is None or \
+            check_significantly_different(self.parent, child, 1.0, 0.0))):
             self.children.append(child)
             child.parent = self
             if (max([child.corners[k][1] for k in range(4)]) >

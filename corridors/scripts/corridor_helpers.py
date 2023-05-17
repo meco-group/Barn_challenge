@@ -116,7 +116,7 @@ def check_stuck(parent, child, threshold=0.4):
 
 
 def check_significantly_different(corridor1, corridor2,
-                                  distance_threshold=0.4,
+                                  distance_threshold=1.7,
                                   tilt_threshold=np.pi/8):
     '''
     Compute the distance between the 'forward' corners of the
