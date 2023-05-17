@@ -851,8 +851,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
                     c2 = sqrt(a2**2-R**2)
                     beta2 = arcsin(R/a2)
-                    x3 = xf + c2*cos(epsilon2 + beta2)
-                    y3 = yf + c2*sin(epsilon2 + beta2)
+                    x3 = xf + c2*cos(epsilon2 - beta2)
+                    y3 = yf + c2*sin(epsilon2 - beta2)
                     eta2 = correct_angle_range(arctan2((y3-yc2),(x3-xc2))) #+2*pi #always positive
                     omega3 = omega_min
                     chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
@@ -941,7 +941,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     a2 = sqrt((yf-yc2)**2 + (xf-xc2)**2)
                     c2 = sqrt(a2**2 - R**2)
                     beta2 = arcsin(R/a2)
-                    eta2 = delta2 + beta2
+                    eta2 = delta2 - beta2
                     x3 = xf + c2 * cos(eta2)
                     y3 = yf + c2 * sin(eta2)
                     # zeta2 = arctan2((y3-yc2),(x3-xc2))
