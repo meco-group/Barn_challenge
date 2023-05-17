@@ -207,6 +207,7 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot=False, **kwargs):
                 man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf, corridor2 = corridor2)
             else:
                 print('stop planning')
+                print('-------------------------------------')
                 STOP_PLANNING = True
                 # SEMI-BACKTRACKING
                 # Create a corridor that resembles corridor1 but is rotated -pi.
@@ -222,7 +223,6 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot=False, **kwargs):
                 man_seq, path, poses = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 + pi , plot, xf = goal_pos2[0], yf = goal_pos2[1])
                 man_seq[:,0:1] = -man_seq[:,0:1]
                 orientation = arctan2((path[-2,1] - path[-1,1]), path[-2,0] - path[-1,0]) 
-
                 # Compute maneuver from point backwards to corridor2
                 # man_seq2, path2, poses2 = compute_trajectory(corridor1, u_bounds, a, b, m, path1[-1,0], path1[-1,1], orientation, plot, corridor2 = corridor2)
                 # Concatenate path, maneuver and poses
@@ -268,6 +268,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
     :rtype: np.array
     '''
     #Unpack variables
+    print('-----------compute trajectory---------------')
     v_min = u_bounds[0]
     v_max = u_bounds[1]
     omega_min = u_bounds[2]
@@ -326,7 +327,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 #if the final position is within the initial circle
                 if a1 <= R: # Rotate on the spot
                     alfa = correct_angle_range(arctan2((yf-y0),(xf-x0)))
-                    epsilon = alfa - theta0
+                    epsilon = alfa - correct_angle_range(theta0)
                     omega = omega_max if (sin(epsilon) > 0) else omega_min #CHECK ALL THE CASES
                     c = sqrt((yf-y0)**2 + (xf-x0)**2)
                     t1 = abs(epsilon/omega)
@@ -354,7 +355,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     if R > 1e-3:
                         iota1 = 2 * arcsin((chord1/2)/R)
                     else:
-                        iota1 = abs(theta0 - corridor1.tilt)
+                        iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))
                     epsilon1 = correct_angle_range(arctan2((y0-yc1),(x0-xc1))) #always positive angle
 
                     arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 - iota1, 100))
@@ -380,7 +381,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 #if the final position is within the initial circle
                 if a1 <= R:
                     alfa = correct_angle_range(arctan2((yf-y0),(xf-x0)))
-                    epsilon = alfa - theta0
+                    epsilon = alfa - correct_angle_range(theta0)
                     omega = omega_max if (sin(epsilon) > 0) else omega_min #CHECK ALL THE CASES
                     c = sqrt((yf-y0)**2 + (xf-x0)**2)
                     t1 = abs(epsilon/omega)
@@ -407,7 +408,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     if R > 1e-3:
                         iota1 = 2 * arcsin((chord1/2)/R)
                     else:
-                        iota1 = abs(theta0 - corridor1.tilt)
+                        iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))
                     epsilon1 = correct_angle_range(arctan2((y0-yc1),(x0-xc1))) #always positive angle
 
                     arc_x1 = xc1+R*cos(linspace(epsilon1, epsilon1 + iota1, 100))

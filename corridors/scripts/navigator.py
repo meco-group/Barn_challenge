@@ -212,7 +212,7 @@ def main():
             x_c, y_c = message.posx, message.posy
             dist = np.sqrt((x_gc - x_c)**2 + (y_gc - y_c)**2)
             print('dist', dist)
-            if RESUME_PLANNING or dist < 0.15 or rospy.Time.now().to_sec() - timer > 10:
+            if dist < 0.15 or rospy.Time.now().to_sec() - timer > 10:
                 STOP_PLANNING = False
                 pos_restart_planning = None
             rate.sleep()
