@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from numpy import pi, cos, sin, tan, sqrt, linspace, arctan2, arcsin, linalg, arctan
+from numpy import pi, cos, sin, tan, sqrt, linspace, arctan2, arcsin, linalg, arctan, arccos
 import numpy as np
 
 from corridor_world import CorridorWorld
@@ -501,7 +501,9 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else goal_pos[0]
         yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else goal_pos[1]
 
-        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2)[0], 1e-3), R)  
+        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2)[0], 1e-3), R)
+        R = R1
+        # print(f"R1 = {R1}, R = {R}")  
 
         tilt1 = correct_angle_range(corridor1.tilt)
         tilt2 = correct_angle_range(corridor2.tilt)
@@ -522,6 +524,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             maneuver_sequence = np.empty((4,3))
             #Compute the center coordinates
             x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            # print(f"Corner = {x_corner}, {y_corner}")
             # tilt1 = corridor1.tilt
             # tilt2 = corridor2.tilt
             #Compute the coordinates of the center of circle 2
@@ -940,6 +943,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     delta2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
                     a2 = sqrt((yf-yc2)**2 + (xf-xc2)**2)
                     c2 = sqrt(a2**2 - R**2)
+                    print(f"R = {R}")
                     beta2 = arcsin(R/a2)
                     eta2 = correct_angle_range(delta2 - beta2)
                     x3 = xf + c2 * cos(eta2)
@@ -954,13 +958,17 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
                 chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
                 if R1 > 1e-3:
-                    iota1 = 2*arcsin((chord1/2)/R1)
+                    iota1 = correct_angle_range(2*arcsin((chord1/2)/R1))
+                    # iota1 = arccos((2*R1**2 - chord1**2)/(2*R1**2))
                 else:
                     iota1 = abs(correct_angle_range(theta0)- correct_angle_range(corridor1.tilt + pi/2))
+                print(f"R1 = {R1}, iota1 = {iota1}")
 
                 v1 = R1 * abs(omega_min)
-                print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
-                print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
+                print(f"x1 = {x1}, y1 = {y1}, xc1 = {xc1}, yc1 = {yc1}")
+                print(f"x2 = {x2}, y1 = {y2}, xc2 = {xc2}, yc2 = {yc2}")
+                # print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
+                # print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                 if R1 > 1e-3:
                     t1 = R1 * iota1 /v1
