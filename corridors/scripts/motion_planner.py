@@ -628,7 +628,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
                     theta2 = correct_angle_range(arctan2((y2-y1),(x2-x1)))
-                    epsilon2 = alfa2 - theta2
+                    epsilon2 = correct_angle_range(alfa2 - theta2)
                     omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
                     v2 = 0
                     t3 = abs(epsilon2/omega3)
