@@ -786,7 +786,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                         c1 = sqrt((ipo)**2-R**2)
                         beta = arcsin(R/ipo)
                         delta = correct_angle_range(arctan2((yc2-y0), (xc2-x0)))
-                        alfa = correct_angle_range(delta + beta)
+                        alfa = correct_angle_range(delta + beta) # TODO: CHECK THIS
                         epsilon1 = correct_angle_range(alfa - correct_angle_range(theta0))
                         omega1 = omega_max if (sin(epsilon1) > 0) else omega_min #CHECK ALL THE CASES
                         v1 = 0
@@ -860,7 +860,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     if R > 1e-3:
                         iota2 = 2*arcsin((chord2/2)/R)
                     else:
-                        iota2 = abs(tilt1 - tilt2)
+                        iota2 = abs(correct_angle_range(tilt1) - correct_angle_range(tilt2))
 
                     print('chord1, iota1, v1 and R', chord2, iota2, v1, R)
 
@@ -941,7 +941,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     a2 = sqrt((yf-yc2)**2 + (xf-xc2)**2)
                     c2 = sqrt(a2**2 - R**2)
                     beta2 = arcsin(R/a2)
-                    eta2 = delta2 - beta2
+                    eta2 = correct_angle_range(delta2 - beta2)
                     x3 = xf + c2 * cos(eta2)
                     y3 = yf + c2 * sin(eta2)
                     # zeta2 = arctan2((y3-yc2),(x3-xc2))
@@ -1070,6 +1070,8 @@ def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, th
     xf = kwargs['xf'] if 'xf' in kwargs else None
     yf = kwargs['yf'] if 'yf' in kwargs else None
     thetaf = kwargs['thetaf'] if 'thetaf' in kwargs else None
+
+    theta0 = correct_angle_range(theta0)
 
     maneuver_list = np.empty((0,3))
     computed_path_list = np.empty((0,2))
