@@ -430,10 +430,14 @@ def main():
             print("[manager] Backtracking...")
             visualize_backtracking_corridors(backtracking_corridors,
                                              current_corridor)
-            if current_corridor.check_inside(np.array([[curr_pose.posx],
-                                                       [curr_pose.posy],
-                                                       [1]])):
+            if check_inside_one_point(current_corridor,
+                                      [[curr_pose.posx],
+                                       [curr_pose.posy]]):
+                print("[manager] Stopping backtracking!")
                 backtrack_mode_activated = False
+                # Flush all corridors heared while backtracking
+                new_corridor_list = []
+                new_corridor_present = False
             else:
                 rate.sleep()
                 continue
