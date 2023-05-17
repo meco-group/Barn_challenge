@@ -98,11 +98,16 @@ def get_corner_point(parent, child):
     '''
     W_child = child.W
     W_parent = parent.W
-    tilt1 = parent.tilt
-    tilt2 = child.tilt
+    tilt1 = correct_angle_range(parent.tilt)
+    tilt2 = correct_angle_range(child.tilt)
     # initialize a np.array containing the corner points candidates
     corner_point = np.empty([0, 2])
     turn_left = False
+
+    BACKTRACKING_CASE = False
+    if tilt1 >= np.pi:
+        print("BACKTRACKING case in get_corner_point")
+        BACKTRACKING_CASE = True
 
     # select the correct faces to check for the corner point, depending
     # whether the maneuver is turning right or left
@@ -121,22 +126,39 @@ def get_corner_point(parent, child):
             intersection_point = get_intersection(w1, w2)
             if (check_inside_one_point(parent, intersection_point) and
                check_inside_one_point(child, intersection_point)):
-                # if turn left and there are more than one candidate points,
-                # take the one with lower x coordinate (more on the left)
-                if (turn_left and
-                   np.all(intersection_point[0] < corner_point[:, 0])):
-                    corner_point = np.vstack((intersection_point,
-                                              corner_point))
-                # if turn right and there are more than one candidate points,
-                # take the one with larger x coordinate (more on the right)
-                elif (not turn_left and
-                      np.all(intersection_point[0] > corner_point[:, 0])):
-                    corner_point = np.vstack((intersection_point,
-                                              corner_point))
-                else:
-                    corner_point = np.vstack((corner_point,
-                                              intersection_point))
 
+                if not BACKTRACKING_CASE:
+                    # if turn left and there are more than one candidate points,
+                    # take the one with lower x coordinate (more on the left)
+                    if (turn_left and
+                    np.all(intersection_point[0] < corner_point[:, 0])):
+                        corner_point = np.vstack((intersection_point,
+                                                corner_point))
+                    # if turn right and there are more than one candidate points,
+                    # take the one with larger x coordinate (more on the right)
+                    elif (not turn_left and
+                        np.all(intersection_point[0] > corner_point[:, 0])):
+                        corner_point = np.vstack((intersection_point,
+                                                corner_point))
+                    else:
+                        corner_point = np.vstack((corner_point,
+                                                intersection_point))
+                else:
+                    # if turn left and there are more than one candidate points,
+                    # take the one with lower x coordinate (more on the left)
+                    if (turn_left and
+                    np.all(intersection_point[0] > corner_point[:, 0])):
+                        corner_point = np.vstack((intersection_point,
+                                                corner_point))
+                    # if turn right and there are more than one candidate points,
+                    # take the one with larger x coordinate (more on the right)
+                    elif (not turn_left and
+                        np.all(intersection_point[0] < corner_point[:, 0])):
+                        corner_point = np.vstack((intersection_point,
+                                                corner_point))
+                    else:
+                        corner_point = np.vstack((corner_point,
+                                                intersection_point))
     # you could also just store all the points in corner_point and at the end
     # get the one with minimum/maximum x coordinate whether you are turning
     # left or right
@@ -184,7 +206,33 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
     yf = kwargs['yf'] if 'yf' in kwargs else None
 
     if corridor2 is None:
+        # margin = 0.25
+        # corridor_margin = CorridorWorld(corridor1.width - margin,
+        #                                 corridor1.height - margin,
+        #                                 corridor1.center,
+        #                                 corridor1.tilt)
+        # if check_inside_one_point(corridor_margin, np.array([x0, y0])):
         man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
+        # else:
+        #     print('stop planning - single corridor')
+        #     print('-------------------------------------')
+        #         # STOP_PLANNING = True
+        #         # # SEMI-BACKTRACKING
+        #         # # Create a corridor that resembles corridor1 but is rotated -pi.
+        #         # corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt + pi)
+
+        #         # # Compute 
+        #         # # goal_pos1 = compute_goal_point(corridor1_back, 0)
+        #         # # distance0 = linalg.norm(goal_pos1-[x_corner, y_corner])
+        #         # # goal_pos2 = compute_goal_point(corridor1_back, 0.8*distance0)
+        #         # goal_pos2 = corridor2.growth_center
+
+        #         # # Compute maneuver of going backwards
+        #         # man_seq, path, poses = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 + pi , plot, xf = goal_pos2[0], yf = goal_pos2[1])
+        #         # man_seq[:,0:1] = -man_seq[:,0:1]
+        #         # orientation = arctan2((path[-2,1] - path[-1,1]), path[-2,0] - path[-1,0]) 
+
+        #TODO: add semi backtracking to make sure we completely are in the next corridor before continuing'
     else:
         # Check whether initial point (x0,y0) is inside corridor2
         if check_inside_one_point(corridor2, np.array([x0,y0])):
@@ -203,12 +251,13 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
                                             corridor2.tilt)
 
             # TODO: This check is not sufficient.
+            print('semi-backtracking needed?', check_inside_one_point(corridor_margin, np.array([x0, y0])))
             if check_inside_one_point(corridor_margin, np.array([x0, y0])) or EXECUTING_BACKTRACKING:
                 # print('EEE')
 
                 man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf=xf, yf=yf, corridor2=corridor2)
             else:
-                print('stop planning')
+                print('stop planning - multiple corridors')
                 print('-------------------------------------')
                 STOP_PLANNING = True
                 # SEMI-BACKTRACKING
@@ -545,12 +594,17 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 else:
                     iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))
 
+
                 v1 = R1 * omega_max
+                print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
+                print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                 if R1 > 1e-3:
                     t1 = R1 * iota1 /v1
                 else: 
                     t1 = iota1 / omega_max
+
+                print('t1',t1)
                 t2 = c1/v_max
                 #t3 is computed previusly, depends whether the final point is insied second circle
                 t4 = c2/v_max
@@ -611,7 +665,10 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     if R1 > 1e-3:
                         iota1 = 2 * arcsin((chord1/2)/R1)
                     else:
-                        iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))       
+                        iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))     
+
+                    print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
+
                     arc_x1 = xc1 + R1 * cos(linspace(eta1, eta1 - iota1, 100))
                     arc_y1 = yc1 + R1 * sin(linspace(eta1, eta1 - iota1, 100))
                     v1 = R1 * abs(omega_min)
@@ -636,9 +693,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y2 = y2
                     x3 = x2
                     y3 = y2
-                elif not(new_case):
+                elif not new_case:
                     print('CASE 2c: fxx')
-                    
                     delta2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
                     a2 = sqrt((yc2-yf)**2 + (xc2-xf)**2)
                     c2 = sqrt(a2**2 - R**2)
@@ -653,7 +709,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_x2 = xc2 + R * cos(linspace(eta2, eta2 + iota2, 100))
                     arc_y2 = yc2 + R * sin(linspace(eta2, eta2 + iota2, 100))
                 else:
-                    print('CASE 2d: xx')
+                    print('CASE 2d: new case')
                     #If the initial position is inside the second circle
                     delta = correct_angle_range(arctan2((yc2-y0),(xc2-x0)))
                     epsilon1 = correct_angle_range(delta - correct_angle_range(theta0))
@@ -664,7 +720,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y1 = y0
                     x1 = x0
                     y1 = y0
-                    c1 = sqrt((xc2-x0)**2 - (yc2-y0)**2)
+                    c1 = sqrt((xc2-x0)**2 + (yc2-y0)**2)
                     x2 = x1 + c1 * cos(delta)
                     y2 = y1 + c1 * sin(delta)
 
@@ -677,7 +733,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y2 = y2
                     x3 = x2
                     y3 = y2
-                    c2 = sqrt((xf-xc2)**2 - (yf-yc2)**2)
+                    c2 = sqrt((xf-xc2)**2 + (yf-yc2)**2)
                     #xf = x1 + c1 * cos(alfa)
                     #y2 = y1 + c1 * sin(alfa)
  
@@ -696,6 +752,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             maneuver_sequence = np.empty((4,3))
             #Compute the center coordinates
             x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            # print(f"corners: {x_corner}, {y_corner}")
             # tilt1 = corridor1.tilt
             # tilt2 = corridor2.tilt
             #Compute the coordinates of the center of circle 2
@@ -703,6 +760,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             angle = (pi - abs(tilt2-tilt1))/2
             xc2 = x_corner + (R-a/2-m)*cos(pi/2 + tilt2 - angle)
             yc2 = y_corner + (R-a/2-m)*sin(pi/2 + tilt2 - angle)
+            # print(f"xc2, yc2: {xc2}, {yc2}")
             #Compute the radius of the second circle
             R_max = sqrt((yf-yc2)**2+(xf-xc2)**2)
             v2 = v_max
@@ -752,7 +810,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     x1 = xc1 + R1*cos(eta1)
                     y1 = yc1 + R1*sin(eta1)
                     eta1 = correct_angle_range(arctan2((yc1-y1),(xc1-x1)))
-                    x2 = x1+2*c1*cos(eta1 - pi/2)
+                    x2 = x1 + 2*c1*cos(eta1 - pi/2)
                     y2 = y1 + 2*c1*sin(eta1 - pi/2)
                     chord1 = sqrt((x1-x0)**2+(y1-y0)**2)
                     if R1 > 1e-3:
@@ -760,8 +818,11 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     else:
                         iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))
                     
+
                     v1 = R1 * omega_max
                     omega1 = omega_max
+                    print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
+
                     c1 = 2*c1
                     if R1 > 1e-3:
                         t1 = R1 * iota1 /v1
@@ -770,7 +831,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_x1 = xc1 + R1 * cos(linspace(delta1, delta1 + iota1,100))
                     arc_y1 = yc1 + R1 * sin(linspace(delta1, delta1 + iota1,100))
                 #If the final position is inside the second circle, stop, turn in place and reach the final position through a straight line primitive
-                if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R and not(new_case):
+                if sqrt((yf-yc2)**2 + (xf-xc2)**2) <= R and not new_case:
                     print('CASE 3b: final pos inside second circle')
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
@@ -783,15 +844,15 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y2 = y2
                     x3 = x2
                     y3 = y2
-                elif not(new_case):
+                elif not new_case:
                     print('CASE 3ba:xx')
                     delta2 = correct_angle_range(arctan2((y2-yc2),(x2-xc2))) #+2*pi #always positive
                     epsilon2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
                     a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
                     c2 = sqrt(a2**2-R**2)
                     beta2 = arcsin(R/a2)
-                    x3 = xf + c2*cos(epsilon2 + beta2)
-                    y3 = yf + c2*sin(epsilon2 + beta2)
+                    x3 = xf + c2*cos(epsilon2 - beta2)
+                    y3 = yf + c2*sin(epsilon2 - beta2)
                     eta2 = correct_angle_range(arctan2((y3-yc2),(x3-xc2))) #+2*pi #always positive
                     omega3 = omega_min
                     chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
@@ -800,6 +861,9 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                         iota2 = 2*arcsin((chord2/2)/R)
                     else:
                         iota2 = abs(tilt1 - tilt2)
+
+                    print('chord1, iota1, v1 and R', chord2, iota2, v1, R)
+
                     t3 = R*iota2/v2
                     arc_x2 = xc2 + R * cos(linspace(delta2 , delta2 - iota2, 100))
                     arc_y2 = yc2 + R * sin(linspace(delta2 , delta2 - iota2, 100))
@@ -815,7 +879,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y1 = y0
                     x1 = x0
                     y1 = y0
-                    c1 = sqrt((xc2-x0)**2 - (yc2-y0)**2)
+                    c1 = sqrt((xc2-x0)**2 + (yc2-y0)**2)
                     x2 = x1 + c1 * cos(delta)
                     y2 = y1 + c1 * sin(delta)
 
@@ -828,16 +892,14 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     arc_y2 = y2
                     x3 = x2
                     y3 = y2
-                    c2 = sqrt((xf-xc2)**2 - (yf-yc2)**2)
+                    c2 = sqrt((xf-xc2)**2 + (yf-yc2)**2)
                     #xf = x1 + c1 * cos(alfa)
                     #y2 = y1 + c1 * sin(alfa)
                      
-                t2 = 2*c1/v_max
+                t2 = c1/v_max
                 #t3 is computed previously
                 t4 = c2/v_max
 
-                if v1 < 0:
-                    print("NOOOOOOOOOOOOOOOOOOO v1 is negative")
                 maneuver_sequence[0,:] = np.array([v1, omega1, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
                 maneuver_sequence[2,:] = np.array([v2, omega3, t3])
@@ -847,7 +909,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             else:
                 print('CASE 4: turn right-right')
                 xc1 = x0 + R1*cos(theta0 - pi/2)
-                yc1 = y0 + R1*sin(theta0-pi/2)
+                yc1 = y0 + R1*sin(theta0 - pi/2)
 
                 c1 = sqrt((yc2-yc1)**2 + (xc2-xc1)**2)
                 # a1 = sqrt(c1**2-R1**2) # TODO: NaN could come from here
@@ -879,7 +941,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     a2 = sqrt((yf-yc2)**2 + (xf-xc2)**2)
                     c2 = sqrt(a2**2 - R**2)
                     beta2 = arcsin(R/a2)
-                    eta2 = delta2 + beta2
+                    eta2 = delta2 - beta2
                     x3 = xf + c2 * cos(eta2)
                     y3 = yf + c2 * sin(eta2)
                     # zeta2 = arctan2((y3-yc2),(x3-xc2))
@@ -897,12 +959,17 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     iota1 = abs(correct_angle_range(theta0)- correct_angle_range(corridor1.tilt + pi/2))
 
                 v1 = R1 * abs(omega_min)
+                print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
+                print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                 if R1 > 1e-3:
                     t1 = R1 * iota1 /v1
                 else: 
                     t1 = iota1 / abs(omega_min)
-                t2 = 2*c1/v_max
+
+                print('t1',t1)
+
+                t2 = c1/v_max
                 #t3 = R*iota2/v2
                 t4 = c2/v_max
 
@@ -914,7 +981,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 maneuver_sequence[2,:] = np.array([v2, omega3, t3])
                 maneuver_sequence[3,:] = np.array([v_max, 0, t4])
 
-                arc_x1 = xc1 + R1 * cos(linspace(epsilon1 , epsilon1 - iota1,100))
+                arc_x1 = xc1 + R1 * cos(linspace(epsilon1, epsilon1 - iota1,100))
                 arc_y1 = yc1 + R1 * sin(linspace(epsilon1, epsilon1 - iota1,100))
                 #arc_x2 = xc2 + R * cos(linspace(epsilon2, epsilon2 - iota2,100))
                 #arc_y2 = yc2 + R * sin(linspace(epsilon2, epsilon2  -iota2 ,100))

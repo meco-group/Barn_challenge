@@ -179,7 +179,7 @@ def main():
     omega_max = 0.3
     omega_min = -0.3
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
-    Bck_vel_gain = 1
+    Bck_vel_gain = .5
     u_bounds_back = np.array([Bck_vel_gain*v_min, Bck_vel_gain*v_max, Bck_vel_gain*omega_min, Bck_vel_gain*omega_max])
     a = 0.430
     b = 0.3
@@ -231,8 +231,8 @@ def main():
                 # always be the one where the robot is.
 
                 if corridor2 is not None and check_inside_one_point(
-                    # CorridorWorld(corridor2.width-(a), corridor2.height, corridor2.center, corridor2.tilt),
-                    corridor2, 
+                    CorridorWorld(corridor2.width-.15, corridor2.height, corridor2.center, corridor2.tilt),
+                    # corridor2, 
                     np.array([message.posx, message.posy])):
                     ##############################
                     list_of_corridors.pop(0)
