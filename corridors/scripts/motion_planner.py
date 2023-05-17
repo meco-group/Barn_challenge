@@ -513,7 +513,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     c2 = sqrt((yf-y2)**2 + (xf-x2)**2)
                     alfa2 = correct_angle_range(arctan2((yf-y2),(xf-x2)))
                     theta2 = correct_angle_range(arctan2((y2-y1),(x2-x1)))
-                    epsilon2 = alfa2 - theta2
+                    epsilon2 = correct_angle_range(alfa2 - theta2)
                     omega3 = omega_max if (sin(epsilon2) > 0) else omega_min #CHECK ALL THE CASES
                     v2 = 0
                     t3 = abs(epsilon2/omega3)
@@ -528,7 +528,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
                     c2 = sqrt(a2**2 - R**2)
                     beta2 = arcsin(R/a2)
-                    eta2 = delta2 - beta2
+                    eta2 = correct_angle_range(delta2 - beta2)
                     x3 = xf + c2 * cos(eta2)
                     y3 = yf + c2 * sin(eta2)
                     chord2 = sqrt((x3-x2)**2 + (y3-y2)**2)
@@ -543,7 +543,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 if R1 > 1e-3:
                     iota1 = 2 * arcsin((chord1/2)/R1)
                 else:
-                    iota1 = abs(theta0 - corridor1.tilt)
+                    iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))
 
                 v1 = R1 * omega_max
 
