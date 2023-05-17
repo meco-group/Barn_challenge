@@ -98,11 +98,16 @@ def get_corner_point(parent, child):
     '''
     W_child = child.W
     W_parent = parent.W
-    tilt1 = parent.tilt
-    tilt2 = child.tilt
+    tilt1 = correct_angle_range(parent.tilt)
+    tilt2 = correct_angle_range(child.tilt)
     # initialize a np.array containing the corner points candidates
     corner_point = np.empty([0, 2])
     turn_left = False
+
+    BACKTRACKING_CASE = False
+    if tilt1 >= np.pi:
+        print("BACKTRACKING case in get_corner_point")
+        BACKTRACKING_CASE = True
 
     # select the correct faces to check for the corner point, depending
     # whether the maneuver is turning right or left
@@ -121,22 +126,39 @@ def get_corner_point(parent, child):
             intersection_point = get_intersection(w1, w2)
             if (check_inside_one_point(parent, intersection_point) and
                check_inside_one_point(child, intersection_point)):
-                # if turn left and there are more than one candidate points,
-                # take the one with lower x coordinate (more on the left)
-                if (turn_left and
-                   np.all(intersection_point[0] < corner_point[:, 0])):
-                    corner_point = np.vstack((intersection_point,
-                                              corner_point))
-                # if turn right and there are more than one candidate points,
-                # take the one with larger x coordinate (more on the right)
-                elif (not turn_left and
-                      np.all(intersection_point[0] > corner_point[:, 0])):
-                    corner_point = np.vstack((intersection_point,
-                                              corner_point))
-                else:
-                    corner_point = np.vstack((corner_point,
-                                              intersection_point))
 
+                if not BACKTRACKING_CASE:
+                    # if turn left and there are more than one candidate points,
+                    # take the one with lower x coordinate (more on the left)
+                    if (turn_left and
+                    np.all(intersection_point[0] < corner_point[:, 0])):
+                        corner_point = np.vstack((intersection_point,
+                                                corner_point))
+                    # if turn right and there are more than one candidate points,
+                    # take the one with larger x coordinate (more on the right)
+                    elif (not turn_left and
+                        np.all(intersection_point[0] > corner_point[:, 0])):
+                        corner_point = np.vstack((intersection_point,
+                                                corner_point))
+                    else:
+                        corner_point = np.vstack((corner_point,
+                                                intersection_point))
+                else:
+                    # if turn left and there are more than one candidate points,
+                    # take the one with lower x coordinate (more on the left)
+                    if (turn_left and
+                    np.all(intersection_point[0] > corner_point[:, 0])):
+                        corner_point = np.vstack((intersection_point,
+                                                corner_point))
+                    # if turn right and there are more than one candidate points,
+                    # take the one with larger x coordinate (more on the right)
+                    elif (not turn_left and
+                        np.all(intersection_point[0] < corner_point[:, 0])):
+                        corner_point = np.vstack((intersection_point,
+                                                corner_point))
+                    else:
+                        corner_point = np.vstack((corner_point,
+                                                intersection_point))
     # you could also just store all the points in corner_point and at the end
     # get the one with minimum/maximum x coordinate whether you are turning
     # left or right
@@ -730,6 +752,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             maneuver_sequence = np.empty((4,3))
             #Compute the center coordinates
             x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            # print(f"corners: {x_corner}, {y_corner}")
             # tilt1 = corridor1.tilt
             # tilt2 = corridor2.tilt
             #Compute the coordinates of the center of circle 2
@@ -737,6 +760,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
             angle = (pi - abs(tilt2-tilt1))/2
             xc2 = x_corner + (R-a/2-m)*cos(pi/2 + tilt2 - angle)
             yc2 = y_corner + (R-a/2-m)*sin(pi/2 + tilt2 - angle)
+            # print(f"xc2, yc2: {xc2}, {yc2}")
             #Compute the radius of the second circle
             R_max = sqrt((yf-yc2)**2+(xf-xc2)**2)
             v2 = v_max
