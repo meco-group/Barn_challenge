@@ -110,7 +110,7 @@ def check_inside_one_point(corridor, point):
     return False
 
 
-def get_corner_point(parent, child):
+def get_corner_point(parent, child, BACKTRACKING_CASE=False):
     '''
     Given a parent and a child corridor, compute the corner point which
     corresponds to the intersection of their edges.
@@ -131,14 +131,14 @@ def get_corner_point(parent, child):
     corner_point = np.empty([0, 2])
     turn_left = False
 
-    BACKTRACKING_CASE = False
-    if tilt1 >= np.pi:
-        print("BACKTRACKING case in get_corner_point")
-        BACKTRACKING_CASE = True
+    # BACKTRACKING_CASE = False
+    # if tilt1 >= np.pi:
+    #     print("BACKTRACKING case in get_corner_point")
+    #     BACKTRACKING_CASE = True
 
     # select the correct faces to check for the corner point, depending
     # whether the maneuver is turning right or left
-    if tilt2 >= tilt1:  # turn left
+    if sin(tilt2 - tilt1) > 0:  # turn left
         turn_left = True
         select_edges1 = np.array([0, 2, 3])  # check F, B and L faces of child
         select_edges2 = np.array([0, 3])  # check F and L faces of parent
@@ -237,40 +237,46 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
     yf = kwargs['yf'] if 'yf' in kwargs else None
 
     if corridor2 is None:
-        # margin = 0.25
-        # corridor_margin = CorridorWorld(corridor1.width - margin,
-        #                                 corridor1.height - margin,
-        #                                 corridor1.center,
-        #                                 corridor1.tilt)
-        # if check_inside_one_point(corridor_margin, np.array([x0, y0])):
-        man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
-        # else:
-        #     print('stop planning - single corridor')
-        #     print('-------------------------------------')
-        #         # STOP_PLANNING = True
-        #         # # SEMI-BACKTRACKING
-        #         # # Create a corridor that resembles corridor1 but is rotated -pi.
-        #         # corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt + pi)
+        margin = 0.25
+        corridor_margin = CorridorWorld(corridor1.width - margin,
+                                        corridor1.height - margin,
+                                        corridor1.center,
+                                        corridor1.tilt)
+        if check_inside_one_point(corridor_margin, np.array([x0, y0])):
+            man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf=xf, yf=yf)
+        else:
+            print('stop planning - single corridor')
+            print('-------------------------------------')
+            # SEMI-BACKTRACKING
+            # Create a new corridor that relocates us better.
 
-        #         # # Compute 
-        #         # # goal_pos1 = compute_goal_point(corridor1_back, 0)
-        #         # # distance0 = linalg.norm(goal_pos1-[x_corner, y_corner])
-        #         # # goal_pos2 = compute_goal_point(corridor1_back, 0.8*distance0)
-        #         # goal_pos2 = corridor2.growth_center
-
-        #         # # Compute maneuver of going backwards
-        #         # man_seq, path, poses = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 + pi , plot, xf = goal_pos2[0], yf = goal_pos2[1])
-        #         # man_seq[:,0:1] = -man_seq[:,0:1]
-        #         # orientation = arctan2((path[-2,1] - path[-1,1]), path[-2,0] - path[-1,0]) 
+            # not the best idea
+            goal_pos_cor = compute_goal_point(corridor1, b)
+            growth_pos = corridor1.growth_center
+            goal_pos = [(goal_pos_cor[0] + growth_pos[0])/2,
+                        (goal_pos_cor[1] + growth_pos[1])/2]
+            init_pos = [x0, y0]
+            local_dest = [goal_pos[0] - init_pos[0], goal_pos[1] - init_pos[1]]
+            tilt = correct_angle_range(arctan2(local_dest[1], local_dest[0]) + np.pi/2)
+            corridor_correction = CorridorWorld(.5, 1., [x0, y0], tilt)
+            man_seq, path, poses = compute_trajectory(corridor_correction, u_bounds, a, b, m, x0, y0, theta0, plot, xf=goal_pos[0], yf=goal_pos[1])
+            print(man_seq)
 
         #TODO: add semi backtracking to make sure we completely are in the next corridor before continuing'
     else:
         # Check whether initial point (x0,y0) is inside corridor2
+        ################################################################################################################################
+        ## TODO: Check this, this may be the origin of some problems while backtracking
         if check_inside_one_point(corridor2, np.array([x0,y0])):
             man_seq, path, poses = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
+            # man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf, corridor2=corridor2)
         else:
+
+            print(f'corridor1: {corridor1.center}, {corridor1.width}, {corridor1.height}, {corridor1.tilt}')
+            print(f'corridor2: {corridor2.center}, {corridor2.width}, {corridor2.height}, {corridor2.tilt}')
+        ################################################################################################################################
             # corridor2_margin = CorridorWorld(corridor2.width-(a+2*m), corridor2.height-2*m, corridor2.center, corridor2.tilt)
-            x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            x_corner, y_corner = get_corner_point(corridor1, corridor2, EXECUTING_BACKTRACKING)
             # test_point = compute_initial_point(corridor2, 0)
             # x_corner, y_corner = test_point[0], test_point[1]
             psi = arctan2((y_corner - y0),(x_corner - x0)) - pi/2
@@ -284,8 +290,6 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
             # TODO: This check is not sufficient.
             print('semi-backtracking needed?', check_inside_one_point(corridor_margin, np.array([x0, y0])))
             if check_inside_one_point(corridor_margin, np.array([x0, y0])) or EXECUTING_BACKTRACKING:
-                # print('EEE')
-
                 man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf=xf, yf=yf, corridor2=corridor2)
             else:
                 print('stop planning - multiple corridors')
@@ -532,7 +536,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else goal_pos[0]
         yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else goal_pos[1]
 
-        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2)[0], 1e-3), R)
+        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2)[0], 1e-3), corridor1.width/2)
         R = R1
         # print(f"R1 = {R1}, R = {R}")  
 
@@ -630,8 +634,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
 
                 v1 = R1 * omega_max
-                print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
-                print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
+                # print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
+                # print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                 if R1 > 1e-3:
                     t1 = R1 * iota1 /v1
@@ -701,7 +705,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     else:
                         iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))     
 
-                    print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
+                    # print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                     arc_x1 = xc1 + R1 * cos(linspace(eta1, eta1 - iota1, 100))
                     arc_y1 = yc1 + R1 * sin(linspace(eta1, eta1 - iota1, 100))
@@ -896,7 +900,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     else:
                         iota2 = abs(correct_angle_range(tilt1) - correct_angle_range(tilt2))
 
-                    print('chord1, iota1, v1 and R', chord2, iota2, v1, R)
+                    # print('chord1, iota1, v1 and R', chord2, iota2, v1, R)
 
                     t3 = R*iota2/v2
                     arc_x2 = xc2 + R * cos(linspace(delta2 , delta2 - iota2, 100))
@@ -933,6 +937,10 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 t2 = c1/v_max
                 #t3 is computed previously
                 t4 = c2/v_max
+
+                print(f"x1 = {x1}, y1 = {y1}")
+                print(f"x2 = {x2}, y1 = {y2}")
+                print(f"x0 = {x0}, y0 = {y0}")
 
                 maneuver_sequence[0,:] = np.array([v1, omega1, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
@@ -998,7 +1006,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 v1 = R1 * abs(omega_min)
                 print(f"x1 = {x1}, y1 = {y1}, xc1 = {xc1}, yc1 = {yc1}")
                 print(f"x2 = {x2}, y1 = {y2}, xc2 = {xc2}, yc2 = {yc2}")
-                # print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
+                print(f"x0 = {x0}, y0 = {y0}")
                 # print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                 if R1 > 1e-3:
@@ -1012,8 +1020,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 #t3 = R*iota2/v2
                 t4 = c2/v_max
 
-                if v1 < 0:
-                    print(" b NOOOOOOOOOOOOOOOOOOO v1 is negative")
+                # if v1 < 0:
+                #     print(" b NOOOOOOOOOOOOOOOOOOO v1 is negative")
 
                 maneuver_sequence[0,:] = np.array([v1, omega_min, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
@@ -1117,6 +1125,8 @@ def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, th
     poses_sequence_list = np.empty((0,3))
 
     for i in range(len(corridor_list)-1):
+
+        print(f"*** [SEQ] Pair of corridors:\n\t\t{corridor_list[i]} - None? = {corridor_list[i] is None}\n\t\t{corridor_list[i+1]} - None? = {corridor_list[i+1] is None}\n*************************************")
         
         if i == len(corridor_list)-2:
             print("[seq] planning for the last two corridors")

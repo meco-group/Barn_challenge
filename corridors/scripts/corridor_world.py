@@ -116,9 +116,11 @@ class CorridorWorld:
         corridor as parent to the child
         '''
         if force_add_child or \
-           (check_significantly_different(self, child) and \
-            (self.parent is None or \
-            check_significantly_different(self.parent, child, 1.0, 0.0))):
+           (check_significantly_different(self, child, distance_threshold=1.0, tilt_threshold=0.0) and \
+                (self.parent is None or \
+                (check_significantly_different(self.parent, child, 1.5, 0.0) and \
+                (self.parent.parent is None or \
+                check_significantly_different(self.parent.parent, child, 1.7, 0.0))))):
             self.children.append(child)
             child.parent = self
             if (max([child.corners[k][1] for k in range(4)]) >
