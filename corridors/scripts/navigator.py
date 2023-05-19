@@ -175,14 +175,14 @@ def main():
     # omega_max = 1.57
     # omega_min = -1.57
     v_max = 0.5
-    v_min = -0.3
+    v_min = -0.5
     omega_max = 0.3
     omega_min = -0.3
     u_bounds = np.array([v_min, v_max, omega_min, omega_max])
-    Bck_vel_gain = .5
+    Bck_vel_gain = .75
     u_bounds_back = np.array([Bck_vel_gain*v_min, Bck_vel_gain*v_max, Bck_vel_gain*omega_min, Bck_vel_gain*omega_max])
     a = 0.430
-    b = 0.3
+    b = 0.35
     m = 0.10
 
     print("[navigator] Initializing Navigator")
@@ -231,8 +231,8 @@ def main():
                 # always be the one where the robot is.
 
                 if corridor2 is not None and check_inside_one_point(
-                    CorridorWorld(corridor2.width-.15, corridor2.height, corridor2.center, corridor2.tilt),
-                    # corridor2, 
+                    # CorridorWorld(corridor2.width-.05, corridor2.height, corridor2.center, corridor2.tilt),
+                    corridor2, 
                     np.array([message.posx, message.posy])):
                     ##############################
                     list_of_corridors.pop(0)
@@ -363,6 +363,9 @@ def main():
                         tilt = corridor_instance.tilt + np.pi
                         # print('orig tilt',corridor_instance.tilt)
                         # print('tilt',tilt, corridor_instance)
+                        # print('--------------------------------------------------------')
+                        print(f'For Alejandro {corridor_instance.width}, {corridor_instance.height}, [{corridor_instance.center[0]},{corridor_instance.center[1]}], {tilt}, {message.theta}')
+                        print(f'x0 = {message.posx}, y0 = {message.posy}')
                         backtracking_list_0.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, tilt))
                     
                     backtracking_list = remove_corridors_backtracking(backtracking_list_0)
