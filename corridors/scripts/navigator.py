@@ -16,7 +16,7 @@ from corridor_world import CorridorWorld
 from barn_challenge.msg import CorridorWorldMsg, CorridorWorldListMsg,\
     ManeuverMsg, GoalMsg
 
-from motion_planner import planner, check_inside_one_point, compute_goal_point, planner_corridor_sequence, compute_initial_point
+from motion_planner import planner, check_inside_one_point, compute_goal_point, planner_corridor_sequence, compute_initial_point, remove_corridors_backtracking
 
 
 class messageClass():
@@ -355,7 +355,7 @@ def main():
                 # Implementation using forward mode (and reversing maneuver)
                 ############################################################
                 if not EXECUTING_BACKTRACKING: # TODO check this
-                    backtracking_list = []
+                    backtracking_list_0 = []
                     for corridor_instance in list_of_corridors:
                     # for i in range(2):
                         # corridor_instance = list_of_corridors[i]
@@ -363,8 +363,9 @@ def main():
                         tilt = corridor_instance.tilt + np.pi
                         # print('orig tilt',corridor_instance.tilt)
                         # print('tilt',tilt, corridor_instance)
-                        backtracking_list.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, tilt))
+                        backtracking_list_0.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, tilt))
                     
+                    backtracking_list = remove_corridors_backtracking(backtracking_list_0)
                     print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
                     goal_point_last_corridor = compute_initial_point(backtracking_list[-1], m)
                     # print(f"### Backtracking: veh angle = {message.theta-np.pi}, corridor angle = {backtracking_list[0].tilt}")
