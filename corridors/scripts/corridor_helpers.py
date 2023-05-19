@@ -156,7 +156,7 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
     returns the point to backtrack to from which we can get to another
     branch
     '''
-    minimal_backtrack_distance = 1.5
+    minimal_backtrack_distance = 1.0
 
     if EXPLORE_FULL_CORRIDOR:
         # we know this current corridor is a dead end, so we have to start
@@ -228,8 +228,6 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
                     orphanage.add_child_corridor(rejected_child, True)
 
             # backtracking_corridors = backtracking_corridors[:-1]
-            print(f"\n\n\n\n\nbacktracking_corridors: {backtracking_corridors}")
-            print(f"Current corridor: {parent}\n\n\n\n\n")
             print(f"[manager - helper] Found {len(backtracking_corridors)} corridors to backtrack in.")
 
             return (current_corridor.growth_center, parent,
