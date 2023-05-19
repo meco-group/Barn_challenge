@@ -40,13 +40,14 @@ def remove_corridors_backtracking(corridor_list):
 
 def correct_angle_range(angle):
     
-    if angle <= -0:
+    if angle < 0:
         return correct_angle_range(angle + 2*pi)
     elif angle >= 2*pi:
         return correct_angle_range(angle - 2*pi)
     else: 
         return angle
     # return angle
+    # return angle % 2*pi
 
 
 def compute_goal_point(corridor, m):
