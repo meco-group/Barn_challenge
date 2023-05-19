@@ -47,6 +47,7 @@ def correct_angle_range(angle):
     else: 
         return angle
     # return angle
+    # return angle % 2*pi
 
 
 def compute_goal_point(corridor, m):
