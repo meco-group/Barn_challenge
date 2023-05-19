@@ -141,7 +141,7 @@ class CorridorWorld:
             for j in range(i):
                 if not check_significantly_different(self.children[i],
                                                      self.children[j]):
-                    print("Removing too similar child")
+                    # print("Removing too similar child")
                     self.remove_child_corridor(i)
                     break  # break from outer loop
 

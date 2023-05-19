@@ -168,26 +168,26 @@ class Corridor:
         '''
         # print('growing forward')
         theta = self.correct_angle_range(theta + self.tilt)
-        print('theta', theta)
+        # print('theta', theta)
         self.grow_edge(datapoints, Corridor.FWD,
                        step_multiplier=step_multiplier)
 
         if theta >= np.pi/4 and theta <= 3/4*np.pi:
-            print('case1')
+            # print('case1')
             self.grow_edge(datapoints, Corridor.RGT,
                            step_multiplier=step_multiplier)
             self.grow_edge(datapoints, Corridor.LFT,
                            step_multiplier=step_multiplier)
         elif theta > 3/4*np.pi and theta <= 5/4*np.pi:
-            print('case2')
+            # print('case2')
             self.grow_edge(datapoints, Corridor.RGT,
                            step_multiplier=step_multiplier)
         elif theta > 7/4*np.pi or theta < np.pi/4:
-            print('case3')
+            # print('case3')
             self.grow_edge(datapoints, Corridor.LFT,
                            step_multiplier=step_multiplier)
         else:
-            print('case4')
+            # print('case4')
 
         # Rotate corridor only if width becomes larger than height
         if self.width > self.height:

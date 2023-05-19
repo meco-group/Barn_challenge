@@ -80,7 +80,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         # root_corridor = new_corridor.corridor_deep_copy()
         root_corridor = new_corridor
         current_corridor = root_corridor
-        print("[manager] Root corridor is now created")
+        # print("[manager] Root corridor is now created")
         publish_corridors([root_corridor], corridor_pub,
                           backtrack_mode_activated)
         return (root_corridor, current_corridor)
@@ -101,7 +101,7 @@ def process_new_corridor(new_corridor_msg, root_corridor,
     # Check if goal position is reachable
     global rotated_goal
     if check_inside_one_point(new_corridor, rotated_goal):
-        print("[manager] Child corridor is added to the tree")
+        # print("[manager] Child corridor is added to the tree")
         receiving_corridor.add_child_corridor(new_corridor)
         receiving_corridor.remove_similar_children()
         receiving_corridor.sort_children()
@@ -120,14 +120,14 @@ def process_new_corridor(new_corridor_msg, root_corridor,
         backtracked = orphanage.has_similar_child(new_corridor, distance_threshold=2.0, tilt_threshold=0)
 
         if not stuck and not backtracked:
-            print("[manager] Child corridor added")
+            # print("[manager] Child corridor added")
             receiving_corridor.add_child_corridor(new_corridor, margin=.2)
             receiving_corridor.sort_children()
             receiving_corridor.remove_similar_children()
         elif stuck:
-            print(f"[manager] Discarding a corridor (stuck: {round(d,3)})")
+            # print(f"[manager] Discarding a corridor (stuck: {round(d,3)})")
         else:
-            print("[manager] Discarding a corridor (backtrack similarity)")
+            # print("[manager] Discarding a corridor (backtrack similarity)")
 
     return (root_corridor, current_corridor)
 
@@ -151,7 +151,7 @@ def select_child_corridor(current_corridor):
                 if child.quality >= 0.5:
                     return (True, child)
 
-            print("[manager] ERROR: select_child_corridor")
+            # print("[manager] ERROR: select_child_corridor")
             return (False, current_corridor)
 
 
@@ -220,7 +220,7 @@ def publish_corridors(corridors, publisher, backtrack_mode_activated):
         to_send_list.len += 1
         to_send_list.corridors.append(to_send)
 
-    print("[manager] Published ", to_send_list.len, " corridor(s)")
+    # print("[manager] Published ", to_send_list.len, " corridor(s)")
     publisher.publish(to_send_list)
 
 def publish_final_corridor(final_corridor, publisher):
@@ -248,7 +248,7 @@ def publish_final_corridor(final_corridor, publisher):
     to_send_list.len = 1
     to_send_list.corridors = [to_send]
 
-    print("[manager] Published final corridor")
+    # print("[manager] Published final corridor")
     publisher.publish(to_send_list)
 
 def rviz_visualization_goal(x, y, z):
@@ -420,7 +420,7 @@ def main():
         rviz_visualization_goal(*rotated_goal, 0.)
 
         if GOAL_IN_SIGHT:
-            print("[manager] Goal in sight -- stopping")
+            # print("[manager] Goal in sight -- stopping")
             visualize_corridor_tree(root_corridor, current_corridor, margin=0.1)
             rate.sleep()
             continue
@@ -433,14 +433,14 @@ def main():
             backtracking_goal = current_corridor.center + \
                 np.array([(height/2 - m)*np.sin(tilt),
                          -(height/2 - m)*np.cos(tilt)])
-            print("[manager] Backtracking...")
+            # print("[manager] Backtracking...")
             visualize_backtracking_corridors(backtracking_corridors,
                                              current_corridor)
             if check_inside_one_point(current_corridor,
                                       [[curr_pose.posx], [curr_pose.posy]]):
                 # np.sqrt((curr_pose.posx - backtracking_goal[0])**2 +
                 #        (curr_pose.posy - backtracking_goal[1])**2) < .5:
-                print("[manager] Stopping backtracking!")
+                # print("[manager] Stopping backtracking!")
                 backtrack_mode_activated = False
                 # Flush all corridors heard while backtracking
                 new_corridor_list = []
@@ -453,8 +453,8 @@ def main():
         # if a new corridor arrived while we are not backtracking,
         # check to add it to the tree
         if not backtrack_mode_activated and new_corridor_present:
-            print("[manager] discovered ", len(new_corridor_list),
-                  " new corridor(s)!")
+            # print("[manager] discovered ", len(new_corridor_list),
+            #       " new corridor(s)!")
 
             for corridor in new_corridor_list:
                 (root_corridor, current_corridor) = process_new_corridor(
@@ -502,10 +502,10 @@ def main():
                 # if we were planning on selecting a child but were unsuccesful,
                 # wait a bit before backtracking
                 if not succes:
-                    print("[manager] Need to backtrack!")
+                    # print("[manager] Need to backtrack!")
                     # if you are not waiting yet, start a timer
                     if not waiting_to_backtrack:
-                        print("[manager] Waiting to backtrack...")
+                        # print("[manager] Waiting to backtrack...")
                         backtrack_start_time = rospy.Time.now().to_sec()
                         waiting_to_backtrack = True
 
@@ -513,10 +513,10 @@ def main():
                     # start backtracking
                     else:
                         backtrack_curr_time = rospy.Time.now().to_sec()
-                        print("[manager] Waiting to backtrack...")
+                        # print("[manager] Waiting to backtrack...")
                         if (backtrack_curr_time - backtrack_start_time >
                            backtrack_waiting_time):
-                            print("[manager] Started to backtrack")
+                            # print("[manager] Started to backtrack")
                             waiting_to_backtrack = False
                             # pass the backtracking corridors to the motion
                             # planner
@@ -526,10 +526,10 @@ def main():
                                                      orphanage,
                                                      explore_full_corridor)
                             if backtrack_point is None:
-                                print("[manager] ERROR: I cannot backtrack")
+                                # print("[manager] ERROR: I cannot backtrack")
                                 backtrack_mode_activated = False
                             else:
-                                print(f"[manager] Publishing {len(backtracking_corridors)} backtracking corridors")
+                                # print(f"[manager] Publishing {len(backtracking_corridors)} backtracking corridors")
                                 # clear all backtrack-like corridors from the tree
                                 clear_backtrack_like_corridors(root_corridor, orphanage)
 
@@ -540,7 +540,7 @@ def main():
                 
                 # If we succesfully selected a child, publish it and proceed
                 else:
-                    print("[manager] Selected child corridor")
+                    # print("[manager] Selected child corridor")
                     waiting_to_backtrack = False
                     publish_corridors([current_corridor], corridor_pub,
                                       backtrack_mode_activated)

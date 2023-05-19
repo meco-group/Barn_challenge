@@ -194,7 +194,7 @@ def main():
     sweeper_fitter_rate = 2
     rate = rospy.Rate(sweeper_fitter_rate)
 
-    print('Building initial corridor')
+    # print('Building initial corridor')
     corridor_0 = Corridor(width=2., height=2., center=[0, 0],
                           tilt=0, copy=True)
     message.corridors.append(corridor_0)
@@ -405,7 +405,7 @@ def main():
                 xyh.append([point[0], point[1], 1])
         xy = np.array([value for value in xyh]).T
 
-        print('Building new corridors')
+        # print('Building new corridors')
         x, y, theta = odom_data.posx, odom_data.posy, odom_data.yaw
         rotation_angle = orig_heading - np.pi/2
         last_best_corr = best_corridors[-1]

@@ -228,7 +228,7 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
                     orphanage.add_child_corridor(rejected_child, True)
 
             # backtracking_corridors = backtracking_corridors[:-1]
-            print(f"[manager - helper] Found {len(backtracking_corridors)} corridors to backtrack in.")
+            # print(f"[manager - helper] Found {len(backtracking_corridors)} corridors to backtrack in.")
 
             return (current_corridor.growth_center, parent,
                     backtracking_corridors, orphanage)
@@ -236,15 +236,15 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
 def clear_backtrack_like_corridors(root_corridor, orphanage):
     corridor = root_corridor
 
-    print(f"[manager-helper] orphanage has {len(orphanage.children)} children")
-    print("[manager-helper] looping over children")
+    # print(f"[manager-helper] orphanage has {len(orphanage.children)} children")
+    # print("[manager-helper] looping over children")
     # remove children that are close to backtracked corridors
     for i in range(len(corridor.children)-1,-1,-1):
         if orphanage.has_similar_child(corridor.children[i], distance_threshold=2.0, tilt_threshold=-0.1):
-            print("[manager] Removing backtracki-like corridor")
+            # print("[manager] Removing backtracki-like corridor")
             corridor.remove_child_corridor(i)
 
-    print(f"[manager-helper] calling clearing recursively")
+    # print(f"[manager-helper] calling clearing recursively")
     # loop over remaining children and do the same there
     for child in corridor.children:
         clear_backtrack_like_corridors(child, orphanage)
