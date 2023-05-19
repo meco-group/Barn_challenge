@@ -9,11 +9,19 @@ Created on Tue Mai 10, 2023
 import rospy
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import Pose2D
-from tf2_geometry_msgs import PoseStamped
-
+import numpy as np
 import math as m
 
 import tf2_ros
+
+
+def correct_angle_range(angle):
+    if angle <= -0:
+        return correct_angle_range(angle + 2*np.pi)
+    elif angle >= 2*np.pi:
+        return correct_angle_range(angle - 2*np.pi)
+    else:
+        return angle
 
 
 def yawFromQuaternion(orientation):
@@ -36,17 +44,32 @@ def odomCallback(data, args):
     :type tf_buffer: tf2_ros.tfBuffer
     '''
     pose_map_pub, tf_buffer = args
-    pose_odom = PoseStamped(header=data.header, pose=data.pose.pose)
+    # print('here',pose_odom)
+    trans = tf_buffer.lookup_transform('odom', 'map', rospy.Time(0),
+                                       rospy.Duration(1.))
+
     try:
-        # ** It is important to wait for the listener to start listening
-        # Hence the rospy.Duration(1)
-        output_pose_stamped = tf_buffer.transform(pose_odom, 'map',
-                                                  rospy.Duration(.1))
-        output_pose_2D = Pose2D(output_pose_stamped.pose.position.x,
-                                output_pose_stamped.pose.position.y,
-                                yawFromQuaternion(
-                                    output_pose_stamped.pose.orientation))
+        theta = yawFromQuaternion(trans.transform.rotation)
+        rotation = yawFromQuaternion(data.pose.pose.orientation) - theta
+
+        # Create the 2D rotation matrix
+        rotation_matrix = np.linalg.inv(
+            np.array([[np.cos(theta), -np.sin(theta)],
+                      [np.sin(theta), np.cos(theta)]]))
+
+        # Define a vector or point to be rotated
+        point = np.array([data.pose.pose.position.x,
+                          data.pose.pose.position.y])  # [x, y] coordinates
+        trans = np.array([trans.transform.translation.x,
+                          trans.transform.translation.y])
+
+        # Apply the rotation matrix to the point
+        rotated_point = np.array(rotation_matrix.dot(point - trans))
+
+        output_pose_2D = Pose2D(rotated_point[0], rotated_point[1],
+                                correct_angle_range(rotation))
         pose_map_pub.publish(output_pose_2D)
+
     except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
             tf2_ros.ExtrapolationException):
         raise
@@ -59,8 +82,7 @@ def main():
 
     tf_buffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tf_buffer)
-    tf_buffer.lookup_transform('odom', 'map', rospy.Time(0), rospy.Duration(10.))
-
+    tf_buffer.lookup_transform('odom', 'map', rospy.Time(0), rospy.Duration(2.))
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback,
                                 (pose_map_pub, tf_buffer))
     print('remapper active')
