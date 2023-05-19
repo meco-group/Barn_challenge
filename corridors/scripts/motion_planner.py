@@ -206,6 +206,7 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
     yf = kwargs['yf'] if 'yf' in kwargs else None
 
     if corridor2 is None:
+        print(f"*** [PLANNER]: Corridor2 is None")
         # margin = 0.25
         # corridor_margin = CorridorWorld(corridor1.width - margin,
         #                                 corridor1.height - margin,
@@ -235,9 +236,13 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
         #TODO: add semi backtracking to make sure we completely are in the next corridor before continuing'
     else:
         # Check whether initial point (x0,y0) is inside corridor2
+        ################################################################################################################################
+        ## TODO: Check this, this may be the origin of some problems while backtracking
         if check_inside_one_point(corridor2, np.array([x0,y0])):
-            man_seq, path, poses = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
+            # man_seq, path, poses = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
+            man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf, corridor2=corridor2)
         else:
+        ################################################################################################################################
             # corridor2_margin = CorridorWorld(corridor2.width-(a+2*m), corridor2.height-2*m, corridor2.center, corridor2.tilt)
             x_corner, y_corner = get_corner_point(corridor1, corridor2)
             # test_point = compute_initial_point(corridor2, 0)
@@ -501,7 +506,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
         xf = kwargs['xf'] if ('xf' in kwargs and kwargs['xf'] is not None) else goal_pos[0]
         yf = kwargs['yf'] if ('yf' in kwargs and kwargs['yf'] is not None) else goal_pos[1]
 
-        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2)[0], 1e-3), R)
+        R1 = min(max(get_max_alignment_radius(x0, y0, theta0-pi/2, corridor1, m+a/2)[0], 1e-3), corridor1.width/2)
         R = R1
         # print(f"R1 = {R1}, R = {R}")  
 
@@ -1086,6 +1091,8 @@ def planner_corridor_sequence(corridor_list, u_bounds, a, b, m, plot, x0, y0, th
     poses_sequence_list = np.empty((0,3))
 
     for i in range(len(corridor_list)-1):
+
+        print(f"*** [SEQ] Pair of corridors:\n\t\t{corridor_list[i]} - None? = {corridor_list[i] is None}\n\t\t{corridor_list[i+1]} - None? = {corridor_list[i+1] is None}\n*************************************")
         
         if i == len(corridor_list)-2:
             print("[seq] planning for the last two corridors")
