@@ -427,12 +427,19 @@ def main():
 
         # if we are backtracking, just wait until we enter the new branch
         if backtrack_mode_activated:
+            height = current_corridor.height
+            m = .1  # from navigator TODO
+            tilt = current_corridor.tilt
+            backtracking_goal = current_corridor.center + \
+                np.array([(height/2 - m)*np.sin(tilt),
+                         -(height/2 - m)*np.cos(tilt)])
             print("[manager] Backtracking...")
             visualize_backtracking_corridors(backtracking_corridors,
                                              current_corridor)
             if check_inside_one_point(current_corridor,
-                                      [[curr_pose.posx],
-                                       [curr_pose.posy]]):
+                                      [[curr_pose.posx], [curr_pose.posy]]):
+                # np.sqrt((curr_pose.posx - backtracking_goal[0])**2 +
+                #        (curr_pose.posy - backtracking_goal[1])**2) < .5:
                 print("[manager] Stopping backtracking!")
                 backtrack_mode_activated = False
                 # Flush all corridors heared while backtracking
