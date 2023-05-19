@@ -424,7 +424,7 @@ def main():
                                          copy=True)
 
             for i, corridor in enumerate(last_best_corr.children):
-                corridor.grow_all_edges(xy)
+                corridor.grow_all_edges(xy, odom_data.yaw)
                 message.corridors.append(corridor)  # TODO do dit weg
                 corridor.get_vertices_for_visualization(x, y, theta)
                 # corridor.rviz_visualization('rect_fitter', i, 0.,0.,0.7,
