@@ -79,6 +79,14 @@ class Corridor:
         if copy:
             self.original = self.corridor_copy()
 
+    def correct_angle_range(self, angle):
+        if angle <= -0:
+            return self.correct_angle_range(angle + 2*np.pi)
+        elif angle >= 2*np.pi:
+            return self.BCKcorrect_angle_range(angle - 2*np.pi)
+        else:
+            return angle
+
     def corridor_copy(self):
         '''Make a copy of the original corridor without reference.
         '''
@@ -152,22 +160,34 @@ class Corridor:
         self.width = - self.wr[2] - self.wl[2]
         self.center = self.get_center()
 
-    def grow_all_edges(self, datapoints, step_multiplier=1):
+    def grow_all_edges(self, datapoints, theta, step_multiplier=1):
         '''Grow all edges of the corridor.
 
         :param datapoints: array with 2d homogeneous datapoints
         :type datapoints: numpy.ndarray
         '''
         # print('growing forward')
+        theta = self.correct_angle_range(theta + self.tilt)
+        print('theta', theta)
         self.grow_edge(datapoints, Corridor.FWD,
                        step_multiplier=step_multiplier)
-        # print('growing right')
-        self.grow_edge(datapoints, Corridor.RGT,
-                       step_multiplier=step_multiplier)
-        # print('growing left')
-        self.grow_edge(datapoints, Corridor.LFT,
-                       step_multiplier=step_multiplier)
-        # print('growing finished')
+
+        if theta >= np.pi/4 and theta <= 3/4*np.pi:
+            print('case1')
+            self.grow_edge(datapoints, Corridor.RGT,
+                           step_multiplier=step_multiplier)
+            self.grow_edge(datapoints, Corridor.LFT,
+                           step_multiplier=step_multiplier)
+        elif theta > 3/4*np.pi and theta <= 5/4*np.pi:
+            print('case2')
+            self.grow_edge(datapoints, Corridor.RGT,
+                           step_multiplier=step_multiplier)
+        elif theta > 7*np.pi/4 or theta < np.pi/4:
+            print('case3')
+            self.grow_edge(datapoints, Corridor.LFT,
+                           step_multiplier=step_multiplier)
+        else:
+            print('case4')
 
         # Rotate corridor only if width becomes larger than height
         if self.width > self.height:
