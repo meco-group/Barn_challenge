@@ -206,31 +206,30 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
     yf = kwargs['yf'] if 'yf' in kwargs else None
 
     if corridor2 is None:
-        # margin = 0.25
-        # corridor_margin = CorridorWorld(corridor1.width - margin,
-        #                                 corridor1.height - margin,
-        #                                 corridor1.center,
-        #                                 corridor1.tilt)
-        # if check_inside_one_point(corridor_margin, np.array([x0, y0])):
-        man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
-        # else:
-        #     print('stop planning - single corridor')
-        #     print('-------------------------------------')
-        #         # STOP_PLANNING = True
-        #         # # SEMI-BACKTRACKING
-        #         # # Create a corridor that resembles corridor1 but is rotated -pi.
-        #         # corridor1_back = CorridorWorld(corridor1.width, corridor1.height, corridor1.center, corridor1.tilt + pi)
+        margin = 0.25
+        corridor_margin = CorridorWorld(corridor1.width - margin,
+                                        corridor1.height - margin,
+                                        corridor1.center,
+                                        corridor1.tilt)
+        if check_inside_one_point(corridor_margin, np.array([x0, y0])):
+            man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf=xf, yf=yf)
+        else:
+            print('stop planning - single corridor')
+            print('-------------------------------------')
+            # SEMI-BACKTRACKING
+            # Create a new corridor that relocates us better.
 
-        #         # # Compute 
-        #         # # goal_pos1 = compute_goal_point(corridor1_back, 0)
-        #         # # distance0 = linalg.norm(goal_pos1-[x_corner, y_corner])
-        #         # # goal_pos2 = compute_goal_point(corridor1_back, 0.8*distance0)
-        #         # goal_pos2 = corridor2.growth_center
-
-        #         # # Compute maneuver of going backwards
-        #         # man_seq, path, poses = compute_trajectory(corridor1_back, u_bounds, a, b, m, x0, y0, theta0 + pi , plot, xf = goal_pos2[0], yf = goal_pos2[1])
-        #         # man_seq[:,0:1] = -man_seq[:,0:1]
-        #         # orientation = arctan2((path[-2,1] - path[-1,1]), path[-2,0] - path[-1,0]) 
+            # not the best idea
+            goal_pos_cor = compute_goal_point(corridor1, b)
+            growth_pos = corridor1.growth_center
+            goal_pos = [(goal_pos_cor[0] + growth_pos[0])/2,
+                        (goal_pos_cor[1] + growth_pos[1])/2]
+            init_pos = [x0, y0]
+            local_dest = [goal_pos[0] - init_pos[0], goal_pos[1] - init_pos[1]]
+            tilt = correct_angle_range(arctan2(local_dest[1], local_dest[0]) + np.pi/2)
+            corridor_correction = CorridorWorld(.5, 1., [x0, y0], tilt)
+            man_seq, path, poses = compute_trajectory(corridor_correction, u_bounds, a, b, m, x0, y0, theta0, plot, xf=goal_pos[0], yf=goal_pos[1])
+            print(man_seq)
 
         #TODO: add semi backtracking to make sure we completely are in the next corridor before continuing'
     else:
