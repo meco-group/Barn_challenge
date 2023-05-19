@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: ros:melodic
+From: alejandroastudillo/ros-noetic-barn
 
 %setup
     mkdir -p ${SINGULARITY_ROOTFS}/jackal_ws/src
@@ -15,15 +15,15 @@ From: ros:melodic
     pip3 install defusedxml rospkg netifaces numpy
     
     cd /jackal_ws/src
-    git clone https://github.com/jackal/jackal.git --branch melodic-devel
+    git clone https://github.com/jackal/jackal.git --branch noetic-devel
     git clone https://github.com/jackal/jackal_simulator.git --branch melodic-devel
     git clone https://github.com/jackal/jackal_desktop.git --branch melodic-devel
     git clone https://github.com/utexas-bwi/eband_local_planner.git
-
-    source /opt/ros/melodic/setup.bash
+    
+    source /opt/ros/noetic/setup.bash
     cd ..
     rosdep init; rosdep update
-    rosdep install -y --from-paths . --ignore-src --rosdistro=melodic
+    rosdep install -y --from-paths . --ignore-src --rosdistro=noetic
     source devel/setup.bash
     catkin_make
 
