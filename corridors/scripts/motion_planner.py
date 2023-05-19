@@ -83,7 +83,7 @@ def check_inside_one_point(corridor, point):
     return False
 
 
-def get_corner_point(parent, child):
+def get_corner_point(parent, child, BACKTRACKING_CASE=False):
     '''
     Given a parent and a child corridor, compute the corner point which
     corresponds to the intersection of their edges.
@@ -104,10 +104,10 @@ def get_corner_point(parent, child):
     corner_point = np.empty([0, 2])
     turn_left = False
 
-    BACKTRACKING_CASE = False
-    if tilt1 >= np.pi:
-        print("BACKTRACKING case in get_corner_point")
-        BACKTRACKING_CASE = True
+    # BACKTRACKING_CASE = False
+    # if tilt1 >= np.pi:
+    #     print("BACKTRACKING case in get_corner_point")
+    #     BACKTRACKING_CASE = True
 
     # select the correct faces to check for the corner point, depending
     # whether the maneuver is turning right or left
@@ -237,12 +237,15 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
         ################################################################################################################################
         ## TODO: Check this, this may be the origin of some problems while backtracking
         if check_inside_one_point(corridor2, np.array([x0,y0])):
-            # man_seq, path, poses = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
-            man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf, corridor2=corridor2)
+            man_seq, path, poses = compute_trajectory(corridor2, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf)
+            # man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf = xf, yf = yf, corridor2=corridor2)
         else:
+
+            print(f'corridor1: {corridor1.center}, {corridor1.width}, {corridor1.height}, {corridor1.tilt}')
+            print(f'corridor2: {corridor2.center}, {corridor2.width}, {corridor2.height}, {corridor2.tilt}')
         ################################################################################################################################
             # corridor2_margin = CorridorWorld(corridor2.width-(a+2*m), corridor2.height-2*m, corridor2.center, corridor2.tilt)
-            x_corner, y_corner = get_corner_point(corridor1, corridor2)
+            x_corner, y_corner = get_corner_point(corridor1, corridor2, EXECUTING_BACKTRACKING)
             # test_point = compute_initial_point(corridor2, 0)
             # x_corner, y_corner = test_point[0], test_point[1]
             psi = arctan2((y_corner - y0),(x_corner - x0)) - pi/2
