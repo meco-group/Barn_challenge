@@ -111,7 +111,7 @@ def get_corner_point(parent, child, BACKTRACKING_CASE=False):
 
     # select the correct faces to check for the corner point, depending
     # whether the maneuver is turning right or left
-    if tilt2 >= tilt1:  # turn left
+    if sin(tilt2 - tilt1) > 0:  # turn left
         turn_left = True
         select_edges1 = np.array([0, 2, 3])  # check F, B and L faces of child
         select_edges2 = np.array([0, 3])  # check F and L faces of parent
@@ -162,9 +162,15 @@ def get_corner_point(parent, child, BACKTRACKING_CASE=False):
     # you could also just store all the points in corner_point and at the end
     # get the one with minimum/maximum x coordinate whether you are turning
     # left or right
-    x_corner = corner_point[0, 0]
-    y_corner = corner_point[0, 1]
-    return x_corner, y_corner
+    try:
+        x_corner = corner_point[0, 0]
+        y_corner = corner_point[0, 1]
+        return x_corner, y_corner
+    except:
+        print("No corner was found between these two corridor")
+        return None, None
+
+    
 
 
 def plot_trajectory(corridor1, R, x0, y0, xf, yf, x1, y1, x_center1, y_center1,
