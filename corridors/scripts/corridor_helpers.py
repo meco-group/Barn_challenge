@@ -116,7 +116,7 @@ def check_stuck(parent, child, threshold=0.4):
 
 
 def check_significantly_different(corridor1, corridor2,
-                                  distance_threshold=1.7,
+                                  distance_threshold=1.,
                                   tilt_threshold=np.pi/8):
     '''
     Compute the distance between the 'forward' corners of the
@@ -156,7 +156,7 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
     returns the point to backtrack to from which we can get to another
     branch
     '''
-    minimal_backtrack_distance = 1.5
+    minimal_backtrack_distance = 1.0
 
     if EXPLORE_FULL_CORRIDOR:
         # we know this current corridor is a dead end, so we have to start
@@ -227,6 +227,7 @@ def get_back_track_point(current_corridor, orphanage, EXPLORE_FULL_CORRIDOR):
                     parent.remove_child_corridor(0)
                     orphanage.add_child_corridor(rejected_child, True)
 
+            # backtracking_corridors = backtracking_corridors[:-1]
             print(f"[manager - helper] Found {len(backtracking_corridors)} corridors to backtrack in.")
 
             return (current_corridor.growth_center, parent,
