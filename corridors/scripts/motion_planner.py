@@ -252,8 +252,6 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
             # TODO: This check is not sufficient.
             print('semi-backtracking needed?', check_inside_one_point(corridor_margin, np.array([x0, y0])))
             if check_inside_one_point(corridor_margin, np.array([x0, y0])) or EXECUTING_BACKTRACKING:
-                # print('EEE')
-
                 man_seq, path, poses = compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, xf=xf, yf=yf, corridor2=corridor2)
             else:
                 print('stop planning - multiple corridors')
@@ -598,8 +596,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
 
 
                 v1 = R1 * omega_max
-                print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
-                print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
+                # print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
+                # print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                 if R1 > 1e-3:
                     t1 = R1 * iota1 /v1
@@ -669,7 +667,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     else:
                         iota1 = abs(correct_angle_range(theta0) - correct_angle_range(corridor1.tilt + pi/2))     
 
-                    print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
+                    # print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                     arc_x1 = xc1 + R1 * cos(linspace(eta1, eta1 - iota1, 100))
                     arc_y1 = yc1 + R1 * sin(linspace(eta1, eta1 - iota1, 100))
@@ -864,7 +862,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                     else:
                         iota2 = abs(correct_angle_range(tilt1) - correct_angle_range(tilt2))
 
-                    print('chord1, iota1, v1 and R', chord2, iota2, v1, R)
+                    # print('chord1, iota1, v1 and R', chord2, iota2, v1, R)
 
                     t3 = R*iota2/v2
                     arc_x2 = xc2 + R * cos(linspace(delta2 , delta2 - iota2, 100))
@@ -901,6 +899,10 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 t2 = c1/v_max
                 #t3 is computed previously
                 t4 = c2/v_max
+
+                print(f"x1 = {x1}, y1 = {y1}")
+                print(f"x2 = {x2}, y1 = {y2}")
+                print(f"x0 = {x0}, y0 = {y0}")
 
                 maneuver_sequence[0,:] = np.array([v1, omega1, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
@@ -966,7 +968,7 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 v1 = R1 * abs(omega_min)
                 print(f"x1 = {x1}, y1 = {y1}, xc1 = {xc1}, yc1 = {yc1}")
                 print(f"x2 = {x2}, y1 = {y2}, xc2 = {xc2}, yc2 = {yc2}")
-                # print('x1, x0, y1, y0, xc1, yc1',x1, x0, y1, y0, xc1, yc1)
+                print(f"x0 = {x0}, y0 = {y0}")
                 # print('chord1, iota1, v1 and R1', chord1, iota1, v1, R1)
 
                 if R1 > 1e-3:
@@ -980,8 +982,8 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 #t3 = R*iota2/v2
                 t4 = c2/v_max
 
-                if v1 < 0:
-                    print(" b NOOOOOOOOOOOOOOOOOOO v1 is negative")
+                # if v1 < 0:
+                #     print(" b NOOOOOOOOOOOOOOOOOOO v1 is negative")
 
                 maneuver_sequence[0,:] = np.array([v1, omega_min, t1])
                 maneuver_sequence[1,:] = np.array([v_max, 0, t2])
