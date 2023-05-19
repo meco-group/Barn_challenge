@@ -83,7 +83,7 @@ class Corridor:
         if angle <= -0:
             return self.correct_angle_range(angle + 2*np.pi)
         elif angle >= 2*np.pi:
-            return self.BCKcorrect_angle_range(angle - 2*np.pi)
+            return self.correct_angle_range(angle - 2*np.pi)
         else:
             return angle
 
@@ -182,7 +182,7 @@ class Corridor:
             print('case2')
             self.grow_edge(datapoints, Corridor.RGT,
                            step_multiplier=step_multiplier)
-        elif theta > 7*np.pi/4 or theta < np.pi/4:
+        elif theta > 7/4*np.pi or theta < np.pi/4:
             print('case3')
             self.grow_edge(datapoints, Corridor.LFT,
                            step_multiplier=step_multiplier)

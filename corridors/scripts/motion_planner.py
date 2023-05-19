@@ -261,9 +261,19 @@ def planner(corridor1, u_bounds, a, b, m, x0, y0, theta0, EXECUTING_BACKTRACKING
                         (goal_pos_cor[1] + growth_pos[1])/2]
             init_pos = [x0, y0]
             local_dest = [goal_pos[0] - init_pos[0], goal_pos[1] - init_pos[1]]
-            tilt = correct_angle_range(arctan2(local_dest[1], local_dest[0]) + np.pi/2)
-            corridor_correction = CorridorWorld(.5, 1., [x0, y0], tilt)
-            man_seq, path, poses = compute_trajectory(corridor_correction, u_bounds, a, b, m, x0, y0, theta0, plot, xf=goal_pos[0], yf=goal_pos[1])
+            relative_tilt = correct_angle_range(arctan2(local_dest[1], local_dest[0]))
+            tilt = correct_angle_range(np.pi/2 - relative_tilt) if relative_tilt <= np.pi/2 else correct_angle_range(relative_tilt - np.pi/2)
+            if relative_tilt >= np.pi/4 and relative_tilt <= 3*np.pi/4:
+                corridor_correction = CorridorWorld(.5, 1., [x0, y0], tilt)
+                man_seq, path, poses = compute_trajectory(corridor_correction, u_bounds, a, b, m, x0, y0, theta0, plot, xf=goal_pos[0], yf=goal_pos[1])
+            else:
+                goal_pos = [growth_pos[0], growth_pos[1]]
+                init_pos = [x0, y0]
+                local_dest = [goal_pos[0] - init_pos[0], goal_pos[1] - init_pos[1]]
+                relative_tilt = correct_angle_range(arctan2(local_dest[1], local_dest[0]))
+                corridor_towards_growth = CorridorWorld(.5, 1., [x0, y0], relative_tilt - np.pi/2)
+                man_seq, path, poses = compute_trajectory(corridor_towards_growth, u_bounds, a, b, m, x0, y0, theta0 + np.pi, plot, xf=goal_pos[0], yf=goal_pos[1])
+                man_seq[:,0:1] = -man_seq[:,0:1]
             print(man_seq)
 
         #TODO: add semi backtracking to make sure we completely are in the next corridor before continuing'

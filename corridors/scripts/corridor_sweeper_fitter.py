@@ -427,11 +427,11 @@ def main():
                                          copy=True)
 
             for i, corridor in enumerate(last_best_corr.children):
-                corridor.grow_all_edges(xy, odom_data.yaw)
+                corridor.grow_all_edges(xy, theta)
                 message.corridors.append(corridor)  # TODO do dit weg
                 corridor.get_vertices_for_visualization(x, y, theta)
-                # corridor.rviz_visualization('rect_fitter', i, 0.,0.,0.7,
-                #                             1/sweeper_fitter_rate)
+                corridor.rviz_visualization('rect_fitter', i, 0.,0.,0.7,
+                                            1/sweeper_fitter_rate)
 
             a = odom_data.posx - goal[0]
             b = goal[1] - odom_data.posy
@@ -439,7 +439,8 @@ def main():
             final_corridor = Corridor(width=1.5, height=1., center=[0, 0],
                                       tilt=angle_test, parent=last_best_corr,
                                       copy=True)
-            final_corridor.grow_edge(xy, Corridor.FWD, step_multiplier=3)
+            if abs(angle_test) < np.pi/4:
+                final_corridor.grow_edge(xy, Corridor.FWD, step_multiplier=3)
             final_corridor.get_vertices_for_visualization(x, y, theta)
 
             next_best_corrs = sorted(last_best_corr.children,
