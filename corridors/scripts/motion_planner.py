@@ -8,6 +8,8 @@ from alignment_radius import get_max_alignment_radius
 
 def remove_corridors_backtracking(corridor_list):
     overlapping_corridors = [[] for i in range(len(corridor_list))]
+    
+    # Creating list of neighbours
     for i in range(len(corridor_list)):
         if i == 0:
             overlapping_corridors[i].append(i + 1)
@@ -17,20 +19,22 @@ def remove_corridors_backtracking(corridor_list):
             overlapping_corridors[i].append(i-1)
             overlapping_corridors[i].append(i+1)
 
-    for index in range(len(corridor_list)-2):
-        for i in range(index + 2, len(corridor_list)-2):
+    # Appending neighbours further than one corridor away
+    for index in range(len(corridor_list)-1): 
+        for i in range(index + 2, len(corridor_list)):
             x_corner, y_corner = get_corner_point(corridor_list[index], corridor_list[i])
             if x_corner is not None:
                 overlapping_corridors[index].append(i)
-    
-    index = 1
+
+
     i = 0
-    updated_corridor_list = []
-    updated_corridor_list[0] = corridor_list[0]
-    while i < len(corridor_list):
-        updated_corridor_list[index] = corridor_list(max(overlapping_corridors[i])-1)
-        index+=1 
-        i = max(overlapping_corridors[i])-1
+    updated_corridor_list = [corridor_list[0]]
+
+    while i < len(corridor_list)-1:
+        #print(f"i = {i}")
+        corridor_to_add = max(overlapping_corridors[i])
+        updated_corridor_list.append(corridor_list[corridor_to_add])
+        i = corridor_to_add
 
     return updated_corridor_list
 
@@ -611,13 +615,29 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 else:
                     print(f'CASE 1b: final pos outside second circle (normal situation)')
                     epsilon2 = correct_angle_range(arctan2((y2 - yc2), (x2 - xc2)))
-                    delta2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
-                    a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
+                    # delta2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
+                    # a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
+                    # c2 = sqrt(a2**2 - R**2)
+                    # beta2 = arcsin(R/a2)
+                    # eta2 = correct_angle_range(delta2 - beta2)
+                    # x3 = xf + c2 * cos(eta2)
+                    # y3 = yf + c2 * sin(eta2)
+                    # chord2 = sqrt((x3-x2)**2 + (y3-y2)**2)
+                    # iota2 = 2*arcsin((chord2/2)/R)
+                    # t3 = R*iota2/v2
+                    # omega3 = omega_max
+                    # arc_x2 = xc2 + R * cos(linspace(epsilon2, epsilon2 + iota2, 100))
+                    # arc_y2 = yc2 + R * sin(linspace(epsilon2, epsilon2 + iota2, 100))
+
+                    # THIS WILL ONLY WORK FOR BACKWARD 
+                    alfa2 = correct_angle_range(arctan2((yf-yc2), (xf-xc2)))
+                    a2 = sqrt((yf-yc2)**2 + (xf - xc2)**2)
                     c2 = sqrt(a2**2 - R**2)
-                    beta2 = arcsin(R/a2)
-                    eta2 = correct_angle_range(delta2 - beta2)
-                    x3 = xf + c2 * cos(eta2)
-                    y3 = yf + c2 * sin(eta2)
+                    gamma2 = arcsin(c2/a2)
+                    beta2 = alfa2 - gamma2
+                    x3 = xc2 + R * cos(beta2)
+                    y3 = yc2 + R * sin(beta2)
+
                     chord2 = sqrt((x3-x2)**2 + (y3-y2)**2)
                     iota2 = 2*arcsin((chord2/2)/R)
                     t3 = R*iota2/v2
@@ -885,12 +905,22 @@ def compute_trajectory(corridor1, u_bounds, a, b, m, x0, y0, theta0, plot, **kwa
                 elif not new_case:
                     print('CASE 3ba:xx')
                     delta2 = correct_angle_range(arctan2((y2-yc2),(x2-xc2))) #+2*pi #always positive
-                    epsilon2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
-                    a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
-                    c2 = sqrt(a2**2-R**2)
-                    beta2 = arcsin(R/a2)
-                    x3 = xf + c2*cos(epsilon2 - beta2)
-                    y3 = yf + c2*sin(epsilon2 - beta2)
+                    # epsilon2 = correct_angle_range(arctan2((yc2-yf),(xc2-xf)))
+                    # a2 = sqrt((yf-yc2)**2+(xf-xc2)**2)
+                    # c2 = sqrt(a2**2-R**2)
+                    # beta2 = arcsin(R/a2)
+                    # x3 = xf + c2*cos(epsilon2 - beta2)
+                    # y3 = yf + c2*sin(epsilon2 - beta2)
+
+                    # ONLY WORKS FOR BACKWARD MOTION
+                    alfa2 = correct_angle_range(arctan2((yf-yc2), (xf-xc2)))
+                    a2 = sqrt((yf-yc2)**2 + (xf - xc2)**2)
+                    c2 = sqrt(a2**2 - R**2)
+                    gamma2 = arcsin(c2/a2)
+                    beta2 = alfa2 + gamma2
+                    x3 = xc2 + R * cos(beta2)
+                    y3 = yc2 + R * sin(beta2)
+
                     eta2 = correct_angle_range(arctan2((y3-yc2),(x3-xc2))) #+2*pi #always positive
                     omega3 = omega_min
                     chord2 = sqrt((x3-x2)**2+(y3-y2)**2)
