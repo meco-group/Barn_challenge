@@ -1,18 +1,18 @@
 Bootstrap: docker
-From: alejandroastudillo/ros-noetic-barn
+From: ros:noetic
 
 %setup
     mkdir -p ${SINGULARITY_ROOTFS}/jackal_ws/src
 
 %files
-    . /jackal_ws/src/nav-competition-icra2022
+    ./barn_challenge_2023 /jackal_ws/src/nav-competition-icra2022
 
 %post -c /bin/bash
-    apt -y update; apt-get -y install python3-venv
+    apt -y update; apt-get -y install python3-venv git
     python3 -m venv /venv
     export PATH="/venv/bin:$PATH"
     pip3 install --upgrade pip
-    pip3 install defusedxml rospkg netifaces numpy
+    pip3 install defusedxml rospkg netifaces numpy matplotlib empy pysdf PyQt5 python-sdformat
     
     cd /jackal_ws/src
     git clone https://github.com/jackal/jackal.git --branch noetic-devel
