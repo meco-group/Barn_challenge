@@ -186,7 +186,7 @@ class Corridor:
             # print('case3')
             self.grow_edge(datapoints, Corridor.LFT,
                            step_multiplier=step_multiplier)
-        else:
+        # else:
             # print('case4')
 
         # Rotate corridor only if width becomes larger than height

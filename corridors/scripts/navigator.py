@@ -57,7 +57,7 @@ def corridorListCallback(data):
 
     if not GOAL_IN_SIGHT: # Avoid reading new corridors once the goal is in sight
         if data.len == 1:
-            print("[navigator] .... got new corridor")
+            # print("[navigator] .... got new corridor")
             RESUME_PLANNING = True
             for corridor_message in data.corridors:
                 corridor_instance = CorridorWorld(
@@ -74,7 +74,7 @@ def corridorListCallback(data):
             BACKTRACKING = False
             EXECUTING_BACKTRACKING = False
         elif data.len > 1:
-            print("[navigator] .... got new corridors for backtracking")
+            # print("[navigator] .... got new corridors for backtracking")
             # TODO: If more than one corridor is sent, backtrack
             list_of_corridors = []
             for corridor_message in data.corridors:
@@ -207,11 +207,11 @@ def main():
                 timer = rospy.Time.now().to_sec()
                 RESUME_PLANNING = False
 
-            print('nav growth center',list_of_corridors[1].growth_center)
+            # print('nav growth center',list_of_corridors[1].growth_center)
             x_gc, y_gc = pos_restart_planning
             x_c, y_c = message.posx, message.posy
             dist = np.sqrt((x_gc - x_c)**2 + (y_gc - y_c)**2)
-            print('dist', dist)
+            # print('dist', dist)
             if dist < 0.15 or rospy.Time.now().to_sec() - timer > 10:
                 STOP_PLANNING = False
                 pos_restart_planning = None
@@ -219,7 +219,7 @@ def main():
             continue
 
         if len(list_of_corridors) > 0:
-            print('tilt',list_of_corridors[0].tilt)
+            # print('tilt',list_of_corridors[0].tilt)
             if not BACKTRACKING:
                 corridor1 = list_of_corridors[0]
                 corridor2 = (list_of_corridors[1]
@@ -284,7 +284,7 @@ def main():
                             corridor2=corridor2,
                             xf=goal[0], yf=goal[1])
                         computed_maneuver[-1][0] = 2.
-                        print("[navigator] Heading to the goal", goal[0], goal[1])
+                        # print("[navigator] Heading to the goal", goal[0], goal[1])
                     
                     
                         # print(computed_maneuver)
@@ -303,7 +303,7 @@ def main():
                         threshold = np.abs(np.arctan((corridor1.width/2 - a/2 - m)/c))
                         #################################
                         goal_heading = np.arctan2(message.posx - goal[0], goal[1] - message.posy)
-                        print(f"[navigator] Difference in heading is {round(np.abs(message.theta - np.pi/2 - goal_heading)/2/np.pi*360, 3)}")
+                        # print(f"[navigator] Difference in heading is {round(np.abs(message.theta - np.pi/2 - goal_heading)/2/np.pi*360, 3)}")
                         if np.abs(message.theta - np.pi/2 - goal_heading) >= threshold:
                             computed_maneuver, computed_path, poses, STOP_PLANNING = planner(
                                 corridor1=corridor1,
@@ -314,14 +314,14 @@ def main():
                                 corridor2=corridor2,
                                 xf=goal[0], yf=goal[1])
                             computed_maneuver[-1][0] = 2.
-                            print("[navigator] Heading to the goal", goal[0], goal[1])
+                            # print("[navigator] Heading to the goal", goal[0], goal[1])
 
                             # print(computed_maneuver, "case 3")
                             maneuver_Pub.publish(generate_maneuver_message(computed_maneuver))
                             path_Pub.publish(generate_path_message(computed_path))
 
                         else:
-                            print(f"[navigator] Skipping computing maneuver...already heading to goal {goal[0]},{goal[1]}")
+                            # print(f"[navigator] Skipping computing maneuver...already heading to goal {goal[0]},{goal[1]}")
 
             else: # Backtracking:
                 # backtracking_list = list_of_corridors.reverse() # .reverse() does not return anything, it modifies the list
@@ -364,12 +364,12 @@ def main():
                         # print('orig tilt',corridor_instance.tilt)
                         # print('tilt',tilt, corridor_instance)
                         # print('--------------------------------------------------------')
-                        print(f'For Alejandro {corridor_instance.width}, {corridor_instance.height}, [{corridor_instance.center[0]},{corridor_instance.center[1]}], {tilt}, {message.theta}')
-                        print(f'x0 = {message.posx}, y0 = {message.posy}')
+                        # print(f'For Alejandro {corridor_instance.width}, {corridor_instance.height}, [{corridor_instance.center[0]},{corridor_instance.center[1]}], {tilt}, {message.theta}')
+                        # print(f'x0 = {message.posx}, y0 = {message.posy}')
                         backtracking_list_0.append(CorridorWorld(corridor_instance.width, corridor_instance.height, corridor_instance.center, tilt))
                     
                     backtracking_list = remove_corridors_backtracking(backtracking_list_0)
-                    print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
+                    # print(f"[navigator] Received backtracking trigger with {len(backtracking_list)} corridors")
                     goal_point_last_corridor = compute_initial_point(backtracking_list[-1], m)
                     # print(f"### Backtracking: veh angle = {message.theta-np.pi}, corridor angle = {backtracking_list[0].tilt}")
                     # print('theta for planner sequence', message.theta + np.pi - np.pi/2)
@@ -386,15 +386,15 @@ def main():
                         xf = goal_point_last_corridor[0],
                         yf = goal_point_last_corridor[1],
                     )
-                    print("[navigator] Forward-Backtracking maneuver computed")
-                    print(fwd_computed_maneuver)
+                    # print("[navigator] Forward-Backtracking maneuver computed")
+                    # print(fwd_computed_maneuver)
                     computed_maneuver = np.empty((0,fwd_computed_maneuver.shape[1]))
                     for maneuver_segment in fwd_computed_maneuver:
                         computed_maneuver = np.vstack((computed_maneuver, np.array([-maneuver_segment[0], maneuver_segment[1], maneuver_segment[2]])))
 
 
-                    print("[navigator] Backtracking maneuver computed")
-                    print(computed_maneuver)
+                    # print("[navigator] Backtracking maneuver computed")
+                    # print(computed_maneuver)
                     # computed_maneuver = np.array([0,0,0]).reshape(1,3)
                     # # The computed maneuver should be sent to the controller, which
                     # # will define the instantaneous twist to be sent to the robot

@@ -124,9 +124,9 @@ def process_new_corridor(new_corridor_msg, root_corridor,
             receiving_corridor.add_child_corridor(new_corridor, margin=.2)
             receiving_corridor.sort_children()
             receiving_corridor.remove_similar_children()
-        elif stuck:
+        # elif stuck:
             # print(f"[manager] Discarding a corridor (stuck: {round(d,3)})")
-        else:
+        # else:
             # print("[manager] Discarding a corridor (backtrack similarity)")
 
     return (root_corridor, current_corridor)
