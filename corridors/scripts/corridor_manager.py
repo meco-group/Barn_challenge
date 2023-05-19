@@ -442,9 +442,10 @@ def main():
                 #        (curr_pose.posy - backtracking_goal[1])**2) < .5:
                 print("[manager] Stopping backtracking!")
                 backtrack_mode_activated = False
-                # Flush all corridors heared while backtracking
+                # Flush all corridors heard while backtracking
                 new_corridor_list = []
                 new_corridor_present = False
+                # publish_corridors([current_corridor], corridor_pub, backtrack_mode_activated)
             else:
                 rate.sleep()
                 continue
