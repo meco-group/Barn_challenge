@@ -18,6 +18,7 @@ From: ros:noetic
     git clone https://github.com/jackal/jackal.git --branch noetic-devel
     git clone https://github.com/jackal/jackal_simulator.git --branch melodic-devel
     git clone https://github.com/jackal/jackal_desktop.git --branch melodic-devel
+    git clone https://github.com/utexas-bwi/eband_local_planner.git
 
     source /opt/ros/noetic/setup.bash
     cd ..
