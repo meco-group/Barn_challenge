@@ -321,7 +321,7 @@ def main():
                             path_Pub.publish(generate_path_message(computed_path))
 
                         else:
-                            # print(f"[navigator] Skipping computing maneuver...already heading to goal {goal[0]},{goal[1]}")
+                            print(f"[navigator] Skipping computing maneuver...already heading to goal {goal[0]},{goal[1]}")
 
             else: # Backtracking:
                 # backtracking_list = list_of_corridors.reverse() # .reverse() does not return anything, it modifies the list

@@ -16,7 +16,7 @@ import tf2_ros
 
 
 def correct_angle_range(angle):
-    if angle <= -0:
+    if angle < 0:
         return correct_angle_range(angle + 2*np.pi)
     elif angle >= 2*np.pi:
         return correct_angle_range(angle - 2*np.pi)
@@ -82,7 +82,7 @@ def main():
 
     tf_buffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tf_buffer)
-    tf_buffer.lookup_transform('odom', 'map', rospy.Time(0), rospy.Duration(2.))
+    tf_buffer.lookup_transform('odom', 'map', rospy.Time(0), rospy.Duration(5.))
     odom_sub = rospy.Subscriber('/odometry/filtered', Odometry, odomCallback,
                                 (pose_map_pub, tf_buffer))
     print('remapper active')

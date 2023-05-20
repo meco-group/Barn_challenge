@@ -5,22 +5,20 @@ From: ros:noetic
     mkdir -p ${SINGULARITY_ROOTFS}/jackal_ws/src
 
 %files
-    ./barn_challenge_2023 /jackal_ws/src/nav-competition-icra2022
+    . /jackal_ws/src/nav-competition-icra2022
 
 %post -c /bin/bash
-    apt -y update; apt-get -y install python3-venv git python3-pykdl
+    apt -y update; apt-get -y install python3-venv git
     python3 -m venv /venv
     export PATH="/venv/bin:$PATH"
     pip3 install --upgrade pip
     pip3 install defusedxml rospkg netifaces numpy matplotlib empy pysdf PyQt5 python-sdformat
-    apt-get -y install python3-pykdl
     
     cd /jackal_ws/src
     git clone https://github.com/jackal/jackal.git --branch noetic-devel
     git clone https://github.com/jackal/jackal_simulator.git --branch melodic-devel
     git clone https://github.com/jackal/jackal_desktop.git --branch melodic-devel
-    git clone https://github.com/utexas-bwi/eband_local_planner.git
-    
+
     source /opt/ros/noetic/setup.bash
     cd ..
     rosdep init; rosdep update

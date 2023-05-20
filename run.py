@@ -81,8 +81,8 @@ if __name__ == "__main__":
         collided = gazebo_sim.get_hard_collision()
         time.sleep(1)
 
-    rviz_process = subprocess.Popen(
-        ['roslaunch', 'jackal_viz', 'view_robot.launch'])
+    # rviz_process = subprocess.Popen(
+    #     ['roslaunch', 'jackal_viz', 'view_robot.launch'])
 
 
     ##########################################################################################
@@ -184,5 +184,5 @@ if __name__ == "__main__":
     gazebo_process.wait()
     nav_stack_process.terminate()
     nav_stack_process.wait()
-    rviz_process.terminate()
-    rviz_process.wait()
+    # rviz_process.terminate()
+    # rviz_process.wait()

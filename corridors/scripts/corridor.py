@@ -80,7 +80,7 @@ class Corridor:
             self.original = self.corridor_copy()
 
     def correct_angle_range(self, angle):
-        if angle <= -0:
+        if angle < 0:
             return self.correct_angle_range(angle + 2*np.pi)
         elif angle >= 2*np.pi:
             return self.correct_angle_range(angle - 2*np.pi)
